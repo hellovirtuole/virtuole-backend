@@ -4,4 +4,3 @@ flask-limiter
 supabase
 python-dotenv
 requests
-xhtml2pdf[renderpm]
