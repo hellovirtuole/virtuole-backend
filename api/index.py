@@ -6,7 +6,6 @@ import base64
 import hashlib
 import requests
 import smtplib
-from io import BytesIO
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -20,42 +19,36 @@ from supabase import create_client, Client
 
 # Load secure environment configurations
 load_dotenv()
-app = Flask(__name__, template_folder='../templates')
-app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY")
+
+# =====================================================================
+# 1. VERCEL ARCHITECTURE SETUP
+# =====================================================================
+base_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+template_dir = os.path.join(base_dir, 'templates')
+
+app = Flask(__name__, template_folder=template_dir)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "fallback-secret-key")
 CORS(app)
 
 # Protect system endpoints from API brute-forcing/spam
 limiter = Limiter(
     key_func=get_remote_address,
     app=app,
+    storage_uri="memory://", # CRITICAL VERCEL FIX
     default_limits=["200 per day", "50 per hour"]
 )
 
 # Core Relational Database Client Connection
-supabase: Client = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+if SUPABASE_URL and SUPABASE_KEY:
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+else:
+    supabase = None
 
 # =====================================================================
-# 1. PDF GENERATOR & HTML TEMPLATES (Vercel-Compatible xhtml2pdf)
+# 2. HTML TEMPLATES (Replaces PDF Generation)
 # =====================================================================
-
-def generate_pdf_from_html(html_string, orientation='Portrait'):
-    """Converts a raw HTML string into a PDF byte array using pure Python."""
-    if orientation.lower() == 'landscape':
-        page_css = "<style>@page { size: a4 landscape; margin: 1cm; }</style>"
-    else:
-        page_css = "<style>@page { size: a4 portrait; margin: 1cm; }</style>"
-    
-    full_html = page_css + html_string
-    result = BytesIO()
-    
-    pisa_status = pisa.CreatePDF(full_html, dest=result)
-    
-    if pisa_status.err:
-        print(f"PDF Generation Error: {pisa_status.err}")
-        return None
-        
-    return result.getvalue()
 
 def get_offer_letter_template(name, date, program_title, track_level, enroll_id, project_details):
     return f"""
@@ -106,7 +99,7 @@ def get_offer_letter_template(name, date, program_title, track_level, enroll_id,
 
 def get_certificate_template(name, date, program_title, track_level, enroll_id, score):
     return f"""
-    <html><body style="font-family: Helvetica, Arial, sans-serif; padding: 30px; border: 8px solid #1a365d; text-align: center;">
+    <html><body style="font-family: Helvetica, Arial, sans-serif; padding: 30px; border: 8px solid #1a365d; text-align: center; max-width: 900px; margin: auto;">
         <h1 style="color: #1a365d; margin: 0; letter-spacing: 4px; font-size: 32px;">VIRTUOLE</h1>
         <p style="color: #4a5568; font-size: 12px; margin: 5px 0 0 0;">MSME Reg. No: UDYAM-BR-06-0064801 | support@virtuole.in</p>
         
@@ -135,17 +128,18 @@ def get_certificate_template(name, date, program_title, track_level, enroll_id, 
                 </td>
                 <td style="width: 50%; text-align: center; vertical-align: bottom; border: none;">
                     <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/public-assets/vishal_signature.png" style="height: 55px; width: 150px;" alt="Vishal Kumar Signature"><br>
-                    <hr style="width: 200px; text-align: center; border: none; border-top: 1px solid #111827;">
+                    <hr style="width: 200px; text-align: center; border: none; border-top: 1px solid #111827; margin: auto;">
                     <p style="margin-top: 5px; font-size: 14px;"><strong>Vishal Kumar</strong><br>Founder & Proprietor, Virtuole</p>
                 </td>
             </tr>
         </table>
+        <br><p style="color: gray; font-size: 10px; border-top: 1px solid #eee; padding-top: 10px;">To save this certificate, press Ctrl+P (Windows) or Cmd+P (Mac) and select "Save as PDF". Ensure "Background graphics" is enabled.</p>
     </body></html>
     """
 
 def get_lor_template(name, date, program_title, track_level, enroll_id, project_details):
     return f"""
-    <html><body style="font-family: Helvetica, Arial, sans-serif; padding: 30px; color: #111827; line-height: 1.5;">
+    <html><body style="font-family: Helvetica, Arial, sans-serif; padding: 30px; color: #111827; line-height: 1.5; max-width: 800px; margin: auto;">
         <div style="text-align: right; border-bottom: 2px solid #ecc94b; padding-bottom: 15px; margin-bottom: 30px;">
             <h1 style="color: #1a365d; margin: 0; letter-spacing: 3px; font-size: 28px;">VIRTU<span style="color: #ecc94b;">OLE</span></h1>
             <p style="color: #4a5568; font-weight: bold; font-size: 12px; margin: 5px 0 2px 0;">Registered MSME, Government of India</p>
@@ -191,7 +185,7 @@ def get_lor_template(name, date, program_title, track_level, enroll_id, project_
 
 def get_ambassador_certificate_template(name, date, tier_name, points, amb_id):
     return f"""
-    <html><body style="font-family: Helvetica, Arial, sans-serif; padding: 30px; border: 8px solid #9f7aea; text-align: center; background-color: #faf5ff;">
+    <html><body style="font-family: Helvetica, Arial, sans-serif; padding: 30px; border: 8px solid #9f7aea; text-align: center; background-color: #faf5ff; max-width: 900px; margin: auto;">
         <h1 style="color: #1a365d; margin: 0; letter-spacing: 4px; font-size: 28px;">VIRTU<span style="color: #9f7aea;">OLE</span></h1>
         <p style="color: #4a5568; font-size: 12px; margin: 5px 0 0 0;">MSME Reg. No: UDYAM-BR-06-0064801 | ambassador@virtuole.in</p>
         
@@ -220,32 +214,34 @@ def get_ambassador_certificate_template(name, date, tier_name, points, amb_id):
                 </td>
                 <td style="width: 50%; text-align: center; vertical-align: bottom; border: none;">
                     <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/public-assets/vishal_signature.png" style="height: 55px; width: 150px;" alt="Vishal Kumar Signature"><br>
-                    <hr style="width: 200px; text-align: center; border: none; border-top: 1px solid #111827;">
+                    <hr style="width: 200px; text-align: center; border: none; border-top: 1px solid #111827; margin: auto;">
                     <p style="margin-top: 5px; font-size: 14px;"><strong>Vishal Kumar</strong><br>Founder & Proprietor, Virtuole</p>
                 </td>
             </tr>
         </table>
+        <br><p style="color: gray; font-size: 10px; border-top: 1px solid #eee; padding-top: 10px;">To save this certificate, press Ctrl+P (Windows) or Cmd+P (Mac) and select "Save as PDF". Ensure "Background graphics" is enabled.</p>
     </body></html>
     """
 
 # =====================================================================
-# 2. DUAL-RAIL EMAIL INFRASTRUCTURE
+# 3. EMAIL INFRASTRUCTURE (Rich HTML Support added)
 # =====================================================================
 
-def send_system_email(to_email, subject, body_content, pdf_attachment=None, pdf_filename="document.pdf"):
-    """Intern Channel: Outbound via AWS SES (service@virtuole.in). Replies routed to Zoho."""
+def send_system_email(to_email, subject, body_content, is_html=False):
+    """Intern Channel: Outbound via AWS SES."""
     msg = MIMEMultipart()
     msg['From'] = f"Virtuole Services <{os.getenv('AWS_SMTP_USER')}>"
     msg['To'] = to_email
     msg['Subject'] = subject
     msg.add_header('reply-to', 'support@virtuole.in')
-    msg.attach(MIMEText(body_content, 'plain'))
-    if pdf_attachment:
-        part = MIMEApplication(pdf_attachment, Name=pdf_filename)
-        part['Content-Disposition'] = f'attachment; filename="{pdf_filename}"'
-        msg.attach(part)
+    
+    if is_html:
+        msg.attach(MIMEText(body_content, 'html'))
+    else:
+        msg.attach(MIMEText(body_content, 'plain'))
+        
     try:
-        with smtplib.SMTP(os.getenv("AWS_SMTP_SERVER"), int(os.getenv("AWS_SMTP_PORT"))) as server:
+        with smtplib.SMTP(os.getenv("AWS_SMTP_SERVER"), int(os.getenv("AWS_SMTP_PORT", 587))) as server:
             server.starttls()
             server.login(os.getenv("AWS_SMTP_USER"), os.getenv("AWS_SMTP_PASS"))
             server.send_message(msg)
@@ -253,7 +249,7 @@ def send_system_email(to_email, subject, body_content, pdf_attachment=None, pdf_
         print(f"AWS SES Delivery Exception: {e}")
 
 def send_ambassador_email(to_email, subject, body_content):
-    """Ambassador Channel: Direct outbound and inbound via Zoho (ambassador@virtuole.in)."""
+    """Ambassador Channel: Direct outbound via Zoho."""
     msg = MIMEMultipart()
     msg['From'] = f"Virtuole Ambassador Program <ambassador@virtuole.in>"
     msg['To'] = to_email
@@ -270,57 +266,36 @@ def send_ambassador_email(to_email, subject, body_content):
 
 
 # =====================================================================
-# 3. VERCEL SERVERLESS CRON ROUTE (Replaces APScheduler)
+# 4. VERCEL SERVERLESS CRON ROUTE 
 # =====================================================================
 
 def automated_system_maintenance():
-    """Core logic for purging and updating database status."""
+    if not supabase: return
     now = datetime.utcnow()
-    
-    # 1. Purge Enrollments older than 30 days without submission
     thirty_days_ago = (now - timedelta(days=30)).isoformat()
     supabase.table('enrollments').delete().eq('status', 'active').lt('created_at', thirty_days_ago).execute()
 
-    # 2. Purge Failed Submissions older than 24 hours (No resubmission)
     twenty_four_hours_ago = (now - timedelta(hours=24)).isoformat()
     expired_fails = supabase.table('enrollments').select('id', 'user_id').eq('status', 'failed').lt('created_at', twenty_four_hours_ago).execute()
     for row in expired_fails.data:
         supabase.table('enrollments').delete().eq('id', row['id']).execute()
 
-    # 3. Smart Reminders (Active enrolled, not submitted, past 7 days)
     seven_days_ago = (now - timedelta(days=7)).isoformat()
     reminders = supabase.table('enrollments').select('id', 'user_id').eq('status', 'active').gt('created_at', seven_days_ago).execute()
     for row in reminders.data:
         user = supabase.table('users').select('email', 'full_name').eq('id', row['user_id']).execute().data[0]
-        send_system_email(
-            user['email'], 
-            "Virtuole Internship: Pending Submission Reminder", 
-            f"Hello {user['full_name']},\n\nDon't forget to submit your architecture. You have a 30-day window from enrollment to qualify for credentials."
-        )
+        send_system_email(user['email'], "Virtuole Internship: Pending Submission Reminder", f"Hello {user['full_name']},\n\nDon't forget to submit your architecture. You have a 30-day window from enrollment to qualify for credentials.")
 
-    # 4. Ambassador Expiry (Demote to Intern after 1 year)
     expired_ambassadors = supabase.table('users').select('id', 'email', 'full_name').eq('role', 'ambassador').lt('ambassador_expiry', now.isoformat()).execute()
     for row in expired_ambassadors.data:
-        supabase.table('users').update({
-            "role": "intern",
-            "promo_code": None,
-            "ambassador_expiry": None
-        }).eq('id', row['id']).execute()
-        
-        send_system_email(
-            row['email'], 
-            "Virtuole Ambassador Program: Term Completed", 
-            f"Hello {row['full_name']},\n\nYour 1-year term as a Virtuole Ambassador has officially concluded. We thank you for your incredible service and advocacy! Your account has now been seamlessly transitioned back to a standard Intern profile."
-        )
+        supabase.table('users').update({"role": "intern", "promo_code": None, "ambassador_expiry": None}).eq('id', row['id']).execute()
+        send_system_email(row['email'], "Virtuole Ambassador Program: Term Completed", f"Hello {row['full_name']},\n\nYour 1-year term as a Virtuole Ambassador has officially concluded. Your account has now been seamlessly transitioned back to a standard Intern profile.")
 
 @app.route('/api/cron/maintenance', methods=['GET', 'POST'])
 def run_maintenance():
-    """Endpoint triggered by Vercel's Cron engine."""
     auth_header = request.headers.get('Authorization')
-    # Validate the request came from Vercel using the secure key
     if auth_header != f"Bearer {os.getenv('CRON_SECRET_KEY')}":
         return jsonify({"error": "Unauthorized"}), 401
-        
     try:
         automated_system_maintenance()
         return jsonify({"status": "Maintenance execution completed successfully"}), 200
@@ -329,12 +304,14 @@ def run_maintenance():
 
 
 # =====================================================================
-# 4. AUTHENTICATION & REGISTRATION GATEWAYS
+# 5. AUTHENTICATION & REGISTRATION GATEWAYS
 # =====================================================================
 
 @app.route('/')
 def home():
-    programs = supabase.table('programs').select('*').eq('is_active', True).execute().data
+    programs = []
+    if supabase:
+        programs = supabase.table('programs').select('*').eq('is_active', True).execute().data
     return render_template('index.html', offered_programs=programs)
 
 @app.route('/api/register', methods=['POST'])
@@ -344,23 +321,16 @@ def register():
     email = request.form.get('email')
     password = request.form.get('password')
     promo_used = request.form.get('promo_code')
-    
     public_id = f"VT-2026-{random.randint(1000, 9999)}"
     
     try:
         auth_user = supabase.auth.sign_up({"email": email, "password": password})
         if auth_user:
             supabase.table('users').insert({
-                "id": auth_user.user.id,
-                "full_name": full_name,
-                "email": email,
-                "public_id": public_id,
-                "role": "intern"
+                "id": auth_user.user.id, "full_name": full_name, "email": email, "public_id": public_id, "role": "intern"
             }).execute()
-            
             if promo_used:
                 send_ambassador_email("ambassador@virtuole.in", f"Conversion Logged: Code {promo_used}", f"A new student has registered using promo code {promo_used}.")
-                
             send_system_email(email, "Welcome to Virtuole", f"Hello {full_name},\nYour public identity ID is {public_id}. Please log in to your dashboard to view offered programs and begin your internship.")
             return redirect(url_for('login', message="Account created successfully."))
     except Exception as e:
@@ -373,11 +343,9 @@ def login():
         email = request.form.get('email')
         password = request.form.get('password')
         login_type = request.form.get('login_type') 
-        
         try:
             supabase.auth.sign_in_with_password({"email": email, "password": password})
             user_data = supabase.table('users').select('*').eq('email', email).execute().data[0]
-            
             if login_type == 'staff' and user_data['role'] == 'intern':
                 return render_template('login.html', error="unauthorized")
                 
@@ -387,23 +355,21 @@ def login():
             session['role'] = user_data['role']
             session['public_id'] = user_data['public_id']
             
-            # Master RBAC Routing
-            if session.get('role') == 'admin' and email == "admin@virtuole.in": 
-                return redirect(url_for('dashboard_admin'))
-            elif user_data['role'] == 'mentor': 
-                return redirect(url_for('dashboard_mentor'))
-            elif user_data['role'] == 'ambassador': 
-                return redirect('/dashboard-ambassador')
-            else: 
-                return redirect(url_for('dashboard_intern'))
-                
+            if session.get('role') == 'admin' and email == "admin@virtuole.in": return redirect(url_for('dashboard_admin'))
+            elif user_data['role'] == 'mentor': return redirect(url_for('dashboard_mentor'))
+            elif user_data['role'] == 'ambassador': return redirect('/dashboard-ambassador')
+            else: return redirect(url_for('dashboard_intern'))
         except Exception:
             return render_template('login.html', error="unregistered")
-            
     return render_template('login.html')
 
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
 # =====================================================================
-# 5. GTM PROMO CODE & PHONEPE SECURE GATEWAY
+# 6. GTM PROMO CODE & PHONEPE SECURE GATEWAY
 # =====================================================================
 
 @app.route('/api/validate-promo', methods=['POST'])
@@ -419,7 +385,6 @@ def validate_promo():
 @limiter.limit("3 per minute")
 def create_phonepe_payment():
     if not session.get('email'): return jsonify({"error": "Unauthorized"}), 401
-    
     data = request.get_json()
     enrollment_id = data.get('enrollment_id')
     promo_code = data.get('promo_code', '').upper()
@@ -433,12 +398,11 @@ def create_phonepe_payment():
     if promo_code:
         is_valid = supabase.table('users').select('id').eq('promo_code', promo_code).eq('role', 'ambassador').execute().data
         if is_valid:
-            final_price = int(base_price * 0.9)  # 10% Discount applied
+            final_price = int(base_price * 0.9)
             applied_promo = promo_code
 
     transaction_id = f"VT-TXN-{random.randint(100000, 999999)}"
     amount_in_paise = final_price * 100 
-
     payload = {
         "merchantId": os.getenv("PHONEPE_MERCHANT_ID"),
         "merchantTransactionId": transaction_id,
@@ -449,7 +413,6 @@ def create_phonepe_payment():
         "callbackUrl": "https://www.virtuole.in/api/phonepe-webhook", 
         "paymentInstrument": {"type": "PAY_PAGE"}
     }
-
     base64_payload = base64.b64encode(json.dumps(payload).encode('utf-8')).decode('utf-8')
     checksum = hashlib.sha256((base64_payload + "/pg/v1/pay" + os.getenv("PHONEPE_SALT_KEY")).encode('utf-8')).hexdigest() + "###" + os.getenv("PHONEPE_SALT_INDEX")
     headers = {"Content-Type": "application/json", "X-VERIFY": checksum}
@@ -457,7 +420,6 @@ def create_phonepe_payment():
     try:
         response = requests.post("https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay", json={"request": base64_payload}, headers=headers)
         response_data = response.json()
-
         if response_data.get('success'):
             supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": data.get('code_link'), "defense_link": data.get('defense_link')}).execute()
             supabase.table('payments').insert({"user_id": session['user_id'], "transaction_id": transaction_id, "amount": amount_in_paise, "status": "pending", "applied_promo": applied_promo}).execute()
@@ -474,68 +436,45 @@ def phonepe_webhook():
         supabase.table('payments').update({"status": "paid"}).eq('transaction_id', transaction_id).execute()
     return jsonify({"status": "received"}), 200
 
-
 # =====================================================================
-# 6. INTERN ACTIONS (ENROLL & SUBMIT)
+# 7. INTERN ACTIONS
 # =====================================================================
 
 @app.route('/api/enroll', methods=['POST'])
 def api_enroll():
     if session.get('role') != 'intern': return redirect('/login')
-    
     program_id = request.form.get('program_id')
     track_level = request.form.get('track_level')
     enrollment_id = f"VT-E-{random.randint(100000, 999999)}"
     
     supabase.table('enrollments').insert({
-        "enrollment_id": enrollment_id,
-        "user_id": session['user_id'],
-        "program_id": program_id,
-        "track_level": track_level,
-        "college_name": request.form.get('college_name'),
-        "course_name": request.form.get('course_name'),
-        "session_year": request.form.get('session_year')
+        "enrollment_id": enrollment_id, "user_id": session['user_id'], "program_id": program_id,
+        "track_level": track_level, "college_name": request.form.get('college_name'),
+        "course_name": request.form.get('course_name'), "session_year": request.form.get('session_year')
     }).execute()
     
     prog = supabase.table('programs').select('*').eq('id', program_id).execute().data[0]
-    program_title = prog['title']
-    project_details = prog['short_description']
-    today_date = datetime.utcnow().strftime("%B %d, %Y")
-
-    # Generate Portrait Offer Letter
-    html_offer = get_offer_letter_template(session['name'], today_date, program_title, track_level.title(), enrollment_id, project_details)
-    pdf_offer = generate_pdf_from_html(html_offer, orientation='Portrait')
-
-    send_system_email(
-        session['email'], "Official Internship Offer Letter - Virtuole", 
-        f"Congratulations {session['name']}, you are officially enrolled. Your tracking ID is {enrollment_id}. Find your Offer Letter attached.",
-        pdf_attachment=pdf_offer, pdf_filename=f"Offer_Letter_{enrollment_id}.pdf"
-    )
+    html_offer = get_offer_letter_template(session['name'], datetime.utcnow().strftime("%B %d, %Y"), prog['title'], track_level.title(), enrollment_id, prog['short_description'])
+    
+    # Send HTML Offer letter directly as email
+    send_system_email(session['email'], "Official Internship Offer Letter - Virtuole", html_offer, is_html=True)
     return redirect(url_for('dashboard_intern'))
 
 @app.route('/api/submit-project', methods=['POST'])
 def api_submit_project():
     enrollment_id = request.form.get('enrollment_id')
-    
-    supabase.table('submissions').insert({
-        "enrollment_id": enrollment_id,
-        "code_link": request.form.get('code_link'),
-        "defense_link": request.form.get('defense_link')
-    }).execute()
-    
+    supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": request.form.get('code_link'), "defense_link": request.form.get('defense_link')}).execute()
     supabase.table('enrollments').update({"status": "submitted"}).eq('enrollment_id', enrollment_id).execute()
-    
     send_system_email(session['email'], "Submission Received", f"Your architecture for {enrollment_id} has entered the Mentor grading matrix.")
     return redirect(url_for('dashboard_intern'))
 
 # =====================================================================
-# 7. MENTOR GRADING & AMBASSADOR TASK APPROVALS
+# 8. MENTOR GRADING 
 # =====================================================================
 
 @app.route('/api/grade-submission', methods=['POST'])
 def grade_submission():
     if session.get('role') != 'mentor': return redirect('/login')
-    
     sub_id = request.form.get('submission_id')
     enrollment_id = request.form.get('enrollment_id')
     score = int(request.form.get('score'))
@@ -543,68 +482,23 @@ def grade_submission():
     
     enroll_data = supabase.table('enrollments').select('*, programs(title, short_description)').eq('enrollment_id', enrollment_id).execute().data[0]
     student = supabase.table('users').select('email', 'full_name').eq('id', enroll_data['user_id']).execute().data[0]
-    program_title = enroll_data['programs']['title']
-    project_details = enroll_data['programs']['short_description']
-    today_date = datetime.utcnow().strftime("%B %d, %Y")
     
     if score >= 80:
-        # Generate Landscape Certificate
-        html_cert = get_certificate_template(student['full_name'], today_date, program_title, enroll_data['track_level'].title(), enrollment_id, score)
-        pdf_cert = generate_pdf_from_html(html_cert, orientation='Landscape')
-        db_updates = {"score": score, "certificate_url": f"https://virtuole.in/verify/{enrollment_id}", "evaluated_at": datetime.utcnow().isoformat()}
-        
+        db_updates = {"score": score, "certificate_url": f"https://www.virtuole.in/verify-credential?credential_id={enrollment_id}", "evaluated_at": datetime.utcnow().isoformat()}
         if score == 100:
-            # Generate Portrait LoR
-            html_lor = get_lor_template(student['full_name'], today_date, program_title, enroll_data['track_level'].title(), enrollment_id, project_details)
-            pdf_lor = generate_pdf_from_html(html_lor, orientation='Portrait')
-            
-            db_updates["lor_url"] = f"https://virtuole.in/verify/{enrollment_id}/lor"
-            body_msg = f"{student['full_name']}, flawless defense. Attached are your official Certificate of Completion AND your Elite Founder's Letter of Recommendation."
-            subj = "Elite LoR Unlocked - Virtuole"
-            
-            msg = MIMEMultipart()
-            msg['From'] = f"Virtuole Services <{os.getenv('AWS_SMTP_USER')}>"
-            msg['To'] = student['email']
-            msg['Subject'] = subj
-            msg.add_header('reply-to', 'support@virtuole.in')
-            msg.attach(MIMEText(body_msg, 'plain'))
-            
-            part_cert = MIMEApplication(pdf_cert, Name=f"Certificate_{enrollment_id}.pdf")
-            part_cert['Content-Disposition'] = f'attachment; filename="Certificate_{enrollment_id}.pdf"'
-            msg.attach(part_cert)
-            
-            part_lor = MIMEApplication(pdf_lor, Name=f"LoR_{enrollment_id}.pdf")
-            part_lor['Content-Disposition'] = f'attachment; filename="LoR_{enrollment_id}.pdf"'
-            msg.attach(part_lor)
-            
-            with smtplib.SMTP(os.getenv("AWS_SMTP_SERVER"), int(os.getenv("AWS_SMTP_PORT"))) as server:
-                server.starttls()
-                server.login(os.getenv("AWS_SMTP_USER"), os.getenv("AWS_SMTP_PASS"))
-                server.send_message(msg)
-                
-            supabase.table('submissions').update(db_updates).eq('id', sub_id).execute()
-            supabase.table('enrollments').update({"status": "graded"}).eq('enrollment_id', enrollment_id).execute()
-            
+            db_updates["lor_url"] = f"https://www.virtuole.in/verify-credential?credential_id={enrollment_id}"
+            body_msg = f"Congratulations {student['full_name']}! Flawless defense. You can view, verify, and print your official MSME Certificate and Elite Founder's Letter of Recommendation here: https://www.virtuole.in/verify-credential?credential_id={enrollment_id}"
         else:
-            body_msg = f"{student['full_name']}, you passed with a {score}%. Your official MSME certificate is attached."
-            supabase.table('submissions').update(db_updates).eq('id', sub_id).execute()
-            supabase.table('enrollments').update({"status": "graded"}).eq('enrollment_id', enrollment_id).execute()
-            send_system_email(student['email'], "Certification Passed - Virtuole", body_msg, pdf_attachment=pdf_cert, pdf_filename=f"Certificate_{enrollment_id}.pdf")
+            body_msg = f"Congratulations {student['full_name']}! You passed with {score}%. You can view, verify, and print your official MSME Certificate here: https://www.virtuole.in/verify-credential?credential_id={enrollment_id}"
+            
+        supabase.table('submissions').update(db_updates).eq('id', sub_id).execute()
+        supabase.table('enrollments').update({"status": "graded"}).eq('enrollment_id', enrollment_id).execute()
+        send_system_email(student['email'], "Certification Passed - Virtuole", body_msg)
     else:
-        # Failure logic: 24h resubmit window
         supabase.table('submissions').delete().eq('id', sub_id).execute() 
         supabase.table('enrollments').update({"status": "failed", "created_at": datetime.utcnow().isoformat()}).eq('enrollment_id', enrollment_id).execute()
-        
-        failure_email_body = f"""Dear {student['full_name']},
-
-Your submission scored {score}%, failing the 80% certification threshold. 
-MENTOR FEEDBACK: "{feedback}"
-You have exactly 24 hours to correct these flaws and resubmit via your dashboard.
-Resubmit: https://www.virtuole.in/dashboard-intern
-
-The Virtuole Evaluation Team"""
+        failure_email_body = f"Dear {student['full_name']},\n\nYour submission scored {score}%, failing the 80% certification threshold. \nMENTOR FEEDBACK: \"{feedback}\"\nYou have exactly 24 hours to correct these flaws and resubmit via your dashboard."
         send_system_email(student['email'], "ACTION REQUIRED: Submission Failed - 24H Resubmit Window", failure_email_body)
-        
     return redirect(url_for('dashboard_mentor'))
 
 @app.route('/api/evaluate-task', methods=['POST'])
@@ -613,61 +507,49 @@ def evaluate_task():
     claim_id = request.form.get('claim_id')
     action = request.form.get('action') 
     claim_data = supabase.table('ambassador_claims').select('ambassador_id, users(email, full_name)').eq('id', claim_id).execute().data[0]
-    amb_email, amb_name, amb_id = claim_data['users']['email'], claim_data['users']['full_name'], claim_data['ambassador_id']
-
+    
     if action == 'approve':
         pts = int(request.form.get('point_value'))
         supabase.table('ambassador_claims').update({"status": "approved"}).eq('id', claim_id).execute()
-        curr_pts = supabase.table('users').select('total_points').eq('id', amb_id).execute().data[0]['total_points'] or 0
-        supabase.table('users').update({"total_points": curr_pts + pts}).eq('id', amb_id).execute()
-        send_ambassador_email(amb_email, "Task Approved: Merit Points Awarded!", f"Great job {amb_name}! +{pts} Points added.")
+        curr_pts = supabase.table('users').select('total_points').eq('id', claim_data['ambassador_id']).execute().data[0]['total_points'] or 0
+        supabase.table('users').update({"total_points": curr_pts + pts}).eq('id', claim_data['ambassador_id']).execute()
+        send_ambassador_email(claim_data['users']['email'], "Task Approved!", f"Great job {claim_data['users']['full_name']}! +{pts} Points added.")
     elif action == 'reject':
         supabase.table('ambassador_claims').update({"status": "rejected"}).eq('id', claim_id).execute()
-        send_ambassador_email(amb_email, "Task Proof Rejected", f"Hi {amb_name},\nYour task proof could not be verified. No points awarded.")
+        send_ambassador_email(claim_data['users']['email'], "Task Proof Rejected", "Your task proof could not be verified.")
     return redirect(url_for('dashboard_mentor'))
 
-
 # =====================================================================
-# 8. ADMIN ACTIONS
+# 9. ADMIN ACTIONS
 # =====================================================================
 
 @app.route('/admin/add-program', methods=['POST'])
 def add_program():
-    if session.get('role') != 'admin': return redirect('/login')
     supabase.table('programs').insert({
-        "title": request.form.get('title'),
-        "short_description": request.form.get('short_description'),
-        "specs_beginner": request.form.get('specs_beginner'),
-        "specs_intermediate": request.form.get('specs_intermediate'),
-        "specs_expert": request.form.get('specs_expert'),
-        "price_beginner": int(request.form.get('price_beginner')),
-        "price_intermediate": int(request.form.get('price_intermediate')),
-        "price_expert": int(request.form.get('price_expert')),
-        "is_active": True
+        "title": request.form.get('title'), "short_description": request.form.get('short_description'), "specs_beginner": request.form.get('specs_beginner'),
+        "specs_intermediate": request.form.get('specs_intermediate'), "specs_expert": request.form.get('specs_expert'),
+        "price_beginner": int(request.form.get('price_beginner')), "price_intermediate": int(request.form.get('price_intermediate')),
+        "price_expert": int(request.form.get('price_expert')), "is_active": True
     }).execute()
     return redirect(url_for('dashboard_admin'))
 
 @app.route('/admin/delete-program', methods=['POST'])
 def delete_program():
-    if session.get('role') != 'admin': return redirect('/login')
     supabase.table('programs').delete().eq('id', request.form.get('program_id')).execute()
     return redirect(url_for('dashboard_admin'))
 
 @app.route('/admin/add-task', methods=['POST'])
 def add_task():
-    if session.get('role') != 'admin': return redirect('/login')
     supabase.table('ambassador_tasks').insert({"title": request.form.get('title'), "description": request.form.get('description'), "point_value": int(request.form.get('point_value')), "is_active": True}).execute()
     return redirect(url_for('dashboard_admin'))
 
 @app.route('/admin/delete-task', methods=['POST'])
 def delete_task():
-    if session.get('role') != 'admin': return redirect('/login')
     supabase.table('ambassador_tasks').delete().eq('id', request.form.get('task_id')).execute()
     return redirect(url_for('dashboard_admin'))
 
 @app.route('/admin/update-role', methods=['POST'])
 def update_role():
-    if session.get('role') != 'admin': return redirect('/login')
     user_id = request.form.get('user_id')
     new_role = request.form.get('new_role')
     user = supabase.table('users').select('email', 'full_name').eq('id', user_id).execute().data[0]
@@ -682,229 +564,133 @@ def update_role():
     supabase.table('users').update(update_data).eq('id', user_id).execute()
     return redirect(url_for('dashboard_admin'))
 
-@app.route('/admin/mark-swag-sent', methods=['POST'])
-def mark_swag_sent():
-    if session.get('role') != 'admin': return redirect('/login')
-    # Can add relational logic for shipped tracking IDs later
-    return redirect(url_for('dashboard_admin'))
-
-
 # =====================================================================
-# 9. AMBASSADOR ACTIONS
+# 10. AMBASSADOR ACTIONS
 # =====================================================================
 
 @app.route('/api/claim-points', methods=['POST'])
 def claim_points():
-    if session.get('role') != 'ambassador': return redirect('/login')
     supabase.table('ambassador_claims').insert({
-        "ambassador_id": session['user_id'],
-        "task_id": request.form.get('task_id'),
-        "proof_link": request.form.get('proof_link'),
-        "notes": request.form.get('notes')
+        "ambassador_id": session['user_id'], "task_id": request.form.get('task_id'),
+        "proof_link": request.form.get('proof_link'), "notes": request.form.get('notes')
     }).execute()
-    send_ambassador_email("ambassador@virtuole.in", "New Point Claim Submitted", f"Ambassador {session['name']} has submitted proof for task evaluation.")
     return redirect(url_for('dashboard_ambassador'))
 
 @app.route('/api/update-address', methods=['POST'])
 def update_address():
-    if session.get('role') != 'ambassador': return redirect('/login')
-    shipping_address = request.form.get('shipping_address')
-    supabase.table('users').update({"shipping_address": shipping_address}).eq('id', session['user_id']).execute()
+    supabase.table('users').update({"shipping_address": request.form.get('shipping_address')}).eq('id', session['user_id']).execute()
     return redirect(url_for('dashboard_ambassador'))
 
-
 # =====================================================================
-# 10. DASHBOARD RENDER ROUTING
+# 11. DASHBOARD RENDERS
 # =====================================================================
 
 @app.route('/dashboard-intern')
 def dashboard_intern():
-    if session.get('role') == 'intern':
-        u_id = session['user_id']
-        active_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).eq('status', 'active').execute().data
-        active_projects = []
-        for e in active_enrolls:
-            prog = e['programs']
-            track = e['track_level']
-            active_projects.append({
-                'program_title': prog['title'], 'description': prog['short_description'], 'track_level': track, 'enrollment_id': e['enrollment_id'],
-                'specs_link': prog.get(f'specs_{track}', '#'), 'amount_due': prog.get(f'price_{track}', 0)
-            })
-        
-        offered = supabase.table('programs').select('*').eq('is_active', True).execute().data
-        
-        completed_projects = []
-        graded_enrolls = supabase.table('enrollments').select('*, programs(title)').eq('user_id', u_id).in_('status', ['graded', 'submitted']).execute().data
-        for e in graded_enrolls:
-            sub = supabase.table('submissions').select('*').eq('enrollment_id', e['enrollment_id']).execute().data
-            if sub:
-                s = sub[0]
-                completed_projects.append({'score': s.get('score'), 'program_title': e['programs']['title'], 'track_level': e['track_level'], 'enrollment_id': e['enrollment_id'], 'evaluated_date': s.get('evaluated_at', '').split('T')[0] if s.get('evaluated_at') else 'Pending', 'certificate_url': s.get('certificate_url'), 'lor_url': s.get('lor_url')})
+    if session.get('role') != 'intern': return redirect('/login')
+    u_id = session['user_id']
+    active_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).eq('status', 'active').execute().data
+    active_projects = [{'program_title': e['programs']['title'], 'description': e['programs']['short_description'], 'track_level': e['track_level'], 'enrollment_id': e['enrollment_id'], 'specs_link': e['programs'].get(f"specs_{e['track_level']}", '#'), 'amount_due': e['programs'].get(f"price_{e['track_level']}", 0)} for e in active_enrolls]
+    offered = supabase.table('programs').select('*').eq('is_active', True).execute().data
+    
+    completed_projects = []
+    graded_enrolls = supabase.table('enrollments').select('*, programs(title)').eq('user_id', u_id).in_('status', ['graded', 'submitted']).execute().data
+    for e in graded_enrolls:
+        sub = supabase.table('submissions').select('*').eq('enrollment_id', e['enrollment_id']).execute().data
+        if sub:
+            s = sub[0]
+            completed_projects.append({'score': s.get('score'), 'program_title': e['programs']['title'], 'track_level': e['track_level'], 'enrollment_id': e['enrollment_id'], 'evaluated_date': s.get('evaluated_at', '').split('T')[0] if s.get('evaluated_at') else 'Pending', 'certificate_url': s.get('certificate_url'), 'lor_url': s.get('lor_url')})
 
-        return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered, completed_projects=completed_projects)
-    return redirect(url_for('login'))
+    return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered, completed_projects=completed_projects)
 
 @app.route('/dashboard-mentor')
 def dashboard_mentor():
-    if session.get('role') == 'mentor':
-        pend_subs = supabase.table('submissions').select('*').is_('score', 'null').execute().data
-        graded_subs = supabase.table('submissions').select('*').not_.is_('score', 'null').execute().data
-        claims_query = supabase.table('ambassador_claims').select('id, proof_link, notes, ambassador_id, users(full_name, email), ambassador_tasks(title, point_value)').eq('status', 'pending').execute().data
-        pending_claims = [{"id": c['id'], "ambassador_id": c['ambassador_id'], "ambassador_name": c['users']['full_name'], "ambassador_email": c['users']['email'], "task_title": c['ambassador_tasks']['title'], "point_value": c['ambassador_tasks']['point_value'], "proof_link": c['proof_link'], "notes": c['notes']} for c in claims_query]
-        return render_template('dashboard_mentor.html', user_name=session.get('name'), pending_submissions=pend_subs, graded_submissions=graded_subs, pending_claims=pending_claims)
-    return redirect(url_for('login'))
+    if session.get('role') != 'mentor': return redirect('/login')
+    pend_subs = supabase.table('submissions').select('*').is_('score', 'null').execute().data
+    graded_subs = supabase.table('submissions').select('*').not_.is_('score', 'null').execute().data
+    claims = supabase.table('ambassador_claims').select('id, proof_link, notes, ambassador_id, users(full_name, email), ambassador_tasks(title, point_value)').eq('status', 'pending').execute().data
+    pending_claims = [{"id": c['id'], "ambassador_id": c['ambassador_id'], "ambassador_name": c['users']['full_name'], "ambassador_email": c['users']['email'], "task_title": c['ambassador_tasks']['title'], "point_value": c['ambassador_tasks']['point_value'], "proof_link": c['proof_link'], "notes": c['notes']} for c in claims]
+    return render_template('dashboard_mentor.html', user_name=session.get('name'), pending_submissions=pend_subs, graded_submissions=graded_subs, pending_claims=pending_claims)
 
 @app.route('/dashboard-admin')
 def dashboard_admin():
-    if session.get('role') == 'admin' and session.get('email') == "admin@virtuole.in":
-        earnings = sum([p['amount']/100 for p in supabase.table('payments').select('amount').eq('status', 'paid').execute().data])
-        enrolled = len(supabase.table('enrollments').select('id').execute().data)
-        certified = len(supabase.table('submissions').select('id').gte('score', 80).execute().data)
-        pend_grading = len(supabase.table('submissions').select('id').is_('score', 'null').execute().data)
-        progs = supabase.table('programs').select('*').execute().data
-        tasks = supabase.table('ambassador_tasks').select('*').execute().data
-        users = supabase.table('users').select('*').execute().data
-        tier3 = [u for u in users if u['role'] == 'ambassador' and u['total_points'] >= 1500 and u['total_points'] < 3000]
-        tier4 = [u for u in users if u['role'] == 'ambassador' and u['total_points'] >= 3000]
-        return render_template('dashboard_admin.html', user_name=session.get('name'), total_earnings=earnings, total_enrolled=enrolled, total_certified=certified, pending_grading=pend_grading, offered_programs=progs, all_tasks=tasks, user_directory=users, tier3_ambassadors=tier3, tier4_ambassadors=tier4)
-    return redirect(url_for('login'))
+    if session.get('role') != 'admin': return redirect('/login')
+    earnings = sum([p['amount']/100 for p in supabase.table('payments').select('amount').eq('status', 'paid').execute().data])
+    enrolled = len(supabase.table('enrollments').select('id').execute().data)
+    certified = len(supabase.table('submissions').select('id').gte('score', 80).execute().data)
+    pend_grading = len(supabase.table('submissions').select('id').is_('score', 'null').execute().data)
+    progs = supabase.table('programs').select('*').execute().data
+    tasks = supabase.table('ambassador_tasks').select('*').execute().data
+    users = supabase.table('users').select('*').execute().data
+    return render_template('dashboard_admin.html', user_name=session.get('name'), total_earnings=earnings, total_enrolled=enrolled, total_certified=certified, pending_grading=pend_grading, offered_programs=progs, all_tasks=tasks, user_directory=users, tier3_ambassadors=[u for u in users if u['role'] == 'ambassador' and 1500 <= (u['total_points'] or 0) < 3000], tier4_ambassadors=[u for u in users if u['role'] == 'ambassador' and (u['total_points'] or 0) >= 3000])
 
 @app.route('/dashboard-ambassador')
 def dashboard_ambassador():
-    if session.get('role') == 'ambassador':
-        u = supabase.table('users').select('*').eq('id', session['user_id']).execute().data[0]
-        pts = u['total_points'] or 0
-        tier_name = "Kickstart"
-        if pts >= 3000: tier_name = "Star Ambassador"
-        elif pts >= 1500: tier_name = "Community Lead"
-        elif pts >= 500: tier_name = "Campus Advocate"
-        refs = len(supabase.table('payments').select('id').eq('applied_promo', u['promo_code']).eq('status', 'paid').execute().data)
-        tasks = supabase.table('ambassador_tasks').select('*').eq('is_active', True).execute().data
-
-        return render_template('dashboard_ambassador.html', 
-            ambassador_name=session.get('name'), 
-            valid_until_date=u['ambassador_expiry'].split('T')[0] if u.get('ambassador_expiry') else 'N/A', 
-            total_points=pts, 
-            current_tier_name=tier_name, 
-            total_referrals=refs, 
-            promo_code=u['promo_code'], 
-            amb_id=u['public_id'], 
-            available_tasks=tasks,
-            shipping_address=u['shipping_address']
-        )
-    return redirect(url_for('login'))
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('login'))
-
+    if session.get('role') != 'ambassador': return redirect('/login')
+    u = supabase.table('users').select('*').eq('id', session['user_id']).execute().data[0]
+    pts = u['total_points'] or 0
+    tier_name = "Star Ambassador" if pts >= 3000 else "Community Lead" if pts >= 1500 else "Campus Advocate" if pts >= 500 else "Kickstart"
+    refs = len(supabase.table('payments').select('id').eq('applied_promo', u['promo_code']).eq('status', 'paid').execute().data)
+    tasks = supabase.table('ambassador_tasks').select('*').eq('is_active', True).execute().data
+    return render_template('dashboard_ambassador.html', ambassador_name=session.get('name'), valid_until_date=u['ambassador_expiry'].split('T')[0] if u.get('ambassador_expiry') else 'N/A', total_points=pts, current_tier_name=tier_name, total_referrals=refs, promo_code=u['promo_code'], amb_id=u['public_id'], available_tasks=tasks, shipping_address=u['shipping_address'])
 
 # =====================================================================
-# 11. AMBASSADOR REWARDS & CERTIFICATE DOWNLOADS
+# 12. WEB-RENDERED CERTIFICATES (The PDF Bypass)
 # =====================================================================
 
 @app.route('/download_cert/<tier>')
 def download_cert(tier):
-    if session.get('role') != 'ambassador': 
-        return redirect('/login')
-    
+    """Instead of downloading a PDF, this renders a clean HTML page. Users hit Ctrl+P to save as PDF."""
+    if session.get('role') != 'ambassador': return redirect('/login')
     u = supabase.table('users').select('*').eq('id', session['user_id']).execute().data[0]
     pts = u['total_points'] or 0
     
-    tier_name = ""
-    if tier == 'kickstart': 
-        tier_name = "Kickstart"
-    elif tier == 'advocate' and pts >= 500: 
-        tier_name = "Campus Advocate"
-    elif tier == 'lead' and pts >= 1500: 
-        tier_name = "Community Lead"
-    elif tier == 'star' and pts >= 3000: 
-        tier_name = "Star Ambassador"
-    else:
-        return "Unauthorized or Insufficient Points for this Tier", 403
-
-    today_date = datetime.utcnow().strftime("%B %d, %Y")
-    html_cert = get_ambassador_certificate_template(u['full_name'], today_date, tier_name, pts, u['public_id'])
-    pdf_cert = generate_pdf_from_html(html_cert, orientation='Landscape')
-    
-    response = make_response(pdf_cert)
-    response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = f'attachment; filename="Virtuole_{tier_name}_Certificate.pdf"'
-    return response
+    tier_name = "Kickstart" if tier == 'kickstart' else "Campus Advocate" if tier == 'advocate' and pts >= 500 else "Community Lead" if tier == 'lead' and pts >= 1500 else "Star Ambassador" if tier == 'star' and pts >= 3000 else None
+    if not tier_name: return "Insufficient Points for this Tier", 403
+    return get_ambassador_certificate_template(u['full_name'], datetime.utcnow().strftime("%B %d, %Y"), tier_name, pts, u['public_id'])
 
 @app.route('/download_lor/<type>')
 def download_lor(type):
-    if session.get('role') != 'ambassador': 
-        return redirect('/login')
-    
+    if session.get('role') != 'ambassador': return redirect('/login')
     u = supabase.table('users').select('*').eq('id', session['user_id']).execute().data[0]
-    pts = u['total_points'] or 0
-    
-    if type == 'devrel' and pts >= 1500:
-        today_date = datetime.utcnow().strftime("%B %d, %Y")
-        project_details = "Community Leadership, Developer Relations (DevRel), and Technical Advocacy for the Virtuole MSME platform."
-        
-        html_lor = get_lor_template(u['full_name'], today_date, "GTM Ambassador Program", "Community Lead", u['public_id'], project_details)
-        pdf_lor = generate_pdf_from_html(html_lor, orientation='Portrait')
-        
-        response = make_response(pdf_lor)
-        response.headers['Content-Type'] = 'application/pdf'
-        response.headers['Content-Disposition'] = 'attachment; filename="Virtuole_DevRel_LoR.pdf"'
-        return response
-    else:
-        return "Unauthorized or Insufficient Points", 403
+    if type == 'devrel' and (u['total_points'] or 0) >= 1500:
+        return get_lor_template(u['full_name'], datetime.utcnow().strftime("%B %d, %Y"), "GTM Ambassador Program", "Community Lead", u['public_id'], "Community Leadership, Developer Relations (DevRel), and Technical Advocacy for the Virtuole MSME platform.")
+    return "Insufficient Points", 403
 
 # =====================================================================
-# 12. PUBLIC CREDENTIAL VERIFICATION & APPLICATION
+# 13. PUBLIC ROUTES
 # =====================================================================
-
-@app.route('/verify.html')
-def verify_page():
-    return render_template('verify.html')
 
 @app.route('/terms')
-def terms_page():
-    return render_template('terms.html')
-
+def terms_page(): return render_template('terms.html')
 @app.route('/refund')
-def refund_page():
-    return render_template('refund.html')
-
+def refund_page(): return render_template('refund.html')
 @app.route('/privacy')
-def privacy_page():
-    return render_template('privacy.html')
+def privacy_page(): return render_template('privacy.html')
+@app.route('/verify.html')
+def verify_page_redirect(): return render_template('verify.html')
 
 @app.route('/verify-credential', methods=['GET'])
 def verify_credential():
     credential_id = request.args.get('credential_id')
-    if not credential_id:
-        return render_template('verify.html')
-        
+    if not credential_id: return render_template('verify.html')
     try:
         enroll_query = supabase.table('enrollments').select('*, programs(title), users(full_name)').eq('enrollment_id', credential_id).eq('status', 'graded').execute()
         if not enroll_query.data: return render_template('verify.html', error=True)
-            
-        enroll_data = enroll_query.data[0]
         sub_query = supabase.table('submissions').select('*').eq('enrollment_id', credential_id).execute()
         if not sub_query.data: return render_template('verify.html', error=True)
             
-        sub_data = sub_query.data[0]
-        verified_data = {
-            "student_name": enroll_data['users']['full_name'],
-            "program_title": enroll_data['programs']['title'],
-            "track_level": enroll_data['track_level'],
-            "score": sub_data['score'],
+        return render_template('verify.html', verified_data={
+            "student_name": enroll_query.data[0]['users']['full_name'],
+            "program_title": enroll_query.data[0]['programs']['title'],
+            "track_level": enroll_query.data[0]['track_level'],
+            "score": sub_query.data[0]['score'],
             "enrollment_id": credential_id,
-            "evaluated_date": sub_data['evaluated_at'].split('T')[0] if sub_data.get('evaluated_at') else "N/A",
-            "certificate_url": sub_data.get('certificate_url'),
-            "lor_url": sub_data.get('lor_url')
-        }
-        return render_template('verify.html', verified_data=verified_data)
-    except Exception as e:
-        print(f"Verification Error: {e}")
+            "evaluated_date": sub_query.data[0]['evaluated_at'].split('T')[0] if sub_query.data[0].get('evaluated_at') else "N/A"
+        })
+    except Exception:
         return render_template('verify.html', error=True)
-    
+
 @app.route('/apply-ambassador')
 def apply_ambassador_page():
     return render_template('applyambass.html')
@@ -913,17 +699,9 @@ def apply_ambassador_page():
 def apply_ambassador():
     name = request.form.get('name')
     email = request.form.get('email')
-    motivation = request.form.get('motivation')
-
-    supabase.table('ambassador_applications').insert({
-        "name": name, "email": email, "motivation": motivation, "status": "pending_round_2"
-    }).execute()
-
-    subject = "Virtuole Ambassador Program: Round 2 Application"
-    body = f"""Dear {name},\n\nThank you for applying to the Virtuole Ambassador Program. We have reviewed your initial interest.\n\nTo proceed to the second round of selection, please complete the mandatory GTM task assessment via this Google Form:\n[INSERT YOUR GOOGLE FORM LINK HERE]\n\nUpon completion, our team will review your responses and reach out regarding your tier allocation.\n\nRegards,\nThe Virtuole Ambassador Team"""
-    send_ambassador_email(email, subject, body)
-
-    return "Application submitted! Check your email for the Round 2 link."
+    supabase.table('ambassador_applications').insert({"name": name, "email": email, "motivation": request.form.get('motivation'), "status": "pending_round_2"}).execute()
+    send_ambassador_email(email, "Virtuole Ambassador Program: Round 2", f"Dear {name},\nPlease complete the mandatory GTM task assessment via this Google Form: [INSERT YOUR GOOGLE FORM LINK HERE]")
+    return "Application submitted! Check your email."
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
