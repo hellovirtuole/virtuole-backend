@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gateway | Virtuole</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Open+Sans:wght@400;600&display=swap');
+        
+        /* Upgraded Body with a rich gradient background */
+body { 
+    font-family: 'Open Sans', sans-serif; 
+    /* A deep, angled gradient instead of a solid color to make the glass pop */
+    background: linear-gradient(135deg, #0b1a30 0%, #1a365d 50%, #0b1a30 100%); 
+    color: white; 
+    margin: 0; 
+    padding: 20px; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    min-height: 100vh; 
+    box-sizing: border-box; 
+}
+
+/* Frosted Glass Container */
+.auth-container { 
+    width: 100%; 
+    max-width: 450px; 
+    /* Semi-transparent background */
+    background: rgba(26, 32, 44, 0.55); 
+    /* The magic frosted blur effect */
+    backdrop-filter: blur(12px); 
+    -webkit-backdrop-filter: blur(12px); 
+    padding: 40px 30px; 
+    border-radius: 12px; 
+    box-shadow: 0 20px 40px rgba(0,0,0,0.6); 
+    border-top: 4px solid #38b2ac; 
+    /* Subtle inner border to enhance the glass edge */
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    box-sizing: border-box; 
+    text-align: center; 
+}
+        .logo-text { font-family: 'Montserrat', sans-serif; font-size: 2em; font-weight: 800; color: #ffffff; letter-spacing: 2px; margin-bottom: 30px; }
+        .logo-text span { color: #ecc94b; }
+
+        .tabs { display: flex; margin-bottom: 30px; border-bottom: 2px solid #2d3748; flex-wrap: wrap; }
+        .tab { flex: 1; padding: 12px 5px; cursor: pointer; color: #a0aec0; font-weight: bold; transition: 0.3s; font-size: 0.9em; min-width: 30%; }
+        .tab.active { color: #38b2ac; border-bottom: 2px solid #38b2ac; }
+
+        .form-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; color: #a0aec0; font-size: 0.9em; margin-bottom: 8px; font-weight: 600; }
+        input, select { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #4a5568; background: #2d3748; color: white; box-sizing: border-box; }
+        input:focus, select:focus { outline: none; border-color: #38b2ac; }
+        
+        .submit-btn { background: #38b2ac; color: white; font-weight: bold; font-size: 1.1em; padding: 14px; border: none; border-radius: 6px; cursor: pointer; width: 100%; text-transform: uppercase; margin-top: 10px; transition: 0.3s; }
+        .submit-btn:hover { background: #2c7a7b; }
+
+        .alert-error { background: rgba(245, 101, 101, 0.1); border-left: 4px solid #f56565; color: #f56565; padding: 12px; margin-bottom: 20px; font-size: 0.9em; text-align: left; }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <a href="/" style="text-decoration: none;"><div class="logo-text">VIRTU<span>OLE</span></div></a>
+
+        <!-- Dynamic Error Injection -->
+        {% if error == 'unregistered' %}
+            <div class="alert-error">⚠️ Account not found. Please register first to access the platform.</div>
+        {% elif error == 'unauthorized' %}
+            <div class="alert-error">🚫 Unauthorized user, you are unable to login to the partner portal.</div>
+        {% elif error %}
+            <div class="alert-error">⚠️ {{ error }}</div>
+        {% endif %}
+
+        <div class="tabs">
+            <div class="tab active" id="login-tab" onclick="showForm('login')">Intern Login</div>
+            <div class="tab" id="register-tab" onclick="showForm('register')">Register</div>
+            <div class="tab" id="partner-tab" onclick="showForm('partner')">Staff / Partner</div>
+        </div>
+
+        <form id="auth-form" action="/login" method="POST">
+            <input type="hidden" name="login_type" id="login_type" value="intern">
+
+            <div id="name-field" class="form-group hidden">
+                <label>Full Name</label>
+                <input type="text" name="full_name" id="full_name" placeholder="John Doe">
+            </div>
+
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" name="email" id="email" placeholder="name@example.com" required>
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="submit-btn" id="action-btn">Sign In</button>
+        </form>
+    </div>
+
+    <script>
+        function showForm(type) {
+            const form = document.getElementById('auth-form');
+            const nameField = document.getElementById('name-field');
+            const actionBtn = document.getElementById('action-btn');
+            const emailInput = document.getElementById('email');
+            const loginType = document.getElementById('login_type');
+            
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(type + '-tab').classList.add('active');
+
+            if (type === 'register') {
+                form.action = '/register';
+                nameField.classList.remove('hidden');
+                document.getElementById('full_name').required = true;
+                actionBtn.innerText = 'Create Account';
+                emailInput.placeholder = "student@university.edu";
+                loginType.value = "register";
+            } else if (type === 'partner') {
+                form.action = '/login';
+                nameField.classList.add('hidden');
+                document.getElementById('full_name').required = false;
+                actionBtn.innerText = 'Secure Login';
+                emailInput.placeholder = "role@virtuole.in";
+                loginType.value = "staff";
+            } else {
+                form.action = '/login';
+                nameField.classList.add('hidden');
+                document.getElementById('full_name').required = false;
+                actionBtn.innerText = 'Sign In';
+                emailInput.placeholder = "name@example.com";
+                loginType.value = "intern";
+            }
+        }
+    </script>
+</body>
+</html>

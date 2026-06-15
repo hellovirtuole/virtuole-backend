@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtuole | MSME Certified Virtual Internships</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Inter:wght@400;500;600&display=swap');
+        
+        *, *::before, *::after { box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: #030712; /* Deep modern black */
+            color: #f9fafb; 
+            margin: 0; 
+            padding: 0; 
+            scroll-behavior: smooth; 
+            overflow-x: hidden; 
+        }
+
+        /* Ambient Glow Effects */
+        .glow-bg {
+            position: absolute;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(56, 178, 172, 0.15) 0%, rgba(0,0,0,0) 70%);
+            top: -200px; right: -100px;
+            z-index: -1; pointer-events: none;
+        }
+
+        /* Glassmorphism Navigation */
+        nav { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 15px 50px; 
+            background: rgba(3, 7, 18, 0.7); 
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            position: sticky; top: 0; z-index: 100; 
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
+        }
+        .logo { font-family: 'Montserrat', sans-serif; font-size: 1.6em; font-weight: 800; letter-spacing: 2px; text-decoration: none; }
+        .logo .virt { color: #f3f4f6; } 
+        .logo .uole { color: #38b2ac; } 
+
+        .login-btn { 
+            background: #38b2ac; padding: 12px 28px; border-radius: 8px; color: white !important; 
+            font-weight: 600; border: none; cursor: pointer; text-decoration: none; transition: all 0.3s ease; 
+        }
+        .login-btn:hover { background: #2c7a7b; box-shadow: 0 0 20px rgba(56, 178, 172, 0.4); }
+
+        /* Cinematic Hero */
+        .hero { text-align: center; padding: 160px 20px 120px; position: relative; z-index: 1; }
+        .hero h1 { font-family: 'Montserrat', sans-serif; font-size: 4.5em; margin: 0 0 24px 0; line-height: 1.1; letter-spacing: -1px; }
+        .hero span { background: linear-gradient(to right, #38b2ac, #ecc94b); -webkit-background-clip: text; color: transparent; }
+        .hero p { font-size: 1.25em; color: #9ca3af; max-width: 650px; margin: 0 auto 40px auto; line-height: 1.7; }
+        
+        .hero-buttons { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 50px; }
+        .cta-btn { background: #ecc94b; color: #111827; padding: 16px 40px; font-size: 1.1em; font-weight: 600; border-radius: 8px; text-decoration: none; transition: all 0.3s ease; }
+        .cta-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(236, 201, 75, 0.3); }
+        .verify-hero-btn { background: rgba(255,255,255,0.03); color: #e5e7eb; border: 1px solid rgba(255,255,255,0.1); padding: 16px 40px; font-size: 1.1em; font-weight: 600; border-radius: 8px; text-decoration: none; transition: all 0.3s ease; }
+        .verify-hero-btn:hover { background: rgba(255,255,255,0.1); }
+
+        /* The Freemium / Trust Section (Moved Up) */
+        .trust-banner {
+            background: linear-gradient(90deg, rgba(31, 41, 55, 0.8) 0%, rgba(17, 24, 39, 0.9) 100%);
+            border-top: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding: 60px 20px; text-align: center;
+        }
+        .trust-banner h3 { color: #ecc94b; font-size: 2em; margin: 0 0 15px 0; font-family: 'Montserrat', sans-serif; }
+        .trust-banner p { color: #d1d5db; max-width: 800px; margin: 0 auto; font-size: 1.1em; line-height: 1.6; }
+        .trust-grid { display: flex; justify-content: center; gap: 40px; margin-top: 40px; flex-wrap: wrap; }
+        .trust-item { text-align: center; max-width: 250px; }
+        .trust-item h4 { color: white; margin-bottom: 10px; font-size: 1.2em; }
+        .trust-item p { color: #9ca3af; font-size: 0.9em; }
+
+        /* Internship Grid */
+        .domains { padding: 100px 20px; text-align: center; position: relative; z-index: 1; }
+        .domains h2 { font-family: 'Montserrat', sans-serif; font-size: 3em; margin-bottom: 60px; }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; }
+        
+        .card { 
+            background: rgba(17, 24, 39, 0.6); backdrop-filter: blur(10px);
+            padding: 40px 30px; border-radius: 16px; text-align: left; 
+            border: 1px solid rgba(255,255,255,0.05); border-top: 4px solid #38b2ac; 
+            transition: all 0.4s ease; display: flex; flex-direction: column; 
+        }
+        .card:hover { transform: translateY(-10px); background: rgba(31, 41, 55, 0.8); border-color: rgba(56, 178, 172, 0.4); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+        .card h3 { font-family: 'Montserrat', sans-serif; font-size: 1.5em; margin: 0 0 15px 0; }
+        .card p { color: #9ca3af; line-height: 1.6; margin-bottom: 30px; }
+        
+        .level-selector { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.05); }
+        .level-selector label { font-size: 0.8em; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 8px; display: block; }
+        .level-selector select { width: 100%; padding: 12px; border-radius: 6px; background: #111827; border: 1px solid rgba(56, 178, 172, 0.3); color: #ecc94b; font-weight: 600; outline: none; }
+        
+        .enroll-btn { background: rgba(56, 178, 172, 0.1); border: 1px solid #38b2ac; color: #38b2ac; padding: 14px; border-radius: 8px; font-weight: 600; text-align: center; text-decoration: none; transition: 0.3s; margin-top: auto; }
+        .enroll-btn:hover { background: #38b2ac; color: white; }
+
+        footer { background: #030712; padding: 40px; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); color: #6b7280; font-size: 0.9em; }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 3em; }
+            .hero-buttons { flex-direction: column; }
+            .cta-btn, .verify-hero-btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="glow-bg"></div>
+
+    <nav>
+        <a href="/" class="logo"><span class="virt">VIRTU</span><span class="uole">OLE</span></a>
+        <a href="/login" class="login-btn">Login / Register</a>
+    </nav>
+
+    <div class="hero">
+        <h1>Build Real Projects.<br>Get <span>Certified.</span></h1>
+        <p>Bridge the gap between theoretical knowledge and industry demands. Join our virtual internship program, build production-grade architectures, and earn an official MSME-registered credential.</p>
+        
+        <div class="hero-buttons">
+            <a href="/login" class="cta-btn">Start Your Free Internship</a>
+            <a href="/verify.html" class="verify-hero-btn">Verify Credential</a>
+        </div>
+    </div>
+
+    <div class="trust-banner">
+        <h3>Zero Upfront Cost. Pure Merit.</h3>
+        <p>Start coding immediately. You only pay a nominal VIRTUOLE processing fee when you are ready to submit your final code for official grading and certification. Score 100% to unlock an Elite Founder's Letter of Recommendation.</p>
+        
+        <div class="trust-grid">
+            <div class="trust-item">
+                <h4>1. Register for Free</h4>
+                <p>Receive your official Offer Letter and project constraints instantly.</p>
+            </div>
+            <div class="trust-item">
+                <h4>2. Build the Project</h4>
+                <p>Take 30 days to build a production-grade architecture.</p>
+            </div>
+            <div class="trust-item">
+                <h4>3. Submit & Pay</h4>
+                <p>Pay only the ₹199-₹499 evaluation fee when you submit your code.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="domains" class="domains">
+        <h2>Our Internship Domains</h2>
+        <div class="grid">
+            
+            {% for program in offered_programs %}
+            <div class="card">
+                <h3>{{ program.title }}</h3>
+                <p>{{ program.short_description }}</p>
+                <div class="level-selector">
+                    <label>Select Complexity Track</label>
+                    <select id="track-{{ program.id }}" name="track_level">
+                        <option value="beginner">Beginner (₹{{ program.price_beginner }})</option>
+                        <option value="intermediate">Intermediate (₹{{ program.price_intermediate }})</option>
+                        <option value="expert">Expert (₹{{ program.price_expert }})</option>
+                    </select>
+                </div>
+                <a href="/login?program_id={{ program.id }}" class="enroll-btn" onclick="this.href='/login?program_id={{ program.id }}&track=' + document.getElementById('track-{{ program.id }}').value">Enroll Now</a>
+            </div>
+            {% endfor %}
+            
+        </div>
+    </div>
+
+    <div style="padding: 100px 20px; text-align: center; background: #030712;">
+    <h2 style="font-family: 'Montserrat', sans-serif; font-size: 2.5em; margin-bottom: 20px;">Join the Ambassador Program</h2>
+    <p style="color: #9ca3af; max-width: 600px; margin: 0 auto 40px auto; font-size: 1.1em;">
+        Become the face of Virtuole on your campus. Gain exclusive access to premium swag, merit-based rewards, and a fast track to corporate internship opportunities.
+    </p>
+    <a href="/apply-ambassador" style="background: #9f7aea; color: white; padding: 16px 45px; font-size: 1.1em; font-weight: 800; border-radius: 8px; text-decoration: none; display: inline-block; transition: 0.3s;">Apply to Become an Ambassador</a>
+</div>
+
+    <footer>
+        <div style="margin-bottom: 20px;">
+            <a href="/terms" style="color:#6b7280; text-decoration:none; margin:0 10px;">Terms</a> | 
+            <a href="/refund" style="color:#6b7280; text-decoration:none; margin:0 10px;">Refunds</a> | 
+            <a href="/privacy" style="color:#6b7280; text-decoration:none; margin:0 10px;">Privacy</a>
+        </div>
+        © 2026 Virtuole. A registered MSME entity under Vishal Kumar. All rights reserved.
+    </footer>
+
+</body>
+</html>
