@@ -7,7 +7,6 @@ import hashlib
 import requests
 import smtplib
 from io import BytesIO
-from xhtml2pdf import pisa
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
