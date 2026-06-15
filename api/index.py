@@ -9,7 +9,6 @@ import smtplib
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from email.mime.application import MIMEApplication
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for, make_response
 from flask_cors import CORS
 from flask_limiter import Limiter
@@ -264,7 +263,6 @@ def send_ambassador_email(to_email, subject, body_content):
     except Exception as e:
         print(f"Zoho Delivery Exception: {e}")
 
-
 # =====================================================================
 # 4. VERCEL SERVERLESS CRON ROUTE 
 # =====================================================================
@@ -291,6 +289,7 @@ def automated_system_maintenance():
         supabase.table('users').update({"role": "intern", "promo_code": None, "ambassador_expiry": None}).eq('id', row['id']).execute()
         send_system_email(row['email'], "Virtuole Ambassador Program: Term Completed", f"Hello {row['full_name']},\n\nYour 1-year term as a Virtuole Ambassador has officially concluded. Your account has now been seamlessly transitioned back to a standard Intern profile.")
 
+@app.route('/cron/maintenance', methods=['GET', 'POST'])
 @app.route('/api/cron/maintenance', methods=['GET', 'POST'])
 def run_maintenance():
     auth_header = request.headers.get('Authorization')
@@ -301,7 +300,6 @@ def run_maintenance():
         return jsonify({"status": "Maintenance execution completed successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 # =====================================================================
 # 5. AUTHENTICATION & REGISTRATION GATEWAYS
@@ -314,6 +312,7 @@ def home():
         programs = supabase.table('programs').select('*').eq('is_active', True).execute().data
     return render_template('index.html', offered_programs=programs)
 
+@app.route('/register', methods=['POST'])
 @app.route('/api/register', methods=['POST'])
 @limiter.limit("5 per minute")
 def register():
@@ -337,6 +336,7 @@ def register():
         return render_template('login.html', error=str(e))
 
 @app.route('/login', methods=['GET', 'POST'])
+@app.route('/api/login', methods=['GET', 'POST'])
 @limiter.limit("10 per minute")
 def login():
     if request.method == 'POST':
@@ -364,6 +364,7 @@ def login():
     return render_template('login.html')
 
 @app.route('/logout')
+@app.route('/api/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
@@ -372,6 +373,7 @@ def logout():
 # 6. GTM PROMO CODE & PHONEPE SECURE GATEWAY
 # =====================================================================
 
+@app.route('/validate-promo', methods=['POST'])
 @app.route('/api/validate-promo', methods=['POST'])
 def validate_promo():
     data = request.get_json()
@@ -381,6 +383,7 @@ def validate_promo():
         return jsonify({"valid": True, "discount_percent": 10})
     return jsonify({"valid": False, "error": "Invalid or expired GTM promo code."}), 400
 
+@app.route('/create-payment', methods=['POST'])
 @app.route('/api/create-payment', methods=['POST'])
 @limiter.limit("3 per minute")
 def create_phonepe_payment():
@@ -428,6 +431,7 @@ def create_phonepe_payment():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/phonepe-webhook', methods=['POST'])
 @app.route('/api/phonepe-webhook', methods=['POST'])
 def phonepe_webhook():
     decoded_response = json.loads(base64.b64decode(request.json.get('response')).decode('utf-8'))
@@ -440,6 +444,7 @@ def phonepe_webhook():
 # 7. INTERN ACTIONS
 # =====================================================================
 
+@app.route('/enroll', methods=['POST'])
 @app.route('/api/enroll', methods=['POST'])
 def api_enroll():
     if session.get('role') != 'intern': return redirect('/login')
@@ -460,6 +465,7 @@ def api_enroll():
     send_system_email(session['email'], "Official Internship Offer Letter - Virtuole", html_offer, is_html=True)
     return redirect(url_for('dashboard_intern'))
 
+@app.route('/submit-project', methods=['POST'])
 @app.route('/api/submit-project', methods=['POST'])
 def api_submit_project():
     enrollment_id = request.form.get('enrollment_id')
@@ -472,6 +478,7 @@ def api_submit_project():
 # 8. MENTOR GRADING 
 # =====================================================================
 
+@app.route('/grade-submission', methods=['POST'])
 @app.route('/api/grade-submission', methods=['POST'])
 def grade_submission():
     if session.get('role') != 'mentor': return redirect('/login')
@@ -501,6 +508,7 @@ def grade_submission():
         send_system_email(student['email'], "ACTION REQUIRED: Submission Failed - 24H Resubmit Window", failure_email_body)
     return redirect(url_for('dashboard_mentor'))
 
+@app.route('/evaluate-task', methods=['POST'])
 @app.route('/api/evaluate-task', methods=['POST'])
 def evaluate_task():
     if session.get('role') != 'mentor': return redirect('/login')
@@ -524,6 +532,7 @@ def evaluate_task():
 # =====================================================================
 
 @app.route('/admin/add-program', methods=['POST'])
+@app.route('/api/admin/add-program', methods=['POST'])
 def add_program():
     supabase.table('programs').insert({
         "title": request.form.get('title'), "short_description": request.form.get('short_description'), "specs_beginner": request.form.get('specs_beginner'),
@@ -534,21 +543,25 @@ def add_program():
     return redirect(url_for('dashboard_admin'))
 
 @app.route('/admin/delete-program', methods=['POST'])
+@app.route('/api/admin/delete-program', methods=['POST'])
 def delete_program():
     supabase.table('programs').delete().eq('id', request.form.get('program_id')).execute()
     return redirect(url_for('dashboard_admin'))
 
 @app.route('/admin/add-task', methods=['POST'])
+@app.route('/api/admin/add-task', methods=['POST'])
 def add_task():
     supabase.table('ambassador_tasks').insert({"title": request.form.get('title'), "description": request.form.get('description'), "point_value": int(request.form.get('point_value')), "is_active": True}).execute()
     return redirect(url_for('dashboard_admin'))
 
 @app.route('/admin/delete-task', methods=['POST'])
+@app.route('/api/admin/delete-task', methods=['POST'])
 def delete_task():
     supabase.table('ambassador_tasks').delete().eq('id', request.form.get('task_id')).execute()
     return redirect(url_for('dashboard_admin'))
 
 @app.route('/admin/update-role', methods=['POST'])
+@app.route('/api/admin/update-role', methods=['POST'])
 def update_role():
     user_id = request.form.get('user_id')
     new_role = request.form.get('new_role')
@@ -568,6 +581,7 @@ def update_role():
 # 10. AMBASSADOR ACTIONS
 # =====================================================================
 
+@app.route('/claim-points', methods=['POST'])
 @app.route('/api/claim-points', methods=['POST'])
 def claim_points():
     supabase.table('ambassador_claims').insert({
@@ -576,6 +590,7 @@ def claim_points():
     }).execute()
     return redirect(url_for('dashboard_ambassador'))
 
+@app.route('/update-address', methods=['POST'])
 @app.route('/api/update-address', methods=['POST'])
 def update_address():
     supabase.table('users').update({"shipping_address": request.form.get('shipping_address')}).eq('id', session['user_id']).execute()
@@ -691,12 +706,12 @@ def verify_credential():
     except Exception:
         return render_template('verify.html', error=True)
 
-@app.route('/apply-ambassador')
-def apply_ambassador_page():
-    return render_template('applyambass.html')
-
-@app.route('/api/apply-ambassador', methods=['POST'])
+@app.route('/apply-ambassador', methods=['GET', 'POST'])
+@app.route('/api/apply-ambassador', methods=['GET', 'POST'])
 def apply_ambassador():
+    if request.method == 'GET':
+        return render_template('applyambass.html')
+        
     name = request.form.get('name')
     email = request.form.get('email')
     supabase.table('ambassador_applications').insert({"name": name, "email": email, "motivation": request.form.get('motivation'), "status": "pending_round_2"}).execute()
