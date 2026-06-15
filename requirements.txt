@@ -4,5 +4,4 @@ flask-limiter
 supabase
 python-dotenv
 requests
-svglib==1.5.1
-xhtml2pdf==0.2.11
+xhtml2pdf[renderpm]
