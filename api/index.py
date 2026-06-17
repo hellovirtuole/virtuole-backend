@@ -29,11 +29,19 @@ app = Flask(__name__, template_folder=template_dir)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "fallback-secret-key")
 CORS(app)
 
-# Protect system endpoints from API brute-forcing/spam
+# Custom IP tracker to bypass Vercel's proxy server network
+def get_real_client_ip():
+    # Vercel automatically forwards the true user IP in this header
+    forwarded_for = request.headers.get('X-Forwarded-For')
+    if forwarded_for:
+        return forwarded_for.split(',')[0].strip()
+    return request.remote_addr
+
+# Protect system endpoints using individual real user IPs
 limiter = Limiter(
-    key_func=get_remote_address,
+    key_func=get_real_client_ip, # <-- Swapped to our custom real IP tracker
     app=app,
-    storage_uri="memory://", # CRITICAL VERCEL FIX
+    storage_uri="memory://",
     default_limits=["200 per day", "50 per hour"]
 )
 
