@@ -255,18 +255,7 @@
             line-height: 1.5;
         }
 
-        .msme-tag { 
-            display: inline-block; 
-            margin-top: 30px; 
-            padding: 6px 16px; 
-            background: rgba(255,255,255,0.03); 
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 50px; 
-            color: #64748b; 
-            font-size: 0.75em; 
-            font-weight: 600; 
-            letter-spacing: 1px; 
-        }
+        
         
         .back-link { 
             display: inline-block; 
@@ -365,11 +354,11 @@
             </svg>
             
             <h2>Credential Verification</h2>
-            <p>Enter the unique Credential ID found on the student's document to verify its MSME authenticity.</p>
+            <p>Enter the unique Credential ID found on the student's document to verify its VIRTUOLE authenticity.</p>
             
             {% if error %}
                 <div class="error-msg">
-                    <strong>Verification Failed:</strong> We could not find a valid MSME credential matching that ID. Please check the ID and try again.
+                    <strong>Verification Failed:</strong> We could not find a valid VIRTUOLE credential matching that ID. Please check the ID and try again.
                 </div>
             {% endif %}
 
@@ -378,7 +367,7 @@
                 <button type="submit" class="search-btn">Verify Credential</button>
             </form>
 
-            <div class="msme-tag">UDYAM-BR-06-0064801</div>
+           
             <br>
             <a href="/" class="back-link">&larr; Return to Main Site</a>
         {% endif %}
