@@ -580,11 +580,32 @@ def update_role():
         update_data['public_id'] = f"AMB-2026-{random.randint(100, 999)}"
         update_data['promo_code'] = f"AMB{''.join(random.choices(string.ascii_uppercase, k=4))}"
         update_data['ambassador_expiry'] = (datetime.utcnow() + timedelta(days=365)).isoformat()
-        send_ambassador_email(user['email'], "Welcome to the Ambassador Program", f"Hi {user['full_name']},\nYou have been promoted to Ambassador. Your promo code is {update_data['promo_code']}.")
+        
+        # Sent via Zoho (ambassador@virtuole.in)
+        send_ambassador_email(
+            user['email'], 
+            "Welcome to the Virtuole Ambassador Program", 
+            f"Hi {user['full_name']},\nYou have been promoted to Ambassador. Your promo code is {update_data['promo_code']}."
+        )
+        
+    elif new_role == 'mentor':
+        # Sent via AWS SES (service@virtuole.in)
+        send_system_email(
+            user['email'], 
+            "Virtuole Promotion: Mentor Status", 
+            f"Hi {user['full_name']},\nYou have been promoted to a Virtuole Mentor. You can now access the grading dashboard."
+        )
+        
+    elif new_role == 'admin':
+        # Sent via AWS SES (service@virtuole.in)
+        send_system_email(
+            user['email'], 
+            "Virtuole Promotion: Admin Clearance", 
+            f"Hi {user['full_name']},\nYou have been granted Master Admin access to the Virtuole platform."
+        )
         
     supabase.table('users').update(update_data).eq('id', user_id).execute()
     return redirect(url_for('dashboard_admin'))
-
 # =====================================================================
 # 10. AMBASSADOR ACTIONS
 # =====================================================================
