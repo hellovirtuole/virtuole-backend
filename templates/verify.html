@@ -7,14 +7,14 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Inter:wght@400;500;600;700&display=swap');
         
-        /* FIX 1: Universal box-sizing prevents padding from pushing elements off-screen */
+        /* Universal box-sizing prevents padding from pushing elements off-screen */
         *, *::before, *::after {
             box-sizing: border-box;
         }
 
         html, body {
             max-width: 100%;
-            overflow-x: hidden; /* FIX 2: Kills the blank side-scroll on mobile */
+            overflow-x: hidden; /* Kills the blank side-scroll on mobile */
         }
 
         body { 
@@ -83,51 +83,57 @@
         h2 { margin: 15px 0 10px 0; font-family: 'Montserrat', sans-serif; color: #ffffff; font-size: 1.5em; letter-spacing: -0.5px;}
         p { color: #94a3b8; font-size: 0.95em; margin-bottom: 35px; line-height: 1.6; }
         
-        /* Unified Modern Search Bar */
+        /* Centered Stacked Search Form */
         .search-group { 
-            position: relative; 
             width: 100%; 
             margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         .search-group input { 
             width: 100%; 
-            padding: 18px 140px 18px 20px; 
-            border-radius: 50px; 
+            padding: 16px 20px; 
+            border-radius: 12px; 
             border: 1px solid rgba(56, 178, 172, 0.3); 
             background: rgba(2, 6, 23, 0.5); 
             color: white; 
-            font-size: 1em; 
+            font-size: 1.05em; 
             font-family: 'Inter', sans-serif; 
             outline: none; 
             transition: all 0.3s ease;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+            text-align: center; /* Centers the typed ID */
+            margin-bottom: 25px; /* Pushes the button down */
+            letter-spacing: 1px;
         }
         .search-group input:focus { 
             border-color: #38b2ac; 
             background: rgba(2, 6, 23, 0.8);
             box-shadow: 0 0 15px rgba(56, 178, 172, 0.2), inset 0 2px 4px rgba(0,0,0,0.2); 
         }
-        .search-group input::placeholder { color: #475569; }
+        .search-group input::placeholder { color: #475569; letter-spacing: normal; }
         
+        /* The Centered Verify Button */
         .search-btn { 
-            position: absolute;
-            right: 6px;
-            top: 6px;
-            bottom: 6px;
             background: linear-gradient(135deg, #38b2ac 0%, #2c7a7b 100%); 
             color: white; 
-            padding: 0 25px; 
-            font-weight: 600; 
+            padding: 15px 45px; 
+            font-weight: 700; 
             border: none; 
-            border-radius: 40px; 
+            border-radius: 50px; 
             cursor: pointer; 
             transition: all 0.3s ease; 
-            font-size: 0.95em; 
+            font-size: 1.05em; 
             letter-spacing: 0.5px;
+            box-shadow: 0 6px 20px rgba(56, 178, 172, 0.3);
+            width: auto;
+            min-width: 200px;
         }
         .search-btn:hover { 
             background: linear-gradient(135deg, #4fd1c5 0%, #319795 100%);
-            box-shadow: 0 4px 12px rgba(56, 178, 172, 0.3); 
+            box-shadow: 0 8px 25px rgba(56, 178, 172, 0.5); 
+            transform: translateY(-2px);
         }
         
         /* Shield Icon for Empty State */
@@ -139,12 +145,12 @@
             opacity: 0.8;
         }
 
-        /* Verified Result Elements */
+        /* Verified Result Badge */
         .badge-wrapper {
             display: flex;
             justify-content: center;
             width: 100%;
-            margin-top: 10px;
+            margin-top: 15px; /* Centers it perfectly below the logo */
             margin-bottom: 30px;
         }
 
@@ -249,7 +255,18 @@
             line-height: 1.5;
         }
 
-        
+        .msme-tag { 
+            display: inline-block; 
+            margin-top: 30px; 
+            padding: 6px 16px; 
+            background: rgba(255,255,255,0.03); 
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 50px; 
+            color: #64748b; 
+            font-size: 0.75em; 
+            font-weight: 600; 
+            letter-spacing: 1px; 
+        }
         
         .back-link { 
             display: inline-block; 
@@ -262,7 +279,7 @@
         }
         .back-link:hover { color: #38b2ac; }
 
-        /* FIX 3: Mobile Optimization Rules */
+        /* Mobile Optimization Rules */
         @media (max-width: 500px) {
             .verify-box {
                 padding: 40px 20px;
@@ -271,10 +288,7 @@
                 padding: 20px 15px;
             }
             .search-group input {
-                padding: 15px 100px 15px 15px;
-            }
-            .search-btn {
-                padding: 0 15px;
+                padding: 15px;
             }
             .split-row {
                 flex-direction: column;
@@ -351,20 +365,20 @@
             </svg>
             
             <h2>Credential Verification</h2>
-            <p>Enter the unique Credential ID found on the student's document to verify its VIRTUOLE authenticity.</p>
+            <p>Enter the unique Credential ID found on the student's document to verify its MSME authenticity.</p>
             
             {% if error %}
                 <div class="error-msg">
-                    <strong>Verification Failed:</strong> We could not find a valid VIRTUOLE credential matching that ID. Please check the ID and try again.
+                    <strong>Verification Failed:</strong> We could not find a valid MSME credential matching that ID. Please check the ID and try again.
                 </div>
             {% endif %}
 
             <form action="/verify-credential" method="GET" class="search-group">
                 <input type="text" name="credential_id" placeholder="e.g., VT-E-123456" required autocomplete="off">
-                <button type="submit" class="search-btn">Verify</button>
+                <button type="submit" class="search-btn">Verify Credential</button>
             </form>
 
-            
+            <div class="msme-tag">UDYAM-BR-06-0064801</div>
             <br>
             <a href="/" class="back-link">&larr; Return to Main Site</a>
         {% endif %}
