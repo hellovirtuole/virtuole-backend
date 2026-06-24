@@ -39,7 +39,7 @@ def get_real_client_ip():
 
 # Protect system endpoints using individual real user IPs
 limiter = Limiter(
-    key_func=get_real_client_ip, # <-- Swapped to our custom real IP tracker
+    key_func=get_real_client_ip, 
     app=app,
     storage_uri="memory://",
     default_limits=["200 per day", "50 per hour"]
@@ -327,7 +327,13 @@ def register():
     full_name = request.form.get('full_name')
     email = request.form.get('email')
     password = request.form.get('password')
+    confirm_password = request.form.get('confirm_password')
     promo_used = request.form.get('promo_code')
+    
+    # Backend safety check for matching passwords
+    if password != confirm_password:
+        return render_template('login.html', error="Passwords do not match. Please try again.")
+
     public_id = f"VT-2026-{random.randint(1000, 9999)}"
     
     try:
@@ -347,6 +353,9 @@ def register():
 @app.route('/api/login', methods=['GET', 'POST'])
 @limiter.limit("10 per minute")
 def login():
+    # Catch success messages from URL redirects (like forgot password or register)
+    message = request.args.get('message')
+
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
@@ -369,13 +378,26 @@ def login():
             else: return redirect(url_for('dashboard_intern'))
         except Exception:
             return render_template('login.html', error="unregistered")
-    return render_template('login.html')
+            
+    return render_template('login.html', message=message)
 
 @app.route('/logout')
 @app.route('/api/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
+@app.route('/forgot-password', methods=['POST'])
+@app.route('/api/forgot-password', methods=['POST'])
+@limiter.limit("3 per minute")
+def forgot_password():
+    email = request.form.get('email')
+    try:
+        # Supabase built-in method to send a password reset link
+        supabase.auth.reset_password_for_email(email)
+        return redirect(url_for('login', message="If an account exists, a password reset link has been sent to your email!"))
+    except Exception as e:
+        return render_template('login.html', error=str(e))
 
 # =====================================================================
 # 6. GTM PROMO CODE & PHONEPE SECURE GATEWAY
@@ -606,6 +628,7 @@ def update_role():
         
     supabase.table('users').update(update_data).eq('id', user_id).execute()
     return redirect(url_for('dashboard_admin'))
+
 # =====================================================================
 # 10. AMBASSADOR ACTIONS
 # =====================================================================
