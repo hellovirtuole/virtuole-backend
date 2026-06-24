@@ -393,11 +393,42 @@ def logout():
 def forgot_password():
     email = request.form.get('email')
     try:
-        # Supabase built-in method to send a password reset link
-        supabase.auth.reset_password_for_email(email)
+        # Generate link and redirect to our custom frontend page
+        supabase.auth.reset_password_for_email(
+            email, 
+            options={"redirect_to": "https://www.virtuole.in/reset-password"}
+        )
         return redirect(url_for('login', message="If an account exists, a password reset link has been sent to your email!"))
     except Exception as e:
         return render_template('login.html', error=str(e))
+
+@app.route('/reset-password')
+def reset_password_page():
+    return render_template('reset_password.html')
+
+@app.route('/update-password', methods=['POST'])
+@app.route('/api/update-password', methods=['POST'])
+def update_password():
+    new_password = request.form.get('password')
+    confirm_password = request.form.get('confirm_password')
+    access_token = request.form.get('access_token')
+    refresh_token = request.form.get('refresh_token')
+
+    if password != confirm_password:
+        return render_template('reset_password.html', error="Passwords do not match. Try again.")
+    if not access_token or not refresh_token:
+        return render_template('reset_password.html', error="Invalid or expired reset link. Please request a new one.")
+
+    try:
+        # 1. Temporarily authenticate the backend using the tokens from the email link
+        supabase.auth.set_session(access_token, refresh_token)
+        # 2. Overwrite the encrypted password
+        supabase.auth.update_user({"password": new_password})
+        # 3. Securely sign out the temporary session
+        supabase.auth.sign_out()
+        return redirect(url_for('login', message="Password updated successfully! Please log in."))
+    except Exception as e:
+        return render_template('reset_password.html', error=str(e))
 
 # =====================================================================
 # 6. GTM PROMO CODE & PHONEPE SECURE GATEWAY
