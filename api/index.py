@@ -429,7 +429,6 @@ def update_password():
         return redirect(url_for('login', message="Password updated successfully! Please log in."))
     except Exception as e:
         return render_template('reset_password.html', error=str(e))
-
 # =====================================================================
 # 6. GTM PROMO CODE & PHONEPE SECURE GATEWAY
 # =====================================================================
