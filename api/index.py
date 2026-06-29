@@ -27,6 +27,13 @@ template_dir = os.path.join(base_dir, 'templates')
 
 app = Flask(__name__, template_folder=template_dir)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "fallback-secret-key")
+
+# --- ADD THESE 3 LINES TO LOCK THE SESSION ---
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+# --------------------------------------------
+
 CORS(app)
 
 # Custom IP tracker to bypass Vercel's proxy server network
@@ -365,6 +372,8 @@ def login():
             user_data = supabase.table('users').select('*').eq('email', email).execute().data[0]
             if login_type == 'staff' and user_data['role'] == 'intern':
                 return render_template('login.html', error="unauthorized")
+
+            session.permanent = True
                 
             session['user_id'] = user_data['id']
             session['email'] = user_data['email']
