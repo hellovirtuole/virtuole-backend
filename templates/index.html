@@ -8,6 +8,19 @@
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Inter:wght@400;500;600&display=swap');
         
         *, *::before, *::after { box-sizing: border-box; }
+
+        /* Universal Box Sizing to prevent padding overflow */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+/* Force the page to never expand past the screen width */
+html, body {
+    max-width: 100vw;
+    overflow-x: hidden; /* This completely kills the horizontal blank space */
+    margin: 0;
+    padding: 0;
+}
         
         body { 
             font-family: 'Inter', sans-serif; 
