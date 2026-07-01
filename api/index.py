@@ -811,3 +811,7 @@ def apply_ambassador():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
+
+@app.route('/google14abf2786ebd357a.html')
+def google_verification():
+    return render_template('google14abf2786ebd357a.html')
