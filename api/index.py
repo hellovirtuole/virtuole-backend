@@ -15,19 +15,37 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 from supabase import create_client, Client
+from werkzeug.middleware.proxy_fix import ProxyFix
 
-# Load secure environment configurations
+# Load environment variables
 load_dotenv()
 
 # =====================================================================
-# 1. VERCEL ARCHITECTURE SETUP
+# 1. SERVER CONFIGURATION & SECURITY
 # =====================================================================
 base_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 template_dir = os.path.join(base_dir, 'templates')
 
 app = Flask(__name__, template_folder=template_dir)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "fallback-secret-key")
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "virtuole-secure-master-key-2026")
+
+# CRITICAL FIX: Trust Vercel's reverse proxy to keep cookies alive over HTTPS
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
+# Basic, bulletproof session handling (Removed strict domain to prevent lockouts)
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = True  # Allows cookies to stick on Vercel's HTTPS
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+
 CORS(app)
+
+# Vercel Cache Killer to prevent the "reload logout" bug
+@app.after_request
+def add_header(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '-1'
+    return response
 
 def get_real_client_ip():
     forwarded_for = request.headers.get('X-Forwarded-For')
@@ -50,7 +68,7 @@ else:
     supabase = None
 
 # =====================================================================
-# 2. HTML TEMPLATES 
+# 2. HTML TEMPLATES (Offer Letters & Certificates)
 # =====================================================================
 
 def get_offer_letter_template(name, date, program_title, track_level, enroll_id, project_details):
@@ -269,43 +287,42 @@ def send_ambassador_email(to_email, subject, body_content):
 # 4. SYSTEM MAINTENANCE CRON
 # =====================================================================
 
-def automated_system_maintenance():
-    if not supabase: return
-    now = datetime.utcnow()
-    
-    thirty_days_ago = (now - timedelta(days=30)).isoformat()
-    supabase.table('enrollments').update({"status": "expired"}).eq('status', 'active').lt('created_at', thirty_days_ago).execute()
-
-    twenty_four_hours_ago = (now - timedelta(hours=24)).isoformat()
-    expired_fails = supabase.table('enrollments').select('id', 'user_id').eq('status', 'failed').lt('created_at', twenty_four_hours_ago).execute()
-    for row in expired_fails.data:
-        supabase.table('enrollments').update({"status": "expired"}).eq('id', row['id']).execute()
-
-    seven_days_ago = (now - timedelta(days=7)).isoformat()
-    reminders = supabase.table('enrollments').select('id', 'user_id').eq('status', 'active').gt('created_at', seven_days_ago).execute()
-    for row in reminders.data:
-        user = supabase.table('users').select('email', 'full_name').eq('id', row['user_id']).execute().data[0]
-        send_system_email(user['email'], "Virtuole Internship: Pending Submission Reminder", f"Hello {user['full_name']},\n\nDon't forget to submit your architecture. You have a 30-day window from enrollment to qualify for credentials.")
-
-    expired_ambassadors = supabase.table('users').select('id', 'email', 'full_name').eq('role', 'ambassador').lt('ambassador_expiry', now.isoformat()).execute()
-    for row in expired_ambassadors.data:
-        supabase.table('users').update({"role": "intern", "promo_code": None, "ambassador_expiry": None}).eq('id', row['id']).execute()
-        send_system_email(row['email'], "Virtuole Ambassador Program: Term Completed", f"Hello {row['full_name']},\n\nYour 1-year term as a Virtuole Ambassador has officially concluded. Your account has now been seamlessly transitioned back to a standard Intern profile.")
-
 @app.route('/cron/maintenance', methods=['GET', 'POST'])
 @app.route('/api/cron/maintenance', methods=['GET', 'POST'])
 def run_maintenance():
     auth_header = request.headers.get('Authorization')
     if auth_header != f"Bearer {os.getenv('CRON_SECRET_KEY')}":
         return jsonify({"error": "Unauthorized"}), 401
+    
+    if not supabase: return jsonify({"error": "No database"}), 500
+    
     try:
-        automated_system_maintenance()
+        now = datetime.utcnow()
+        thirty_days_ago = (now - timedelta(days=30)).isoformat()
+        supabase.table('enrollments').update({"status": "expired"}).eq('status', 'active').lt('created_at', thirty_days_ago).execute()
+
+        twenty_four_hours_ago = (now - timedelta(hours=24)).isoformat()
+        expired_fails = supabase.table('enrollments').select('id', 'user_id').eq('status', 'failed').lt('created_at', twenty_four_hours_ago).execute()
+        for row in expired_fails.data:
+            supabase.table('enrollments').update({"status": "expired"}).eq('id', row['id']).execute()
+
+        seven_days_ago = (now - timedelta(days=7)).isoformat()
+        reminders = supabase.table('enrollments').select('id', 'user_id').eq('status', 'active').gt('created_at', seven_days_ago).execute()
+        for row in reminders.data:
+            user = supabase.table('users').select('email', 'full_name').eq('id', row['user_id']).execute().data[0]
+            send_system_email(user['email'], "Virtuole Internship: Pending Submission Reminder", f"Hello {user['full_name']},\n\nDon't forget to submit your architecture. You have a 30-day window from enrollment to qualify for credentials.")
+
+        expired_ambassadors = supabase.table('users').select('id', 'email', 'full_name').eq('role', 'ambassador').lt('ambassador_expiry', now.isoformat()).execute()
+        for row in expired_ambassadors.data:
+            supabase.table('users').update({"role": "intern", "promo_code": None, "ambassador_expiry": None}).eq('id', row['id']).execute()
+            send_system_email(row['email'], "Virtuole Ambassador Program: Term Completed", f"Hello {row['full_name']},\n\nYour 1-year term as a Virtuole Ambassador has officially concluded. Your account has now been seamlessly transitioned back to a standard Intern profile.")
+            
         return jsonify({"status": "Maintenance execution completed successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 # =====================================================================
-# 5. AUTHENTICATION & REGISTRATION GATEWAYS
+# 5. AUTHENTICATION & GATEWAYS (FIXED LOGIN)
 # =====================================================================
 
 @app.route('/')
@@ -354,25 +371,32 @@ def login():
         password = request.form.get('password')
         
         try:
-            # Authenticate via original standard credentials structure
-            supabase.auth.sign_in_with_password({"email": email, "password": password})
+            # 1. Authorize via Supabase
+            auth_response = supabase.auth.sign_in_with_password({"email": email, "password": password})
             
+            # 2. Grab profile from Database
             user_data_response = supabase.table('users').select('*').eq('email', email).execute()
             if not user_data_response.data:
-                return render_template('login.html', error="Profile data missing. Contact support.")
+                return render_template('login.html', error="Profile data missing in the database.")
             
             user_data = user_data_response.data[0]
             
+            # 3. Establish strict session data
+            session.permanent = True
             session['user_id'] = user_data['id']
             session['email'] = user_data['email']
             session['name'] = user_data['full_name']
             session['public_id'] = user_data['public_id']
             
-            # Simple, non-breaking lowercase check to handle case variance safely
+            # 4. Normalize the role string to completely eliminate redirect loop issues
             user_role = str(user_data.get('role', 'intern')).strip().lower()
             session['role'] = user_role
             
-            if user_role == 'admin': 
+            # Force Flask to instantly save the session
+            session.modified = True 
+            
+            # 5. Smart Routing based on normalized role
+            if user_role == 'admin' or email == "admin@virtuole.in": 
                 return redirect(url_for('dashboard_admin'))
             elif user_role == 'mentor': 
                 return redirect(url_for('dashboard_mentor'))
@@ -382,7 +406,10 @@ def login():
                 return redirect(url_for('dashboard_intern'))
                 
         except Exception as e:
-            return render_template('login.html', error=f"Invalid credentials or system error: {str(e)}")
+            error_str = str(e)
+            if "Invalid login credentials" in error_str or "AuthApiError" in error_str:
+                return render_template('login.html', error="Incorrect email or password.")
+            return render_template('login.html', error=f"Login Error: {error_str}")
             
     return render_template('login.html', message=message)
 
@@ -614,7 +641,7 @@ def evaluate_task():
     return redirect(url_for('dashboard_mentor'))
 
 # =====================================================================
-# 9. ADMIN ACTIONS
+# 9. ADMIN ACTIONS (With Soft Delete)
 # =====================================================================
 
 @app.route('/admin/add-program', methods=['POST'])
@@ -633,6 +660,7 @@ def add_program():
 @app.route('/api/admin/delete-program', methods=['POST'])
 def delete_program():
     if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
+    # Soft Delete: Preserves student data history
     supabase.table('programs').update({"is_active": False}).eq('id', request.form.get('program_id')).execute()
     return redirect(url_for('dashboard_admin', tab='programs'))
 
@@ -750,7 +778,7 @@ def dashboard_ambassador():
     return render_template('dashboard_ambassador.html', ambassador_name=session.get('name'), valid_until_date=u['ambassador_expiry'].split('T')[0] if u.get('ambassador_expiry') else 'N/A', total_points=pts, current_tier_name=tier_name, total_referrals=refs, promo_code=u['promo_code'], amb_id=u['public_id'], available_tasks=tasks, shipping_address=u['shipping_address'])
 
 # =====================================================================
-# 12. PUBLIC & RENDERING PATHS
+# 12. PUBLIC & RENDERING PATHS (Including Offer Letters)
 # =====================================================================
 
 @app.route('/download_cert/<tier>')
@@ -779,7 +807,9 @@ def download_offer(enrollment_id):
     e = enroll_data[0]
     raw_date = e['created_at'].split('T')[0] if e.get('created_at') else datetime.utcnow().strftime("%Y-%m-%d")
     html_content = get_offer_letter_template(e['users']['full_name'], raw_date, e['programs']['title'], e['track_level'].title(), enrollment_id, e['programs']['short_description'])
-    return html_content + "<script>window.onload = function() { window.print(); }</script>"
+    
+    # Auto-Print dialog script
+    return html_content + "<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); }</script>"
 
 @app.route('/terms')
 def terms_page(): return render_template('terms.html')
@@ -802,7 +832,8 @@ def view_public_offer():
         if not enroll_data: return render_template('offer.html', error=True)
         e = enroll_data[0]
         raw_date = e['created_at'].split('T')[0] if e.get('created_at') else datetime.utcnow().strftime("%Y-%m-%d")
-        return get_offer_letter_template(e['users']['full_name'], raw_date, e['programs']['title'], e['track_level'].title(), enrollment_id, e['programs']['short_description']) + "<script>window.onload = function() { window.print(); }</script>"
+        html_content = get_offer_letter_template(e['users']['full_name'], raw_date, e['programs']['title'], e['track_level'].title(), enrollment_id, e['programs']['short_description'])
+        return html_content + "<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); }</script>"
     except:
         return render_template('offer.html', error=True)
 
