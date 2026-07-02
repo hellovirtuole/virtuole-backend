@@ -61,6 +61,18 @@ else:
     supabase = None
 
 # =====================================================================
+# 1.5 VERCEL CACHE KILLER (Fixes the Reload Logout Bug)
+# =====================================================================
+@app.after_request
+def add_header(response):
+    # Force Vercel to check the live session cookie on every reload
+    # instead of serving a cached "logged out" snapshot of the dashboards.
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '-1'
+    return response
+
+# =====================================================================
 # 2. HTML TEMPLATES (Replaces PDF Generation)
 # =====================================================================
 
@@ -456,8 +468,17 @@ def validate_promo():
 @app.route('/api/create-payment', methods=['POST'])
 @limiter.limit("3 per minute")
 def create_phonepe_payment():
-    if not session.get('email'): return jsonify({"error": "Unauthorized"}), 401
-    data = request.get_json()
+    if not session.get('email'): 
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    # 1. Safely handle both AJAX JSON calls AND standard HTML form submissions
+    if request.is_json:
+        data = request.get_json()
+        is_ajax = True
+    else:
+        data = request.form
+        is_ajax = False
+        
     enrollment_id = data.get('enrollment_id')
     promo_code = data.get('promo_code', '').upper()
     
@@ -474,17 +495,22 @@ def create_phonepe_payment():
             applied_promo = promo_code
 
     transaction_id = f"VT-TXN-{random.randint(100000, 999999)}"
-    amount_in_paise = final_price * 100 
+    amount_in_paise = int(final_price * 100) # 2. Enforce integer to prevent PhonePe float crashes
+    
+    # 3. Use the public_id (VT-2026-XXXX) instead of email to pass PhonePe's strict character validation
+    safe_merchant_user_id = session.get('public_id', 'VIRT-USER')
+    
     payload = {
         "merchantId": os.getenv("PHONEPE_MERCHANT_ID"),
         "merchantTransactionId": transaction_id,
-        "merchantUserId": session['email'],
+        "merchantUserId": safe_merchant_user_id,
         "amount": amount_in_paise,
         "redirectUrl": "https://www.virtuole.in/dashboard-intern", 
         "redirectMode": "REDIRECT",
         "callbackUrl": "https://www.virtuole.in/api/phonepe-webhook", 
         "paymentInstrument": {"type": "PAY_PAGE"}
     }
+    
     base64_payload = base64.b64encode(json.dumps(payload).encode('utf-8')).decode('utf-8')
     checksum = hashlib.sha256((base64_payload + "/pg/v1/pay" + os.getenv("PHONEPE_SALT_KEY")).encode('utf-8')).hexdigest() + "###" + os.getenv("PHONEPE_SALT_INDEX")
     headers = {"Content-Type": "application/json", "X-VERIFY": checksum}
@@ -492,13 +518,33 @@ def create_phonepe_payment():
     try:
         response = requests.post("https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay", json={"request": base64_payload}, headers=headers)
         response_data = response.json()
+        
         if response_data.get('success'):
             supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": data.get('code_link'), "defense_link": data.get('defense_link')}).execute()
             supabase.table('payments').insert({"user_id": session['user_id'], "transaction_id": transaction_id, "amount": amount_in_paise, "status": "pending", "applied_promo": applied_promo}).execute()
-            return jsonify({"payment_url": response_data['data']['instrumentResponse']['redirectInfo']['url']})
-        return jsonify({"error": "Gateway Error"}), 400
+            
+            payment_url = response_data['data']['instrumentResponse']['redirectInfo']['url']
+            
+            # 4. Correctly redirect the user to the gateway depending on how they submitted
+            if is_ajax:
+                return jsonify({"payment_url": payment_url})
+            else:
+                return redirect(payment_url)
+                
+        # If PhonePe rejects it, print the exact reason to Vercel logs
+        print(f"PhonePe Rejection: {response_data}")
+        error_msg = response_data.get('message', 'Gateway Error')
+        if is_ajax:
+            return jsonify({"error": error_msg}), 400
+        else:
+            return f"Payment Gateway Error: {error_msg}. Please check Vercel Logs.", 400
+            
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Server Error during payment: {str(e)}")
+        if is_ajax:
+            return jsonify({"error": str(e)}), 500
+        else:
+            return f"Server Error: {str(e)}", 500
 
 @app.route('/phonepe-webhook', methods=['POST'])
 @app.route('/api/phonepe-webhook', methods=['POST'])
