@@ -29,20 +29,22 @@ template_dir = os.path.join(base_dir, 'templates')
 app = Flask(__name__, template_folder=template_dir)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "virtuole-master-secure-key-2026-xyz")
 
-# CRITICAL FIX: Tell Flask it is running behind Vercel's proxy
-# This stops Flask from dropping secure session cookies during redirects!
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+# Tell Flask it runs behind Vercel proxies; trusts headers for routing/cookies
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 
-# Streamlined Session Config
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
-# Always secure cookies, but we removed the Domain restriction so Vercel Preview links work
-app.config['SESSION_COOKIE_SECURE'] = True 
+# Dynamically apply secure cookies based on environment (local vs deployed)
+IS_VERCEL = os.getenv("VERCEL") == "1"
+
+app.config.update(
+    SESSION_COOKIE_SAMESITE='Lax',
+    PERMANENT_SESSION_LIFETIME=timedelta(days=30),
+    SESSION_COOKIE_SECURE=IS_VERCEL  # True on Vercel HTTPS, False for local HTTP testing
+)
 
 CORS(app)
 
 # =====================================================================
-# 1.5 VERCEL CACHE KILLER (Fixes the Reload Logout Bug)
+# 1.5 VERCEL CACHE KILLER
 # =====================================================================
 @app.after_request
 def add_header(response):
@@ -51,14 +53,12 @@ def add_header(response):
     response.headers['Expires'] = '-1'
     return response
 
-# Custom IP tracker to bypass Vercel's proxy server network
 def get_real_client_ip():
     forwarded_for = request.headers.get('X-Forwarded-For')
     if forwarded_for:
         return forwarded_for.split(',')[0].strip()
     return request.remote_addr
 
-# Protect system endpoints using individual real user IPs
 limiter = Limiter(
     key_func=get_real_client_ip, 
     app=app,
@@ -66,7 +66,6 @@ limiter = Limiter(
     default_limits=["200 per day", "50 per hour"]
 )
 
-# Core Relational Database Client Connection
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 if SUPABASE_URL and SUPABASE_KEY:
@@ -243,7 +242,7 @@ def get_ambassador_certificate_template(name, date, tier_name, points, amb_id):
                 <td style="width: 50%; text-align: center; vertical-align: bottom; border: none;">
                     <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/public-assets/vishal_signature.png" style="height: 55px; width: 150px;" alt="Vishal Kumar Signature"><br>
                     <hr style="width: 200px; text-align: center; border: none; border-top: 1px solid #111827; margin: auto;">
-                    <p style="margin-top: 5px; font-size: 14px;"><strong>Vishal Kumar</strong><br>Founder & Proprietor, Virtuole</p>
+                    <p style="margin-top: 5px; font-size: 14px;"><strong>Dishal Kumar</strong><br>Founder & Proprietor, Virtuole</p>
                 </td>
             </tr>
         </table>
@@ -395,15 +394,16 @@ def login():
             session['user_id'] = user_data['id']
             session['email'] = user_data['email']
             session['name'] = user_data['full_name']
-            session['role'] = user_data['role']
+            
+            # CRITICAL FIX: Cast database entry to absolute lowercase to avoid structural bypasses
+            user_role = str(user_data.get('role', '')).strip().lower()
+            session['role'] = user_role
             session['public_id'] = user_data['public_id']
             
-            # Force Flask to instantly save the cookie
+            # Force Flask to instantly save cookie states
             session.modified = True 
             
-            # 4. Routing logic based strictly on database role
-            user_role = user_data['role']
-            
+            # 4. Casing-Normalized Routing Logic
             if user_role == 'admin': 
                 return redirect(url_for('dashboard_admin'))
             elif user_role == 'mentor': 
@@ -415,7 +415,7 @@ def login():
                 
         except Exception as e:
             error_string = str(e)
-            print(f"LOGIN ERROR: {error_string}")
+            print(f"LOGIN EXCEPTION LOG: {error_string}")
             
             if "Invalid login credentials" in error_string or "AuthApiError" in error_string:
                 return render_template('login.html', error="Incorrect email or password. Please try again.")
@@ -577,7 +577,7 @@ def phonepe_webhook():
 @app.route('/enroll', methods=['POST'])
 @app.route('/api/enroll', methods=['POST'])
 def api_enroll():
-    if session.get('role') != 'intern': return redirect('/login')
+    if str(session.get('role', '')).lower() != 'intern': return redirect('/login')
     program_id = request.form.get('program_id')
     track_level = request.form.get('track_level')
     enrollment_id = f"VT-E-{random.randint(100000, 999999)}"
@@ -610,7 +610,7 @@ def api_submit_project():
 @app.route('/grade-submission', methods=['POST'])
 @app.route('/api/grade-submission', methods=['POST'])
 def grade_submission():
-    if session.get('role') != 'mentor': return redirect('/login')
+    if str(session.get('role', '')).lower() != 'mentor': return redirect('/login')
     sub_id = request.form.get('submission_id')
     enrollment_id = request.form.get('enrollment_id')
     score = int(request.form.get('score'))
@@ -640,7 +640,7 @@ def grade_submission():
 @app.route('/evaluate-task', methods=['POST'])
 @app.route('/api/evaluate-task', methods=['POST'])
 def evaluate_task():
-    if session.get('role') != 'mentor': return redirect('/login')
+    if str(session.get('role', '')).lower() != 'mentor': return redirect('/login')
     claim_id = request.form.get('claim_id')
     action = request.form.get('action') 
     claim_data = supabase.table('ambassador_claims').select('ambassador_id, users(email, full_name)').eq('id', claim_id).execute().data[0]
@@ -663,6 +663,7 @@ def evaluate_task():
 @app.route('/admin/add-program', methods=['POST'])
 @app.route('/api/admin/add-program', methods=['POST'])
 def add_program():
+    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
     supabase.table('programs').insert({
         "title": request.form.get('title'), "short_description": request.form.get('short_description'), "specs_beginner": request.form.get('specs_beginner'),
         "specs_intermediate": request.form.get('specs_intermediate'), "specs_expert": request.form.get('specs_expert'),
@@ -674,24 +675,28 @@ def add_program():
 @app.route('/admin/delete-program', methods=['POST'])
 @app.route('/api/admin/delete-program', methods=['POST'])
 def delete_program():
+    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
     supabase.table('programs').update({"is_active": False}).eq('id', request.form.get('program_id')).execute()
     return redirect(url_for('dashboard_admin', tab='programs'))
 
 @app.route('/admin/add-task', methods=['POST'])
 @app.route('/api/admin/add-task', methods=['POST'])
 def add_task():
+    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
     supabase.table('ambassador_tasks').insert({"title": request.form.get('title'), "description": request.form.get('description'), "point_value": int(request.form.get('point_value')), "is_active": True}).execute()
     return redirect(url_for('dashboard_admin', tab='tasks'))
 
 @app.route('/admin/delete-task', methods=['POST'])
 @app.route('/api/admin/delete-task', methods=['POST'])
 def delete_task():
+    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
     supabase.table('ambassador_tasks').delete().eq('id', request.form.get('task_id')).execute()
     return redirect(url_for('dashboard_admin', tab='tasks'))
 
 @app.route('/admin/update-role', methods=['POST'])
 @app.route('/api/admin/update-role', methods=['POST'])
 def update_role():
+    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
     user_id = request.form.get('user_id')
     new_role = request.form.get('new_role')
     user = supabase.table('users').select('email', 'full_name').eq('id', user_id).execute().data[0]
@@ -732,6 +737,7 @@ def update_role():
 @app.route('/claim-points', methods=['POST'])
 @app.route('/api/claim-points', methods=['POST'])
 def claim_points():
+    if str(session.get('role', '')).lower() != 'ambassador': return redirect('/login')
     supabase.table('ambassador_claims').insert({
         "ambassador_id": session['user_id'], "task_id": request.form.get('task_id'),
         "proof_link": request.form.get('proof_link'), "notes": request.form.get('notes')
@@ -741,6 +747,7 @@ def claim_points():
 @app.route('/update-address', methods=['POST'])
 @app.route('/api/update-address', methods=['POST'])
 def update_address():
+    if str(session.get('role', '')).lower() != 'ambassador': return redirect('/login')
     supabase.table('users').update({"shipping_address": request.form.get('shipping_address')}).eq('id', session['user_id']).execute()
     return redirect(url_for('dashboard_ambassador'))
 
@@ -750,7 +757,7 @@ def update_address():
 
 @app.route('/dashboard-intern')
 def dashboard_intern():
-    if session.get('role') != 'intern': return redirect('/login')
+    if str(session.get('role', '')).lower() != 'intern': return redirect('/login')
     u_id = session['user_id']
     active_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).eq('status', 'active').execute().data
     active_projects = [{'program_title': e['programs']['title'], 'description': e['programs']['short_description'], 'track_level': e['track_level'], 'enrollment_id': e['enrollment_id'], 'specs_link': e['programs'].get(f"specs_{e['track_level']}", '#'), 'amount_due': e['programs'].get(f"price_{e['track_level']}", 0)} for e in active_enrolls]
@@ -768,7 +775,7 @@ def dashboard_intern():
 
 @app.route('/dashboard-mentor')
 def dashboard_mentor():
-    if session.get('role') != 'mentor': return redirect('/login')
+    if str(session.get('role', '')).lower() != 'mentor': return redirect('/login')
     pend_subs = supabase.table('submissions').select('*').is_('score', 'null').execute().data
     graded_subs = supabase.table('submissions').select('*').not_.is_('score', 'null').execute().data
     claims = supabase.table('ambassador_claims').select('id, proof_link, notes, ambassador_id, users(full_name, email), ambassador_tasks(title, point_value)').eq('status', 'pending').execute().data
@@ -777,7 +784,7 @@ def dashboard_mentor():
 
 @app.route('/dashboard-admin')
 def dashboard_admin():
-    if session.get('role') != 'admin': return redirect('/login')
+    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
     active_tab = request.args.get('tab', 'overview')
     earnings = sum([p['amount']/100 for p in supabase.table('payments').select('amount').eq('status', 'paid').execute().data])
     enrolled = len(supabase.table('enrollments').select('id').execute().data)
@@ -792,7 +799,7 @@ def dashboard_admin():
 
 @app.route('/dashboard-ambassador')
 def dashboard_ambassador():
-    if session.get('role') != 'ambassador': return redirect('/login')
+    if str(session.get('role', '')).lower() != 'ambassador': return redirect('/login')
     u = supabase.table('users').select('*').eq('id', session['user_id']).execute().data[0]
     pts = u['total_points'] or 0
     tier_name = "Star Ambassador" if pts >= 3000 else "Community Lead" if pts >= 1500 else "Campus Advocate" if pts >= 500 else "Kickstart"
@@ -806,7 +813,7 @@ def dashboard_ambassador():
 
 @app.route('/download_cert/<tier>')
 def download_cert(tier):
-    if session.get('role') != 'ambassador': return redirect('/login')
+    if str(session.get('role', '')).lower() != 'ambassador': return redirect('/login')
     u = supabase.table('users').select('*').eq('id', session['user_id']).execute().data[0]
     pts = u['total_points'] or 0
     
@@ -816,7 +823,7 @@ def download_cert(tier):
 
 @app.route('/download_lor/<type>')
 def download_lor(type):
-    if session.get('role') != 'ambassador': return redirect('/login')
+    if str(session.get('role', '')).lower() != 'ambassador': return redirect('/login')
     u = supabase.table('users').select('*').eq('id', session['user_id']).execute().data[0]
     if type == 'devrel' and (u['total_points'] or 0) >= 1500:
         return get_lor_template(u['full_name'], datetime.utcnow().strftime("%B %d, %Y"), "GTM Ambassador Program", "Community Lead", u['public_id'], "Community Leadership, Developer Relations (DevRel), and Technical Advocacy for the Virtuole MSME platform.")
@@ -824,7 +831,7 @@ def download_lor(type):
 
 @app.route('/download_offer/<enrollment_id>')
 def download_offer(enrollment_id):
-    if session.get('role') != 'intern': return redirect('/login')
+    if str(session.get('role', '')).lower() != 'intern': return redirect('/login')
         
     enroll_data = supabase.table('enrollments').select('*, programs(*), users(full_name)').eq('enrollment_id', enrollment_id).eq('user_id', session['user_id']).execute().data
     if not enroll_data: return "Unauthorized or Invalid Enrollment", 403
