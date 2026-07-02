@@ -33,6 +33,13 @@ app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 app.config['SESSION_COOKIE_DOMAIN'] = '.virtuole.in' 
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+
+# Only enforce the virtuole domain if running on the live Vercel server
+if os.getenv("VERCEL_ENV") or os.getenv("FLASK_ENV") == "production":
+    app.config['SESSION_COOKIE_DOMAIN'] = '.virtuole.in'
 
 CORS(app)
 
@@ -377,10 +384,18 @@ def login():
         password = request.form.get('password')
         
         try:
+            # 1. Attempt Authentication with Supabase
             supabase.auth.sign_in_with_password({"email": email, "password": password})
-            user_data = supabase.table('users').select('*').eq('email', email).execute().data[0]
             
-            # The system now automatically sorts users based on their role in the database
+            # 2. Fetch the user's role from your database
+            user_data_response = supabase.table('users').select('*').eq('email', email).execute()
+            
+            if not user_data_response.data:
+                return render_template('login.html', error="Account authenticated, but no database profile found.")
+                
+            user_data = user_data_response.data[0]
+            
+            # 3. Create the secure session
             session.permanent = True 
             session['user_id'] = user_data['id']
             session['email'] = user_data['email']
@@ -388,7 +403,8 @@ def login():
             session['role'] = user_data['role']
             session['public_id'] = user_data['public_id']
             
-            if session.get('role') == 'admin' and email == "admin@virtuole.in": 
+            # 4. Route them to the correct dashboard
+            if user_data['role'] == 'admin' and email == "admin@virtuole.in": 
                 return redirect(url_for('dashboard_admin'))
             elif user_data['role'] == 'mentor': 
                 return redirect(url_for('dashboard_mentor'))
@@ -397,8 +413,16 @@ def login():
             else: 
                 return redirect(url_for('dashboard_intern'))
                 
-        except Exception:
-            return render_template('login.html', error="unregistered")
+        except Exception as e:
+            # Print the exact error to Vercel logs for debugging
+            error_string = str(e)
+            print(f"LOGIN ERROR: {error_string}")
+            
+            # Show a readable error on the screen
+            if "Invalid login credentials" in error_string:
+                return render_template('login.html', error="Incorrect email or password.")
+            else:
+                return render_template('login.html', error=f"System Error: {error_string}")
             
     return render_template('login.html', message=message)
 
