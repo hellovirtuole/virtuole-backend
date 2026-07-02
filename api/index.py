@@ -801,6 +801,43 @@ def download_lor(type):
         return get_lor_template(u['full_name'], datetime.utcnow().strftime("%B %d, %Y"), "GTM Ambassador Program", "Community Lead", u['public_id'], "Community Leadership, Developer Relations (DevRel), and Technical Advocacy for the Virtuole MSME platform.")
     return "Insufficient Points", 403
 
+@app.route('/download_offer/<enrollment_id>')
+def download_offer(enrollment_id):
+    # 1. Ensure the user is an intern
+    if session.get('role') != 'intern': 
+        return redirect('/login')
+        
+    # 2. Fetch the specific enrollment securely (matching the user_id)
+    enroll_data = supabase.table('enrollments').select('*, programs(*), users(full_name)').eq('enrollment_id', enrollment_id).eq('user_id', session['user_id']).execute().data
+    
+    if not enroll_data:
+        return "Unauthorized or Invalid Enrollment", 403
+        
+    e = enroll_data[0]
+    name = e['users']['full_name']
+    
+    # 3. Format the original enrollment date
+    raw_date = e['created_at'].split('T')[0] if e.get('created_at') else datetime.utcnow().strftime("%Y-%m-%d")
+    try:
+        date_obj = datetime.strptime(raw_date, "%Y-%m-%d")
+        formatted_date = date_obj.strftime("%B %d, %Y")
+    except:
+        formatted_date = raw_date
+
+    program_title = e['programs']['title']
+    track_level = e['track_level'].title()
+    project_details = e['programs']['short_description']
+
+    # 4. Generate the HTML using your existing template
+    html_content = get_offer_letter_template(name, formatted_date, program_title, track_level, enrollment_id, project_details)
+    
+    # 5. Inject a tiny script and print instruction so the print/save dialog opens automatically
+    print_instruction = "<br><p style='color: gray; font-size: 10px; text-align: center; border-top: 1px solid #eee; padding-top: 10px; margin-top: 50px;'>To save this Offer Letter, press Ctrl+P (Windows) or Cmd+P (Mac) and select 'Save as PDF'. Ensure 'Background graphics' is enabled.</p>"
+    print_script = "<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); }</script>"
+    
+    final_html = html_content.replace('</body>', print_instruction + print_script + '</body>')
+    return final_html
+
 # =====================================================================
 # 13. PUBLIC ROUTES
 # =====================================================================
@@ -846,6 +883,48 @@ def apply_ambassador():
     supabase.table('ambassador_applications').insert({"name": name, "email": email, "motivation": request.form.get('motivation'), "status": "pending_round_2"}).execute()
     send_ambassador_email(email, "Virtuole Ambassador Program: Round 2", f"Dear {name},\nPlease complete the mandatory GTM task assessment via this Google Form: [INSERT YOUR GOOGLE FORM LINK HERE]")
     return "Application submitted! Check your email."
+
+@app.route('/offer-letter')
+def offer_letter_page():
+    return render_template('offer.html')
+
+@app.route('/view-offer', methods=['GET'])
+def view_public_offer():
+    enrollment_id = request.args.get('enrollment_id')
+    if not enrollment_id: 
+        return render_template('offer.html')
+        
+    try:
+        # Fetch the enrollment securely (no login required, acts just like credential verification)
+        enroll_data = supabase.table('enrollments').select('*, programs(*), users(full_name)').eq('enrollment_id', enrollment_id).execute().data
+        
+        if not enroll_data:
+            return render_template('offer.html', error=True)
+            
+        e = enroll_data[0]
+        name = e['users']['full_name']
+        
+        raw_date = e['created_at'].split('T')[0] if e.get('created_at') else datetime.utcnow().strftime("%Y-%m-%d")
+        try:
+            date_obj = datetime.strptime(raw_date, "%Y-%m-%d")
+            formatted_date = date_obj.strftime("%B %d, %Y")
+        except:
+            formatted_date = raw_date
+
+        program_title = e['programs']['title']
+        track_level = e['track_level'].title()
+        project_details = e['programs']['short_description']
+
+        html_content = get_offer_letter_template(name, formatted_date, program_title, track_level, enrollment_id, project_details)
+        
+        # Inject print logic
+        print_instruction = "<br><p style='color: gray; font-size: 10px; text-align: center; border-top: 1px solid #eee; padding-top: 10px; margin-top: 50px;'>To save this Offer Letter, press Ctrl+P (Windows) or Cmd+P (Mac) and select 'Save as PDF'. Ensure 'Background graphics' is enabled.</p>"
+        print_script = "<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); }</script>"
+        
+        final_html = html_content.replace('</body>', print_instruction + print_script + '</body>')
+        return final_html
+    except Exception as ex:
+        return render_template('offer.html', error=True)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
