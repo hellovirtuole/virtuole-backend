@@ -37,12 +37,11 @@
             text-align: center; 
         }
         
-        /* Enforced #38b2ac color instead of yellow */
         .logo-text { font-family: 'Montserrat', sans-serif; font-size: 2.2em; font-weight: 800; color: #ffffff; letter-spacing: 2px; margin-bottom: 30px; }
         .logo-text span { color: #38b2ac; }
 
         .tabs { display: flex; margin-bottom: 30px; border-bottom: 2px solid #2d3748; flex-wrap: wrap; }
-        .tab { flex: 1; padding: 12px 5px; cursor: pointer; color: #a0aec0; font-weight: bold; transition: 0.3s; font-size: 0.9em; min-width: 30%; }
+        .tab { flex: 1; padding: 12px 5px; cursor: pointer; color: #a0aec0; font-weight: bold; transition: 0.3s; font-size: 0.9em; min-width: 45%; }
         .tab.active { color: #38b2ac; border-bottom: 2px solid #38b2ac; }
 
         .form-group { margin-bottom: 20px; text-align: left; position: relative; }
@@ -50,20 +49,18 @@
         input, select { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #4a5568; background: #2d3748; color: white; box-sizing: border-box; }
         input:focus, select:focus { outline: none; border-color: #38b2ac; }
         
-        /* Show Password Toggle Styling */
         .password-wrapper { position: relative; }
         .toggle-password { position: absolute; right: 12px; top: 12px; cursor: pointer; font-size: 1.1em; user-select: none; opacity: 0.7; transition: 0.2s; }
         .toggle-password:hover { opacity: 1; }
         
-        .submit-btn { background: #38b2ac; color: white; font-weight: bold; font-size: 1.1em; padding: 14px; border: none; border-radius: 6px; cursor: pointer; width: 100%; text-transform: uppercase; margin-top: 10px; transition: 0.3s; }
-        .submit-btn:hover { background: #2c7a7b; }
+        .submit-btn { background: #38b2ac; color: white; font-weight: bold; font-size: 1.1em; padding: 14px 40px; border: none; border-radius: 50px; cursor: pointer; width: max-content; min-width: 200px; margin: 25px auto 10px auto; display: block; text-transform: uppercase; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(56, 178, 172, 0.3); }
+        .submit-btn:hover { background: #2c7a7b; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(56, 178, 172, 0.4); }
 
         .alert-error { background: rgba(245, 101, 101, 0.1); border-left: 4px solid #f56565; color: #f56565; padding: 12px; margin-bottom: 20px; font-size: 0.9em; text-align: left; }
         .alert-success { background: rgba(56, 178, 172, 0.1); border-left: 4px solid #38b2ac; color: #38b2ac; padding: 12px; margin-bottom: 20px; font-size: 0.9em; text-align: left; }
         
         .hidden { display: none !important; }
         
-        /* Forgot Password Link Styling */
         .forgot-link { display: block; text-align: right; margin-top: -10px; margin-bottom: 15px; color: #38b2ac; font-size: 0.85em; text-decoration: none; font-weight: bold; }
         .forgot-link:hover { text-decoration: underline; }
     </style>
@@ -78,20 +75,17 @@
         {% endif %}
         {% if error == 'unregistered' %}
             <div class="alert-error">⚠️ Account not found. Please register first to access the platform.</div>
-        {% elif error == 'unauthorized' %}
-            <div class="alert-error">🚫 Unauthorized user, you are unable to login to the partner portal.</div>
         {% elif error %}
             <div class="alert-error">⚠️ {{ error }}</div>
         {% endif %}
 
         <div class="tabs">
-            <div class="tab active" id="login-tab" onclick="showForm('login')">Intern Login</div>
+            <div class="tab active" id="login-tab" onclick="showForm('login')">Login</div>
             <div class="tab" id="register-tab" onclick="showForm('register')">Register</div>
-            <div class="tab" id="partner-tab" onclick="showForm('partner')">Staff / Partner</div>
         </div>
 
         <form id="auth-form" action="/login" method="POST">
-            <input type="hidden" name="login_type" id="login_type" value="intern">
+            <input type="hidden" name="login_type" id="login_type" value="login">
 
             <div id="name-field" class="form-group hidden">
                 <label>Full Name</label>
@@ -129,19 +123,17 @@
     </div>
 
     <script>
-        // Feature 1: Toggle Show/Hide Password
         function togglePassword(fieldId, iconElement) {
             const field = document.getElementById(fieldId);
             if (field.type === "password") {
                 field.type = "text";
-                iconElement.innerText = "🙈"; // Hide icon
+                iconElement.innerText = "🙈"; 
             } else {
                 field.type = "password";
-                iconElement.innerText = "👁️"; // Show icon
+                iconElement.innerText = "👁️"; 
             }
         }
 
-        // Feature 2: Forgot Password UI Morph
         function showForgotPassword() {
             const form = document.getElementById('auth-form');
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -161,7 +153,6 @@
             document.getElementById('action-btn').innerText = 'Send Reset Email';
         }
 
-        // Tab Switching Logic
         function showForm(type) {
             const form = document.getElementById('auth-form');
             const nameField = document.getElementById('name-field');
@@ -176,7 +167,6 @@
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.getElementById(type + '-tab').classList.add('active');
 
-            // Reset defaults
             passGroup.classList.remove('hidden');
             document.getElementById('password').required = true;
             backToLogin.classList.add('hidden');
@@ -187,25 +177,13 @@
                 nameField.classList.remove('hidden');
                 document.getElementById('full_name').required = true;
                 
-                confirmGroup.classList.remove('hidden'); // Show confirm block
+                confirmGroup.classList.remove('hidden'); 
                 document.getElementById('confirm_password').required = true;
                 
                 forgotLink.classList.add('hidden');
                 actionBtn.innerText = 'Create Account';
                 emailInput.placeholder = "student@university.edu";
                 loginType.value = "register";
-            } else if (type === 'partner') {
-                form.action = '/login';
-                nameField.classList.add('hidden');
-                document.getElementById('full_name').required = false;
-                
-                confirmGroup.classList.add('hidden');
-                document.getElementById('confirm_password').required = false;
-                
-                forgotLink.classList.remove('hidden');
-                actionBtn.innerText = 'Secure Login';
-                emailInput.placeholder = "role@virtuole.in";
-                loginType.value = "staff";
             } else {
                 form.action = '/login';
                 nameField.classList.add('hidden');
@@ -217,18 +195,17 @@
                 forgotLink.classList.remove('hidden');
                 actionBtn.innerText = 'Sign In';
                 emailInput.placeholder = "name@example.com";
-                loginType.value = "intern";
+                loginType.value = "login";
             }
         }
 
-        // Feature 3: Match passwords before submitting registration
         document.getElementById('auth-form').addEventListener('submit', function(e) {
             if (document.getElementById('login_type').value === 'register') {
                 const pass = document.getElementById('password').value;
                 const conf = document.getElementById('confirm_password').value;
                 
                 if (pass !== conf) {
-                    e.preventDefault(); // Stop form submission
+                    e.preventDefault(); 
                     document.getElementById('password-error').style.display = 'block';
                 }
             }
