@@ -125,6 +125,9 @@
                     <div class="btn-group">
                         <a href="{{ project.specs_link }}" target="_blank" class="btn btn-outline">Download Specs</a>
                         <button class="btn btn-solid" onclick="openSubmitModal('{{ project.enrollment_id }}', {{ project.amount_due }})">Submit Architecture</button>
+                        <a href="/download_offer/{{ project.enrollment_id }}" target="_blank" style="background: transparent; border: 2px solid #38b2ac; color: #38b2ac; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 0.9em; display: inline-block; transition: 0.3s; margin-right: 10px;">
+    📄 Download Offer Letter
+</a>
                     </div>
                 </div>
                 {% else %}
