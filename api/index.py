@@ -811,6 +811,34 @@ def download_offer(enrollment_id):
     # Auto-Print dialog script
     return html_content + "<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); }</script>"
 
+@app.route('/contact')
+def contact_page():
+    return render_template('contact.html')
+
+@app.route('/submit-feedback', methods=['POST'])
+def submit_feedback():
+    name = request.form.get('name')
+    email = request.form.get('email')
+    subject = request.form.get('subject')
+    message = request.form.get('message')
+    
+    # Logs the feedback to your Vercel console for now
+    print(f"NEW FEEDBACK: {name} | {email} | {subject} | {message}")
+    
+    # You can later connect this to Supabase or send an email to support@virtuole.in
+    
+    return render_template('contact.html', message="Thank you! Your feedback has been successfully submitted.")
+
+@app.route('/subscribe', methods=['POST'])
+def subscribe_newsletter():
+    email = request.form.get('email')
+    
+    # Logs the new subscriber to your Vercel console
+    print(f"NEW SUBSCRIBER: {email}")
+    
+    # Redirects the user right back to the homepage seamlessly
+    return redirect(url_for('home'))
+
 @app.route('/terms')
 def terms_page(): return render_template('terms.html')
 @app.route('/refund')
