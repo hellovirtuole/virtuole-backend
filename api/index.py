@@ -15,6 +15,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 from supabase import create_client, Client
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Load secure environment configurations
 load_dotenv()
@@ -28,18 +29,14 @@ template_dir = os.path.join(base_dir, 'templates')
 app = Flask(__name__, template_folder=template_dir)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "virtuole-master-secure-key-2026-xyz")
 
-# --- ENVIRONMENT-AWARE COOKIE SECURITY ---
-# If running on Vercel in production, use ultra-strict cookie rules.
-# If running locally, relax them so you can actually log in and test.
-is_production = os.getenv("VERCEL_ENV") == "production"
+# Tell Flask it is running behind Vercel's proxy so it doesn't drop secure cookies
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-app.config['SESSION_COOKIE_SECURE'] = is_production # Must be False for local HTTP testing
+# Streamlined Session Config
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
-
-if is_production:
-    app.config['SESSION_COOKIE_DOMAIN'] = '.virtuole.in'
-# -----------------------------------------
+# Automatically secure cookies if we are in production
+app.config['SESSION_COOKIE_SECURE'] = os.getenv("VERCEL_ENV") == "production"
 
 CORS(app)
 
@@ -48,7 +45,6 @@ CORS(app)
 # =====================================================================
 @app.after_request
 def add_header(response):
-    # Force Vercel to check the live session cookie on every reload
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '-1'
@@ -382,10 +378,10 @@ def login():
         password = request.form.get('password')
         
         try:
-            # Authenticate with Supabase
+            # 1. Authenticate with Supabase
             auth_response = supabase.auth.sign_in_with_password({"email": email, "password": password})
             
-            # Fetch user details from public table
+            # 2. Fetch user details from public table
             user_data_response = supabase.table('users').select('*').eq('email', email).execute()
             
             if not user_data_response.data:
@@ -393,7 +389,7 @@ def login():
             
             user_data = user_data_response.data[0]
             
-            # Lock the session securely
+            # 3. Lock the session securely
             session.permanent = True 
             session['user_id'] = user_data['id']
             session['email'] = user_data['email']
@@ -401,15 +397,14 @@ def login():
             session['role'] = user_data['role']
             session['public_id'] = user_data['public_id']
             
-            # Force Flask to save the cookie immediately
-            session.modified = True 
+            # 4. Routing logic based strictly on database role
+            user_role = user_data['role']
             
-            # Routing logic based on database role
-            if user_data['role'] == 'admin' and email == "admin@virtuole.in": 
+            if user_role == 'admin': 
                 return redirect(url_for('dashboard_admin'))
-            elif user_data['role'] == 'mentor': 
+            elif user_role == 'mentor': 
                 return redirect(url_for('dashboard_mentor'))
-            elif user_data['role'] == 'ambassador': 
+            elif user_role == 'ambassador': 
                 return redirect(url_for('dashboard_ambassador'))
             else: 
                 return redirect(url_for('dashboard_intern'))
@@ -930,24 +925,6 @@ def apply_ambassador():
     supabase.table('ambassador_applications').insert({"name": name, "email": email, "motivation": request.form.get('motivation'), "status": "pending_round_2"}).execute()
     send_ambassador_email(email, "Virtuole Ambassador Program: Round 2", f"Dear {name},\nPlease complete the mandatory GTM task assessment via this Google Form: [INSERT YOUR GOOGLE FORM LINK HERE]")
     return "Application submitted! Check your email."
-
-@app.route('/sitemap.xml')
-def sitemap():
-    sitemap_xml = """<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-    <url><loc>https://www.virtuole.in/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
-    <url><loc>https://www.virtuole.in/login</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-    <url><loc>https://www.virtuole.in/register</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-    <url><loc>https://www.virtuole.in/verify.html</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
-    <url><loc>https://www.virtuole.in/offer-letter</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
-    <url><loc>https://www.virtuole.in/apply-ambassador</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-    <url><loc>https://www.virtuole.in/terms</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
-    <url><loc>https://www.virtuole.in/privacy</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
-    <url><loc>https://www.virtuole.in/refund</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
-</urlset>"""
-    response = make_response(sitemap_xml)
-    response.headers["Content-Type"] = "application/xml"
-    return response
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
