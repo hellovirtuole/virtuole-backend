@@ -20,7 +20,7 @@ from supabase import create_client, Client
 load_dotenv()
 
 # =====================================================================
-# 1. VERCEL ARCHITECTURE SETUP
+# 1. VERCEL ARCHITECTURE SETUP & SECURITY
 # =====================================================================
 base_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 template_dir = os.path.join(base_dir, 'templates')
@@ -28,17 +28,28 @@ template_dir = os.path.join(base_dir, 'templates')
 app = Flask(__name__, template_folder=template_dir)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "fallback-secret-key")
 
-# --- ADD THESE 3 LINES TO LOCK THE SESSION ---
+# Encrypt cookies and enforce cross-subdomain sharing to prevent random logouts
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
-# --------------------------------------------
+app.config['SESSION_COOKIE_DOMAIN'] = '.virtuole.in' 
 
 CORS(app)
 
+# =====================================================================
+# 1.5 VERCEL CACHE KILLER (Fixes the Reload Logout Bug)
+# =====================================================================
+@app.after_request
+def add_header(response):
+    # Force Vercel to check the live session cookie on every reload
+    # instead of serving a cached "logged out" snapshot of the dashboards.
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '-1'
+    return response
+
 # Custom IP tracker to bypass Vercel's proxy server network
 def get_real_client_ip():
-    # Vercel automatically forwards the true user IP in this header
     forwarded_for = request.headers.get('X-Forwarded-For')
     if forwarded_for:
         return forwarded_for.split(',')[0].strip()
@@ -59,18 +70,6 @@ if SUPABASE_URL and SUPABASE_KEY:
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 else:
     supabase = None
-
-# =====================================================================
-# 1.5 VERCEL CACHE KILLER (Fixes the Reload Logout Bug)
-# =====================================================================
-@app.after_request
-def add_header(response):
-    # Force Vercel to check the live session cookie on every reload
-    # instead of serving a cached "logged out" snapshot of the dashboards.
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '-1'
-    return response
 
 # =====================================================================
 # 2. HTML TEMPLATES (Replaces PDF Generation)
@@ -250,11 +249,10 @@ def get_ambassador_certificate_template(name, date, tier_name, points, amb_id):
     """
 
 # =====================================================================
-# 3. EMAIL INFRASTRUCTURE (Rich HTML Support added)
+# 3. EMAIL INFRASTRUCTURE
 # =====================================================================
 
 def send_system_email(to_email, subject, body_content, is_html=False):
-    """Intern Channel: Outbound via AWS SES."""
     msg = MIMEMultipart()
     msg['From'] = f"Virtuole Services <{os.getenv('AWS_SMTP_USER')}>"
     msg['To'] = to_email
@@ -275,7 +273,6 @@ def send_system_email(to_email, subject, body_content, is_html=False):
         print(f"AWS SES Delivery Exception: {e}")
 
 def send_ambassador_email(to_email, subject, body_content):
-    """Ambassador Channel: Direct outbound via Zoho."""
     msg = MIMEMultipart()
     msg['From'] = f"Virtuole Ambassador Program <ambassador@virtuole.in>"
     msg['To'] = to_email
@@ -297,13 +294,15 @@ def send_ambassador_email(to_email, subject, body_content):
 def automated_system_maintenance():
     if not supabase: return
     now = datetime.utcnow()
+    
+    # Safely expire old enrollments to keep data clean, without deleting historical certificates
     thirty_days_ago = (now - timedelta(days=30)).isoformat()
-    supabase.table('enrollments').delete().eq('status', 'active').lt('created_at', thirty_days_ago).execute()
+    supabase.table('enrollments').update({"status": "expired"}).eq('status', 'active').lt('created_at', thirty_days_ago).execute()
 
     twenty_four_hours_ago = (now - timedelta(hours=24)).isoformat()
     expired_fails = supabase.table('enrollments').select('id', 'user_id').eq('status', 'failed').lt('created_at', twenty_four_hours_ago).execute()
     for row in expired_fails.data:
-        supabase.table('enrollments').delete().eq('id', row['id']).execute()
+        supabase.table('enrollments').update({"status": "expired"}).eq('id', row['id']).execute()
 
     seven_days_ago = (now - timedelta(days=7)).isoformat()
     reminders = supabase.table('enrollments').select('id', 'user_id').eq('status', 'active').gt('created_at', seven_days_ago).execute()
@@ -349,7 +348,6 @@ def register():
     confirm_password = request.form.get('confirm_password')
     promo_used = request.form.get('promo_code')
     
-    # Backend safety check for matching passwords
     if password != confirm_password:
         return render_template('login.html', error="Passwords do not match. Please try again.")
 
@@ -372,7 +370,6 @@ def register():
 @app.route('/api/login', methods=['GET', 'POST'])
 @limiter.limit("10 per minute")
 def login():
-    # Catch success messages from URL redirects (like forgot password or register)
     message = request.args.get('message')
 
     if request.method == 'POST':
@@ -384,9 +381,8 @@ def login():
             user_data = supabase.table('users').select('*').eq('email', email).execute().data[0]
             if login_type == 'staff' and user_data['role'] == 'intern':
                 return render_template('login.html', error="unauthorized")
-
-            session.permanent = True
                 
+            session.permanent = True 
             session['user_id'] = user_data['id']
             session['email'] = user_data['email']
             session['name'] = user_data['full_name']
@@ -414,7 +410,6 @@ def logout():
 def forgot_password():
     email = request.form.get('email')
     try:
-        # Generate link and redirect to our custom frontend page
         supabase.auth.reset_password_for_email(
             email, 
             options={"redirect_to": "https://www.virtuole.in/reset-password"}
@@ -435,21 +430,19 @@ def update_password():
     access_token = request.form.get('access_token')
     refresh_token = request.form.get('refresh_token')
 
-    if password != confirm_password:
+    if new_password != confirm_password:
         return render_template('reset_password.html', error="Passwords do not match. Try again.")
     if not access_token or not refresh_token:
         return render_template('reset_password.html', error="Invalid or expired reset link. Please request a new one.")
 
     try:
-        # 1. Temporarily authenticate the backend using the tokens from the email link
         supabase.auth.set_session(access_token, refresh_token)
-        # 2. Overwrite the encrypted password
         supabase.auth.update_user({"password": new_password})
-        # 3. Securely sign out the temporary session
         supabase.auth.sign_out()
         return redirect(url_for('login', message="Password updated successfully! Please log in."))
     except Exception as e:
         return render_template('reset_password.html', error=str(e))
+
 # =====================================================================
 # 6. GTM PROMO CODE & PHONEPE SECURE GATEWAY
 # =====================================================================
@@ -471,7 +464,6 @@ def create_phonepe_payment():
     if not session.get('email'): 
         return jsonify({"error": "Unauthorized"}), 401
     
-    # 1. Safely handle both AJAX JSON calls AND standard HTML form submissions
     if request.is_json:
         data = request.get_json()
         is_ajax = True
@@ -495,9 +487,8 @@ def create_phonepe_payment():
             applied_promo = promo_code
 
     transaction_id = f"VT-TXN-{random.randint(100000, 999999)}"
-    amount_in_paise = int(final_price * 100) # 2. Enforce integer to prevent PhonePe float crashes
+    amount_in_paise = int(final_price * 100) 
     
-    # 3. Use the public_id (VT-2026-XXXX) instead of email to pass PhonePe's strict character validation
     safe_merchant_user_id = session.get('public_id', 'VIRT-USER')
     
     payload = {
@@ -525,13 +516,11 @@ def create_phonepe_payment():
             
             payment_url = response_data['data']['instrumentResponse']['redirectInfo']['url']
             
-            # 4. Correctly redirect the user to the gateway depending on how they submitted
             if is_ajax:
                 return jsonify({"payment_url": payment_url})
             else:
                 return redirect(payment_url)
                 
-        # If PhonePe rejects it, print the exact reason to Vercel logs
         print(f"PhonePe Rejection: {response_data}")
         error_msg = response_data.get('message', 'Gateway Error')
         if is_ajax:
@@ -576,7 +565,6 @@ def api_enroll():
     prog = supabase.table('programs').select('*').eq('id', program_id).execute().data[0]
     html_offer = get_offer_letter_template(session['name'], datetime.utcnow().strftime("%B %d, %Y"), prog['title'], track_level.title(), enrollment_id, prog['short_description'])
     
-    # Send HTML Offer letter directly as email
     send_system_email(session['email'], "Official Internship Offer Letter - Virtuole", html_offer, is_html=True)
     return redirect(url_for('dashboard_intern'))
 
@@ -655,25 +643,27 @@ def add_program():
         "price_beginner": int(request.form.get('price_beginner')), "price_intermediate": int(request.form.get('price_intermediate')),
         "price_expert": int(request.form.get('price_expert')), "is_active": True
     }).execute()
-    return redirect(url_for('dashboard_admin'))
+    return redirect(url_for('dashboard_admin', tab='programs'))
 
 @app.route('/admin/delete-program', methods=['POST'])
 @app.route('/api/admin/delete-program', methods=['POST'])
 def delete_program():
-    supabase.table('programs').delete().eq('id', request.form.get('program_id')).execute()
-    return redirect(url_for('dashboard_admin'))
+    # SOFT DELETE: Sets is_active to False instead of deleting the row.
+    # This keeps all historical student enrollments and certificates perfectly intact!
+    supabase.table('programs').update({"is_active": False}).eq('id', request.form.get('program_id')).execute()
+    return redirect(url_for('dashboard_admin', tab='programs'))
 
 @app.route('/admin/add-task', methods=['POST'])
 @app.route('/api/admin/add-task', methods=['POST'])
 def add_task():
     supabase.table('ambassador_tasks').insert({"title": request.form.get('title'), "description": request.form.get('description'), "point_value": int(request.form.get('point_value')), "is_active": True}).execute()
-    return redirect(url_for('dashboard_admin'))
+    return redirect(url_for('dashboard_admin', tab='tasks'))
 
 @app.route('/admin/delete-task', methods=['POST'])
 @app.route('/api/admin/delete-task', methods=['POST'])
 def delete_task():
     supabase.table('ambassador_tasks').delete().eq('id', request.form.get('task_id')).execute()
-    return redirect(url_for('dashboard_admin'))
+    return redirect(url_for('dashboard_admin', tab='tasks'))
 
 @app.route('/admin/update-role', methods=['POST'])
 @app.route('/api/admin/update-role', methods=['POST'])
@@ -688,7 +678,6 @@ def update_role():
         update_data['promo_code'] = f"AMB{''.join(random.choices(string.ascii_uppercase, k=4))}"
         update_data['ambassador_expiry'] = (datetime.utcnow() + timedelta(days=365)).isoformat()
         
-        # Sent via Zoho (ambassador@virtuole.in)
         send_ambassador_email(
             user['email'], 
             "Welcome to the Virtuole Ambassador Program", 
@@ -696,7 +685,6 @@ def update_role():
         )
         
     elif new_role == 'mentor':
-        # Sent via AWS SES (service@virtuole.in)
         send_system_email(
             user['email'], 
             "Virtuole Promotion: Mentor Status", 
@@ -704,7 +692,6 @@ def update_role():
         )
         
     elif new_role == 'admin':
-        # Sent via AWS SES (service@virtuole.in)
         send_system_email(
             user['email'], 
             "Virtuole Promotion: Admin Clearance", 
@@ -712,7 +699,7 @@ def update_role():
         )
         
     supabase.table('users').update(update_data).eq('id', user_id).execute()
-    return redirect(url_for('dashboard_admin'))
+    return redirect(url_for('dashboard_admin', tab='users'))
 
 # =====================================================================
 # 10. AMBASSADOR ACTIONS
@@ -767,14 +754,20 @@ def dashboard_mentor():
 @app.route('/dashboard-admin')
 def dashboard_admin():
     if session.get('role') != 'admin': return redirect('/login')
+    
+    active_tab = request.args.get('tab', 'overview')
+    
     earnings = sum([p['amount']/100 for p in supabase.table('payments').select('amount').eq('status', 'paid').execute().data])
     enrolled = len(supabase.table('enrollments').select('id').execute().data)
     certified = len(supabase.table('submissions').select('id').gte('score', 80).execute().data)
     pend_grading = len(supabase.table('submissions').select('id').is_('score', 'null').execute().data)
+    
+    # Selecting ALL programs ensures the admin dashboard can still view and manage offline programs
     progs = supabase.table('programs').select('*').execute().data
     tasks = supabase.table('ambassador_tasks').select('*').execute().data
     users = supabase.table('users').select('*').execute().data
-    return render_template('dashboard_admin.html', user_name=session.get('name'), total_earnings=earnings, total_enrolled=enrolled, total_certified=certified, pending_grading=pend_grading, offered_programs=progs, all_tasks=tasks, user_directory=users, tier3_ambassadors=[u for u in users if u['role'] == 'ambassador' and 1500 <= (u['total_points'] or 0) < 3000], tier4_ambassadors=[u for u in users if u['role'] == 'ambassador' and (u['total_points'] or 0) >= 3000])
+    
+    return render_template('dashboard_admin.html', user_name=session.get('name'), total_earnings=earnings, total_enrolled=enrolled, total_certified=certified, pending_grading=pend_grading, offered_programs=progs, all_tasks=tasks, user_directory=users, tier3_ambassadors=[u for u in users if u['role'] == 'ambassador' and 1500 <= (u['total_points'] or 0) < 3000], tier4_ambassadors=[u for u in users if u['role'] == 'ambassador' and (u['total_points'] or 0) >= 3000], active_tab=active_tab)
 
 @app.route('/dashboard-ambassador')
 def dashboard_ambassador():
@@ -787,12 +780,11 @@ def dashboard_ambassador():
     return render_template('dashboard_ambassador.html', ambassador_name=session.get('name'), valid_until_date=u['ambassador_expiry'].split('T')[0] if u.get('ambassador_expiry') else 'N/A', total_points=pts, current_tier_name=tier_name, total_referrals=refs, promo_code=u['promo_code'], amb_id=u['public_id'], available_tasks=tasks, shipping_address=u['shipping_address'])
 
 # =====================================================================
-# 12. WEB-RENDERED CERTIFICATES (The PDF Bypass)
+# 12. WEB-RENDERED CERTIFICATES
 # =====================================================================
 
 @app.route('/download_cert/<tier>')
 def download_cert(tier):
-    """Instead of downloading a PDF, this renders a clean HTML page. Users hit Ctrl+P to save as PDF."""
     if session.get('role') != 'ambassador': return redirect('/login')
     u = supabase.table('users').select('*').eq('id', session['user_id']).execute().data[0]
     pts = u['total_points'] or 0
@@ -857,7 +849,3 @@ def apply_ambassador():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
-
-@app.route('/google14abf2786ebd357a.html')
-def google_verification():
-    return render_template('google14abf2786ebd357a.html')
