@@ -26,20 +26,20 @@ base_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 template_dir = os.path.join(base_dir, 'templates')
 
 app = Flask(__name__, template_folder=template_dir)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "fallback-secret-key")
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "virtuole-master-secure-key-2026-xyz")
 
-# Encrypt cookies and enforce cross-subdomain sharing to prevent random logouts
-app.config['SESSION_COOKIE_SECURE'] = True
+# --- ENVIRONMENT-AWARE COOKIE SECURITY ---
+# If running on Vercel in production, use ultra-strict cookie rules.
+# If running locally, relax them so you can actually log in and test.
+is_production = os.getenv("VERCEL_ENV") == "production"
+
+app.config['SESSION_COOKIE_SECURE'] = is_production # Must be False for local HTTP testing
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
-app.config['SESSION_COOKIE_DOMAIN'] = '.virtuole.in' 
-app.config['SESSION_COOKIE_SECURE'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
-# Only enforce the virtuole domain if running on the live Vercel server
-if os.getenv("VERCEL_ENV") or os.getenv("FLASK_ENV") == "production":
+if is_production:
     app.config['SESSION_COOKIE_DOMAIN'] = '.virtuole.in'
+# -----------------------------------------
 
 CORS(app)
 
@@ -49,7 +49,6 @@ CORS(app)
 @app.after_request
 def add_header(response):
     # Force Vercel to check the live session cookie on every reload
-    # instead of serving a cached "logged out" snapshot of the dashboards.
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '-1'
@@ -79,7 +78,7 @@ else:
     supabase = None
 
 # =====================================================================
-# 2. HTML TEMPLATES (Replaces PDF Generation)
+# 2. HTML TEMPLATES 
 # =====================================================================
 
 def get_offer_letter_template(name, date, program_title, track_level, enroll_id, project_details):
@@ -302,7 +301,6 @@ def automated_system_maintenance():
     if not supabase: return
     now = datetime.utcnow()
     
-    # Safely expire old enrollments to keep data clean, without deleting historical certificates
     thirty_days_ago = (now - timedelta(days=30)).isoformat()
     supabase.table('enrollments').update({"status": "expired"}).eq('status', 'active').lt('created_at', thirty_days_ago).execute()
 
@@ -369,7 +367,7 @@ def register():
             if promo_used:
                 send_ambassador_email("ambassador@virtuole.in", f"Conversion Logged: Code {promo_used}", f"A new student has registered using promo code {promo_used}.")
             send_system_email(email, "Welcome to Virtuole", f"Hello {full_name},\nYour public identity ID is {public_id}. Please log in to your dashboard to view offered programs and begin your internship.")
-            return redirect(url_for('login', message="Account created successfully."))
+            return redirect(url_for('login', message="Account created successfully. Please login."))
     except Exception as e:
         return render_template('login.html', error=str(e))
 
@@ -384,18 +382,18 @@ def login():
         password = request.form.get('password')
         
         try:
-            # 1. Attempt Authentication with Supabase
-            supabase.auth.sign_in_with_password({"email": email, "password": password})
+            # Authenticate with Supabase
+            auth_response = supabase.auth.sign_in_with_password({"email": email, "password": password})
             
-            # 2. Fetch the user's role from your database
+            # Fetch user details from public table
             user_data_response = supabase.table('users').select('*').eq('email', email).execute()
             
             if not user_data_response.data:
-                return render_template('login.html', error="Account authenticated, but no database profile found.")
-                
+                return render_template('login.html', error="Your account was authenticated, but no database profile was found. Please contact support.")
+            
             user_data = user_data_response.data[0]
             
-            # 3. Create the secure session
+            # Lock the session securely
             session.permanent = True 
             session['user_id'] = user_data['id']
             session['email'] = user_data['email']
@@ -403,24 +401,25 @@ def login():
             session['role'] = user_data['role']
             session['public_id'] = user_data['public_id']
             
-            # 4. Route them to the correct dashboard
+            # Force Flask to save the cookie immediately
+            session.modified = True 
+            
+            # Routing logic based on database role
             if user_data['role'] == 'admin' and email == "admin@virtuole.in": 
                 return redirect(url_for('dashboard_admin'))
             elif user_data['role'] == 'mentor': 
                 return redirect(url_for('dashboard_mentor'))
             elif user_data['role'] == 'ambassador': 
-                return redirect('/dashboard-ambassador')
+                return redirect(url_for('dashboard_ambassador'))
             else: 
                 return redirect(url_for('dashboard_intern'))
                 
         except Exception as e:
-            # Print the exact error to Vercel logs for debugging
             error_string = str(e)
             print(f"LOGIN ERROR: {error_string}")
             
-            # Show a readable error on the screen
-            if "Invalid login credentials" in error_string:
-                return render_template('login.html', error="Incorrect email or password.")
+            if "Invalid login credentials" in error_string or "AuthApiError" in error_string:
+                return render_template('login.html', error="Incorrect email or password. Please try again.")
             else:
                 return render_template('login.html', error=f"System Error: {error_string}")
             
@@ -676,8 +675,6 @@ def add_program():
 @app.route('/admin/delete-program', methods=['POST'])
 @app.route('/api/admin/delete-program', methods=['POST'])
 def delete_program():
-    # SOFT DELETE: Sets is_active to False instead of deleting the row.
-    # This keeps all historical student enrollments and certificates perfectly intact!
     supabase.table('programs').update({"is_active": False}).eq('id', request.form.get('program_id')).execute()
     return redirect(url_for('dashboard_admin', tab='programs'))
 
@@ -782,15 +779,12 @@ def dashboard_mentor():
 @app.route('/dashboard-admin')
 def dashboard_admin():
     if session.get('role') != 'admin': return redirect('/login')
-    
     active_tab = request.args.get('tab', 'overview')
-    
     earnings = sum([p['amount']/100 for p in supabase.table('payments').select('amount').eq('status', 'paid').execute().data])
     enrolled = len(supabase.table('enrollments').select('id').execute().data)
     certified = len(supabase.table('submissions').select('id').gte('score', 80).execute().data)
     pend_grading = len(supabase.table('submissions').select('id').is_('score', 'null').execute().data)
     
-    # Selecting ALL programs ensures the admin dashboard can still view and manage offline programs
     progs = supabase.table('programs').select('*').execute().data
     tasks = supabase.table('ambassador_tasks').select('*').execute().data
     users = supabase.table('users').select('*').execute().data
@@ -808,7 +802,7 @@ def dashboard_ambassador():
     return render_template('dashboard_ambassador.html', ambassador_name=session.get('name'), valid_until_date=u['ambassador_expiry'].split('T')[0] if u.get('ambassador_expiry') else 'N/A', total_points=pts, current_tier_name=tier_name, total_referrals=refs, promo_code=u['promo_code'], amb_id=u['public_id'], available_tasks=tasks, shipping_address=u['shipping_address'])
 
 # =====================================================================
-# 12. WEB-RENDERED CERTIFICATES
+# 12. WEB-RENDERED CERTIFICATES & DOCUMENTS
 # =====================================================================
 
 @app.route('/download_cert/<tier>')
@@ -821,22 +815,24 @@ def download_cert(tier):
     if not tier_name: return "Insufficient Points for this Tier", 403
     return get_ambassador_certificate_template(u['full_name'], datetime.utcnow().strftime("%B %d, %Y"), tier_name, pts, u['public_id'])
 
+@app.route('/download_lor/<type>')
+def download_lor(type):
+    if session.get('role') != 'ambassador': return redirect('/login')
+    u = supabase.table('users').select('*').eq('id', session['user_id']).execute().data[0]
+    if type == 'devrel' and (u['total_points'] or 0) >= 1500:
+        return get_lor_template(u['full_name'], datetime.utcnow().strftime("%B %d, %Y"), "GTM Ambassador Program", "Community Lead", u['public_id'], "Community Leadership, Developer Relations (DevRel), and Technical Advocacy for the Virtuole MSME platform.")
+    return "Insufficient Points", 403
+
 @app.route('/download_offer/<enrollment_id>')
 def download_offer(enrollment_id):
-    # 1. Ensure the user is an intern
-    if session.get('role') != 'intern': 
-        return redirect('/login')
+    if session.get('role') != 'intern': return redirect('/login')
         
-    # 2. Fetch the specific enrollment securely (matching the user_id)
     enroll_data = supabase.table('enrollments').select('*, programs(*), users(full_name)').eq('enrollment_id', enrollment_id).eq('user_id', session['user_id']).execute().data
-    
-    if not enroll_data:
-        return "Unauthorized or Invalid Enrollment", 403
+    if not enroll_data: return "Unauthorized or Invalid Enrollment", 403
         
     e = enroll_data[0]
     name = e['users']['full_name']
     
-    # 3. Format the original enrollment date
     raw_date = e['created_at'].split('T')[0] if e.get('created_at') else datetime.utcnow().strftime("%Y-%m-%d")
     try:
         date_obj = datetime.strptime(raw_date, "%Y-%m-%d")
@@ -848,23 +844,11 @@ def download_offer(enrollment_id):
     track_level = e['track_level'].title()
     project_details = e['programs']['short_description']
 
-    # 4. Generate the HTML using your existing template
     html_content = get_offer_letter_template(name, formatted_date, program_title, track_level, enrollment_id, project_details)
-    
-    # 5. Inject a tiny script and print instruction so the print/save dialog opens automatically
     print_instruction = "<br><p style='color: gray; font-size: 10px; text-align: center; border-top: 1px solid #eee; padding-top: 10px; margin-top: 50px;'>To save this Offer Letter, press Ctrl+P (Windows) or Cmd+P (Mac) and select 'Save as PDF'. Ensure 'Background graphics' is enabled.</p>"
     print_script = "<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); }</script>"
     
-    final_html = html_content.replace('</body>', print_instruction + print_script + '</body>')
-    return final_html
-
-@app.route('/download_lor/<type>')
-def download_lor(type):
-    if session.get('role') != 'ambassador': return redirect('/login')
-    u = supabase.table('users').select('*').eq('id', session['user_id']).execute().data[0]
-    if type == 'devrel' and (u['total_points'] or 0) >= 1500:
-        return get_lor_template(u['full_name'], datetime.utcnow().strftime("%B %d, %Y"), "GTM Ambassador Program", "Community Lead", u['public_id'], "Community Leadership, Developer Relations (DevRel), and Technical Advocacy for the Virtuole MSME platform.")
-    return "Insufficient Points", 403
+    return html_content.replace('</body>', print_instruction + print_script + '</body>')
 
 # =====================================================================
 # 13. PUBLIC ROUTES
@@ -878,6 +862,41 @@ def refund_page(): return render_template('refund.html')
 def privacy_page(): return render_template('privacy.html')
 @app.route('/verify.html')
 def verify_page_redirect(): return render_template('verify.html')
+
+@app.route('/offer-letter')
+def offer_letter_page():
+    return render_template('offer.html')
+
+@app.route('/view-offer', methods=['GET'])
+def view_public_offer():
+    enrollment_id = request.args.get('enrollment_id')
+    if not enrollment_id: return render_template('offer.html')
+        
+    try:
+        enroll_data = supabase.table('enrollments').select('*, programs(*), users(full_name)').eq('enrollment_id', enrollment_id).execute().data
+        if not enroll_data: return render_template('offer.html', error=True)
+            
+        e = enroll_data[0]
+        name = e['users']['full_name']
+        
+        raw_date = e['created_at'].split('T')[0] if e.get('created_at') else datetime.utcnow().strftime("%Y-%m-%d")
+        try:
+            date_obj = datetime.strptime(raw_date, "%Y-%m-%d")
+            formatted_date = date_obj.strftime("%B %d, %Y")
+        except:
+            formatted_date = raw_date
+
+        program_title = e['programs']['title']
+        track_level = e['track_level'].title()
+        project_details = e['programs']['short_description']
+
+        html_content = get_offer_letter_template(name, formatted_date, program_title, track_level, enrollment_id, project_details)
+        print_instruction = "<br><p style='color: gray; font-size: 10px; text-align: center; border-top: 1px solid #eee; padding-top: 10px; margin-top: 50px;'>To save this Offer Letter, press Ctrl+P (Windows) or Cmd+P (Mac) and select 'Save as PDF'. Ensure 'Background graphics' is enabled.</p>"
+        print_script = "<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); }</script>"
+        
+        return html_content.replace('</body>', print_instruction + print_script + '</body>')
+    except Exception as ex:
+        return render_template('offer.html', error=True)
 
 @app.route('/verify-credential', methods=['GET'])
 def verify_credential():
@@ -912,48 +931,23 @@ def apply_ambassador():
     send_ambassador_email(email, "Virtuole Ambassador Program: Round 2", f"Dear {name},\nPlease complete the mandatory GTM task assessment via this Google Form: [INSERT YOUR GOOGLE FORM LINK HERE]")
     return "Application submitted! Check your email."
 
-@app.route('/offer-letter')
-def offer_letter_page():
-    return render_template('offer.html')
-
-@app.route('/view-offer', methods=['GET'])
-def view_public_offer():
-    enrollment_id = request.args.get('enrollment_id')
-    if not enrollment_id: 
-        return render_template('offer.html')
-        
-    try:
-        # Fetch the enrollment securely (no login required, acts just like credential verification)
-        enroll_data = supabase.table('enrollments').select('*, programs(*), users(full_name)').eq('enrollment_id', enrollment_id).execute().data
-        
-        if not enroll_data:
-            return render_template('offer.html', error=True)
-            
-        e = enroll_data[0]
-        name = e['users']['full_name']
-        
-        raw_date = e['created_at'].split('T')[0] if e.get('created_at') else datetime.utcnow().strftime("%Y-%m-%d")
-        try:
-            date_obj = datetime.strptime(raw_date, "%Y-%m-%d")
-            formatted_date = date_obj.strftime("%B %d, %Y")
-        except:
-            formatted_date = raw_date
-
-        program_title = e['programs']['title']
-        track_level = e['track_level'].title()
-        project_details = e['programs']['short_description']
-
-        html_content = get_offer_letter_template(name, formatted_date, program_title, track_level, enrollment_id, project_details)
-        
-        # Inject print logic
-        print_instruction = "<br><p style='color: gray; font-size: 10px; text-align: center; border-top: 1px solid #eee; padding-top: 10px; margin-top: 50px;'>To save this Offer Letter, press Ctrl+P (Windows) or Cmd+P (Mac) and select 'Save as PDF'. Ensure 'Background graphics' is enabled.</p>"
-        print_script = "<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); }</script>"
-        
-        final_html = html_content.replace('</body>', print_instruction + print_script + '</body>')
-        return final_html
-    except Exception as ex:
-        return render_template('offer.html', error=True)
+@app.route('/sitemap.xml')
+def sitemap():
+    sitemap_xml = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url><loc>https://www.virtuole.in/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+    <url><loc>https://www.virtuole.in/login</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://www.virtuole.in/register</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://www.virtuole.in/verify.html</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+    <url><loc>https://www.virtuole.in/offer-letter</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+    <url><loc>https://www.virtuole.in/apply-ambassador</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://www.virtuole.in/terms</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+    <url><loc>https://www.virtuole.in/privacy</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+    <url><loc>https://www.virtuole.in/refund</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+</urlset>"""
+    response = make_response(sitemap_xml)
+    response.headers["Content-Type"] = "application/xml"
+    return response
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
-
