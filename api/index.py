@@ -15,43 +15,19 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 from supabase import create_client, Client
-from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Load secure environment configurations
 load_dotenv()
 
 # =====================================================================
-# 1. VERCEL ARCHITECTURE SETUP & SECURITY
+# 1. VERCEL ARCHITECTURE SETUP
 # =====================================================================
 base_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 template_dir = os.path.join(base_dir, 'templates')
 
 app = Flask(__name__, template_folder=template_dir)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "virtuole-master-secure-key-2026-xyz")
-
-# Tell Flask it runs behind Vercel proxies; trusts headers for routing/cookies
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
-
-# Dynamically apply secure cookies based on environment (local vs deployed)
-IS_VERCEL = os.getenv("VERCEL") == "1"
-
-app.config.update(
-    SESSION_COOKIE_SAMESITE='Lax',
-    PERMANENT_SESSION_LIFETIME=timedelta(days=30),
-    SESSION_COOKIE_SECURE=IS_VERCEL  # True on Vercel HTTPS, False for local HTTP testing
-)
-
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "fallback-secret-key")
 CORS(app)
-
-# =====================================================================
-# 1.5 VERCEL CACHE KILLER
-# =====================================================================
-@app.after_request
-def add_header(response):
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '-1'
-    return response
 
 def get_real_client_ip():
     forwarded_for = request.headers.get('X-Forwarded-For')
@@ -242,7 +218,7 @@ def get_ambassador_certificate_template(name, date, tier_name, points, amb_id):
                 <td style="width: 50%; text-align: center; vertical-align: bottom; border: none;">
                     <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/public-assets/vishal_signature.png" style="height: 55px; width: 150px;" alt="Vishal Kumar Signature"><br>
                     <hr style="width: 200px; text-align: center; border: none; border-top: 1px solid #111827; margin: auto;">
-                    <p style="margin-top: 5px; font-size: 14px;"><strong>Dishal Kumar</strong><br>Founder & Proprietor, Virtuole</p>
+                    <p style="margin-top: 5px; font-size: 14px;"><strong>Vishal Kumar</strong><br>Founder & Proprietor, Virtuole</p>
                 </td>
             </tr>
         </table>
@@ -290,7 +266,7 @@ def send_ambassador_email(to_email, subject, body_content):
         print(f"Zoho Delivery Exception: {e}")
 
 # =====================================================================
-# 4. VERCEL SERVERLESS CRON ROUTE 
+# 4. SYSTEM MAINTENANCE CRON
 # =====================================================================
 
 def automated_system_maintenance():
@@ -378,32 +354,24 @@ def login():
         password = request.form.get('password')
         
         try:
-            # 1. Authenticate with Supabase
+            # Authenticate via original standard credentials structure
             supabase.auth.sign_in_with_password({"email": email, "password": password})
             
-            # 2. Fetch user details from public table
             user_data_response = supabase.table('users').select('*').eq('email', email).execute()
-            
             if not user_data_response.data:
-                return render_template('login.html', error="Your account was authenticated, but no database profile was found. Please contact support.")
+                return render_template('login.html', error="Profile data missing. Contact support.")
             
             user_data = user_data_response.data[0]
             
-            # 3. Lock the session securely
-            session.permanent = True 
             session['user_id'] = user_data['id']
             session['email'] = user_data['email']
             session['name'] = user_data['full_name']
-            
-            # CRITICAL FIX: Cast database entry to absolute lowercase to avoid structural bypasses
-            user_role = str(user_data.get('role', '')).strip().lower()
-            session['role'] = user_role
             session['public_id'] = user_data['public_id']
             
-            # Force Flask to instantly save cookie states
-            session.modified = True 
+            # Simple, non-breaking lowercase check to handle case variance safely
+            user_role = str(user_data.get('role', 'intern')).strip().lower()
+            session['role'] = user_role
             
-            # 4. Casing-Normalized Routing Logic
             if user_role == 'admin': 
                 return redirect(url_for('dashboard_admin'))
             elif user_role == 'mentor': 
@@ -414,13 +382,7 @@ def login():
                 return redirect(url_for('dashboard_intern'))
                 
         except Exception as e:
-            error_string = str(e)
-            print(f"LOGIN EXCEPTION LOG: {error_string}")
-            
-            if "Invalid login credentials" in error_string or "AuthApiError" in error_string:
-                return render_template('login.html', error="Incorrect email or password. Please try again.")
-            else:
-                return render_template('login.html', error=f"System Error: {error_string}")
+            return render_template('login.html', error=f"Invalid credentials or system error: {str(e)}")
             
     return render_template('login.html', message=message)
 
@@ -459,7 +421,7 @@ def update_password():
     if new_password != confirm_password:
         return render_template('reset_password.html', error="Passwords do not match. Try again.")
     if not access_token or not refresh_token:
-        return render_template('reset_password.html', error="Invalid or expired reset link. Please request a new one.")
+        return render_template('reset_password.html', error="Invalid reset session context.")
 
     try:
         supabase.auth.set_session(access_token, refresh_token)
@@ -470,7 +432,7 @@ def update_password():
         return render_template('reset_password.html', error=str(e))
 
 # =====================================================================
-# 6. GTM PROMO CODE & PHONEPE SECURE GATEWAY
+# 6. GTM PROMO CODE & PHONEPE GATEWAY
 # =====================================================================
 
 @app.route('/validate-promo', methods=['POST'])
@@ -481,7 +443,7 @@ def validate_promo():
     ambassador = supabase.table('users').select('id').eq('promo_code', promo_code).eq('role', 'ambassador').execute().data
     if ambassador:
         return jsonify({"valid": True, "discount_percent": 10})
-    return jsonify({"valid": False, "error": "Invalid or expired GTM promo code."}), 400
+    return jsonify({"valid": False, "error": "Invalid or expired code."}), 400
 
 @app.route('/create-payment', methods=['POST'])
 @app.route('/api/create-payment', methods=['POST'])
@@ -514,7 +476,6 @@ def create_phonepe_payment():
 
     transaction_id = f"VT-TXN-{random.randint(100000, 999999)}"
     amount_in_paise = int(final_price * 100) 
-    
     safe_merchant_user_id = session.get('public_id', 'VIRT-USER')
     
     payload = {
@@ -541,21 +502,17 @@ def create_phonepe_payment():
             supabase.table('payments').insert({"user_id": session['user_id'], "transaction_id": transaction_id, "amount": amount_in_paise, "status": "pending", "applied_promo": applied_promo}).execute()
             
             payment_url = response_data['data']['instrumentResponse']['redirectInfo']['url']
-            
             if is_ajax:
                 return jsonify({"payment_url": payment_url})
             else:
                 return redirect(payment_url)
                 
-        print(f"PhonePe Rejection: {response_data}")
-        error_msg = response_data.get('message', 'Gateway Error')
         if is_ajax:
-            return jsonify({"error": error_msg}), 400
+            return jsonify({"error": response_data.get('message', 'Gateway Error')}), 400
         else:
-            return f"Payment Gateway Error: {error_msg}. Please check Vercel Logs.", 400
+            return "Gateway Error encountered.", 400
             
     except Exception as e:
-        print(f"Server Error during payment: {str(e)}")
         if is_ajax:
             return jsonify({"error": str(e)}), 500
         else:
@@ -600,7 +557,7 @@ def api_submit_project():
     enrollment_id = request.form.get('enrollment_id')
     supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": request.form.get('code_link'), "defense_link": request.form.get('defense_link')}).execute()
     supabase.table('enrollments').update({"status": "submitted"}).eq('enrollment_id', enrollment_id).execute()
-    send_system_email(session['email'], "Submission Received", f"Your architecture for {enrollment_id} has entered the Mentor grading matrix.")
+    send_system_email(session['email'], "Submission Received", f"Your architecture for {enrollment_id} has entered evaluation.")
     return redirect(url_for('dashboard_intern'))
 
 # =====================================================================
@@ -614,7 +571,7 @@ def grade_submission():
     sub_id = request.form.get('submission_id')
     enrollment_id = request.form.get('enrollment_id')
     score = int(request.form.get('score'))
-    feedback = request.form.get('feedback', 'No specific feedback provided.')
+    feedback = request.form.get('feedback', 'No specific feedback.')
     
     enroll_data = supabase.table('enrollments').select('*, programs(title, short_description)').eq('enrollment_id', enrollment_id).execute().data[0]
     student = supabase.table('users').select('email', 'full_name').eq('id', enroll_data['user_id']).execute().data[0]
@@ -623,9 +580,9 @@ def grade_submission():
         db_updates = {"score": score, "certificate_url": f"https://www.virtuole.in/verify-credential?credential_id={enrollment_id}", "evaluated_at": datetime.utcnow().isoformat()}
         if score == 100:
             db_updates["lor_url"] = f"https://www.virtuole.in/verify-credential?credential_id={enrollment_id}"
-            body_msg = f"Congratulations {student['full_name']}! Flawless defense. You can view, verify, and print your official MSME Certificate and Elite Founder's Letter of Recommendation here: https://www.virtuole.in/verify-credential?credential_id={enrollment_id}"
+            body_msg = f"Congratulations {student['full_name']}! You can view your Certificate and Elite LoR here: https://www.virtuole.in/verify-credential?credential_id={enrollment_id}"
         else:
-            body_msg = f"Congratulations {student['full_name']}! You passed with {score}%. You can view, verify, and print your official MSME Certificate here: https://www.virtuole.in/verify-credential?credential_id={enrollment_id}"
+            body_msg = f"Congratulations {student['full_name']}! You can view your Certificate here: https://www.virtuole.in/verify-credential?credential_id={enrollment_id}"
             
         supabase.table('submissions').update(db_updates).eq('id', sub_id).execute()
         supabase.table('enrollments').update({"status": "graded"}).eq('enrollment_id', enrollment_id).execute()
@@ -633,8 +590,8 @@ def grade_submission():
     else:
         supabase.table('submissions').delete().eq('id', sub_id).execute() 
         supabase.table('enrollments').update({"status": "failed", "created_at": datetime.utcnow().isoformat()}).eq('enrollment_id', enrollment_id).execute()
-        failure_email_body = f"Dear {student['full_name']},\n\nYour submission scored {score}%, failing the 80% certification threshold. \nMENTOR FEEDBACK: \"{feedback}\"\nYou have exactly 24 hours to correct these flaws and resubmit via your dashboard."
-        send_system_email(student['email'], "ACTION REQUIRED: Submission Failed - 24H Resubmit Window", failure_email_body)
+        failure_email_body = f"Dear {student['full_name']},\n\nYour submission scored {score}%. Feedback: \"{feedback}\"\nYou have 24 hours to resubmit."
+        send_system_email(student['email'], "ACTION REQUIRED: Submission Failed", failure_email_body)
     return redirect(url_for('dashboard_mentor'))
 
 @app.route('/evaluate-task', methods=['POST'])
@@ -650,7 +607,7 @@ def evaluate_task():
         supabase.table('ambassador_claims').update({"status": "approved"}).eq('id', claim_id).execute()
         curr_pts = supabase.table('users').select('total_points').eq('id', claim_data['ambassador_id']).execute().data[0]['total_points'] or 0
         supabase.table('users').update({"total_points": curr_pts + pts}).eq('id', claim_data['ambassador_id']).execute()
-        send_ambassador_email(claim_data['users']['email'], "Task Approved!", f"Great job {claim_data['users']['full_name']}! +{pts} Points added.")
+        send_ambassador_email(claim_data['users']['email'], "Task Approved!", f"Great job! +{pts} Points added.")
     elif action == 'reject':
         supabase.table('ambassador_claims').update({"status": "rejected"}).eq('id', claim_id).execute()
         send_ambassador_email(claim_data['users']['email'], "Task Proof Rejected", "Your task proof could not be verified.")
@@ -706,26 +663,11 @@ def update_role():
         update_data['public_id'] = f"AMB-2026-{random.randint(100, 999)}"
         update_data['promo_code'] = f"AMB{''.join(random.choices(string.ascii_uppercase, k=4))}"
         update_data['ambassador_expiry'] = (datetime.utcnow() + timedelta(days=365)).isoformat()
-        
-        send_ambassador_email(
-            user['email'], 
-            "Welcome to the Virtuole Ambassador Program", 
-            f"Hi {user['full_name']},\nYou have been promoted to Ambassador. Your promo code is {update_data['promo_code']}."
-        )
-        
+        send_ambassador_email(user['email'], "Welcome Status", f"Promoted to Ambassador. Code: {update_data['promo_code']}.")
     elif new_role == 'mentor':
-        send_system_email(
-            user['email'], 
-            "Virtuole Promotion: Mentor Status", 
-            f"Hi {user['full_name']},\nYou have been promoted to a Virtuole Mentor. You can now access the grading dashboard."
-        )
-        
+        send_system_email(user['email'], "Promotion Status", "Promoted to Mentor status.")
     elif new_role == 'admin':
-        send_system_email(
-            user['email'], 
-            "Virtuole Promotion: Admin Clearance", 
-            f"Hi {user['full_name']},\nYou have been granted Master Admin access to the Virtuole platform."
-        )
+        send_system_email(user['email'], "Clearance Status", "Granted Admin access clearance.")
         
     supabase.table('users').update(update_data).eq('id', user_id).execute()
     return redirect(url_for('dashboard_admin', tab='users'))
@@ -808,7 +750,7 @@ def dashboard_ambassador():
     return render_template('dashboard_ambassador.html', ambassador_name=session.get('name'), valid_until_date=u['ambassador_expiry'].split('T')[0] if u.get('ambassador_expiry') else 'N/A', total_points=pts, current_tier_name=tier_name, total_referrals=refs, promo_code=u['promo_code'], amb_id=u['public_id'], available_tasks=tasks, shipping_address=u['shipping_address'])
 
 # =====================================================================
-# 12. WEB-RENDERED CERTIFICATES & DOCUMENTS
+# 12. PUBLIC & RENDERING PATHS
 # =====================================================================
 
 @app.route('/download_cert/<tier>')
@@ -816,9 +758,8 @@ def download_cert(tier):
     if str(session.get('role', '')).lower() != 'ambassador': return redirect('/login')
     u = supabase.table('users').select('*').eq('id', session['user_id']).execute().data[0]
     pts = u['total_points'] or 0
-    
     tier_name = "Kickstart" if tier == 'kickstart' else "Campus Advocate" if tier == 'advocate' and pts >= 500 else "Community Lead" if tier == 'lead' and pts >= 1500 else "Star Ambassador" if tier == 'star' and pts >= 3000 else None
-    if not tier_name: return "Insufficient Points for this Tier", 403
+    if not tier_name: return "Insufficient Points", 403
     return get_ambassador_certificate_template(u['full_name'], datetime.utcnow().strftime("%B %d, %Y"), tier_name, pts, u['public_id'])
 
 @app.route('/download_lor/<type>')
@@ -826,39 +767,19 @@ def download_lor(type):
     if str(session.get('role', '')).lower() != 'ambassador': return redirect('/login')
     u = supabase.table('users').select('*').eq('id', session['user_id']).execute().data[0]
     if type == 'devrel' and (u['total_points'] or 0) >= 1500:
-        return get_lor_template(u['full_name'], datetime.utcnow().strftime("%B %d, %Y"), "GTM Ambassador Program", "Community Lead", u['public_id'], "Community Leadership, Developer Relations (DevRel), and Technical Advocacy for the Virtuole MSME platform.")
+        return get_lor_template(u['full_name'], datetime.utcnow().strftime("%B %d, %Y"), "GTM Ambassador Program", "Community Lead", u['public_id'], "Community Leadership and Advocacy.")
     return "Insufficient Points", 403
 
 @app.route('/download_offer/<enrollment_id>')
 def download_offer(enrollment_id):
     if str(session.get('role', '')).lower() != 'intern': return redirect('/login')
-        
     enroll_data = supabase.table('enrollments').select('*, programs(*), users(full_name)').eq('enrollment_id', enrollment_id).eq('user_id', session['user_id']).execute().data
-    if not enroll_data: return "Unauthorized or Invalid Enrollment", 403
+    if not enroll_data: return "Invalid Assignment Context", 403
         
     e = enroll_data[0]
-    name = e['users']['full_name']
-    
     raw_date = e['created_at'].split('T')[0] if e.get('created_at') else datetime.utcnow().strftime("%Y-%m-%d")
-    try:
-        date_obj = datetime.strptime(raw_date, "%Y-%m-%d")
-        formatted_date = date_obj.strftime("%B %d, %Y")
-    except:
-        formatted_date = raw_date
-
-    program_title = e['programs']['title']
-    track_level = e['track_level'].title()
-    project_details = e['programs']['short_description']
-
-    html_content = get_offer_letter_template(name, formatted_date, program_title, track_level, enrollment_id, project_details)
-    print_instruction = "<br><p style='color: gray; font-size: 10px; text-align: center; border-top: 1px solid #eee; padding-top: 10px; margin-top: 50px;'>To save this Offer Letter, press Ctrl+P (Windows) or Cmd+P (Mac) and select 'Save as PDF'. Ensure 'Background graphics' is enabled.</p>"
-    print_script = "<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); }</script>"
-    
-    return html_content.replace('</body>', print_instruction + print_script + '</body>')
-
-# =====================================================================
-# 13. PUBLIC ROUTES
-# =====================================================================
+    html_content = get_offer_letter_template(e['users']['full_name'], raw_date, e['programs']['title'], e['track_level'].title(), enrollment_id, e['programs']['short_description'])
+    return html_content + "<script>window.onload = function() { window.print(); }</script>"
 
 @app.route('/terms')
 def terms_page(): return render_template('terms.html')
@@ -870,38 +791,19 @@ def privacy_page(): return render_template('privacy.html')
 def verify_page_redirect(): return render_template('verify.html')
 
 @app.route('/offer-letter')
-def offer_letter_page():
-    return render_template('offer.html')
+def offer_letter_page(): return render_template('offer.html')
 
 @app.route('/view-offer', methods=['GET'])
 def view_public_offer():
     enrollment_id = request.args.get('enrollment_id')
     if not enrollment_id: return render_template('offer.html')
-        
     try:
         enroll_data = supabase.table('enrollments').select('*, programs(*), users(full_name)').eq('enrollment_id', enrollment_id).execute().data
         if not enroll_data: return render_template('offer.html', error=True)
-            
         e = enroll_data[0]
-        name = e['users']['full_name']
-        
         raw_date = e['created_at'].split('T')[0] if e.get('created_at') else datetime.utcnow().strftime("%Y-%m-%d")
-        try:
-            date_obj = datetime.strptime(raw_date, "%Y-%m-%d")
-            formatted_date = date_obj.strftime("%B %d, %Y")
-        except:
-            formatted_date = raw_date
-
-        program_title = e['programs']['title']
-        track_level = e['track_level'].title()
-        project_details = e['programs']['short_description']
-
-        html_content = get_offer_letter_template(name, formatted_date, program_title, track_level, enrollment_id, project_details)
-        print_instruction = "<br><p style='color: gray; font-size: 10px; text-align: center; border-top: 1px solid #eee; padding-top: 10px; margin-top: 50px;'>To save this Offer Letter, press Ctrl+P (Windows) or Cmd+P (Mac) and select 'Save as PDF'. Ensure 'Background graphics' is enabled.</p>"
-        print_script = "<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); }</script>"
-        
-        return html_content.replace('</body>', print_instruction + print_script + '</body>')
-    except Exception as ex:
+        return get_offer_letter_template(e['users']['full_name'], raw_date, e['programs']['title'], e['track_level'].title(), enrollment_id, e['programs']['short_description']) + "<script>window.onload = function() { window.print(); }</script>"
+    except:
         return render_template('offer.html', error=True)
 
 @app.route('/verify-credential', methods=['GET'])
@@ -912,8 +814,6 @@ def verify_credential():
         enroll_query = supabase.table('enrollments').select('*, programs(title), users(full_name)').eq('enrollment_id', credential_id).eq('status', 'graded').execute()
         if not enroll_query.data: return render_template('verify.html', error=True)
         sub_query = supabase.table('submissions').select('*').eq('enrollment_id', credential_id).execute()
-        if not sub_query.data: return render_template('verify.html', error=True)
-            
         return render_template('verify.html', verified_data={
             "student_name": enroll_query.data[0]['users']['full_name'],
             "program_title": enroll_query.data[0]['programs']['title'],
@@ -922,20 +822,16 @@ def verify_credential():
             "enrollment_id": credential_id,
             "evaluated_date": sub_query.data[0]['evaluated_at'].split('T')[0] if sub_query.data[0].get('evaluated_at') else "N/A"
         })
-    except Exception:
+    except:
         return render_template('verify.html', error=True)
 
 @app.route('/apply-ambassador', methods=['GET', 'POST'])
 @app.route('/api/apply-ambassador', methods=['GET', 'POST'])
 def apply_ambassador():
-    if request.method == 'GET':
-        return render_template('applyambass.html')
-        
-    name = request.form.get('name')
-    email = request.form.get('email')
-    supabase.table('ambassador_applications').insert({"name": name, "email": email, "motivation": request.form.get('motivation'), "status": "pending_round_2"}).execute()
-    send_ambassador_email(email, "Virtuole Ambassador Program: Round 2", f"Dear {name},\nPlease complete the mandatory GTM task assessment via this Google Form: [INSERT YOUR GOOGLE FORM LINK HERE]")
-    return "Application submitted! Check your email."
+    if request.method == 'GET': return render_template('applyambass.html')
+    name, email = request.form.get('name'), request.form.get('email')
+    supabase.table('ambassador_applications').insert({"name": name, "email": email, "motivation": request.form.get('motivation'), "status": "pending"}).execute()
+    return "Application logged."
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
