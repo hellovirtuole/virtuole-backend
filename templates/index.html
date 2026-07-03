@@ -40,6 +40,30 @@
             --tab-active: linear-gradient(135deg, #0ea5e9, #3b82f6);
         }
 
+        .logo-container { 
+    display: flex; 
+    align-items: center; 
+    text-decoration: none; 
+    gap: 12px;
+    height: 40px; /* This locks the height to match your text */
+}
+
+.logo-img { 
+    height: 100%;       /* Forces the logo to be the same height as the container */
+    width: auto;        /* Maintains aspect ratio */
+    object-fit: contain; /* Ensures the whole logo is visible without cropping */
+    display: block; 
+}
+
+.logo-text { 
+    font-family: 'Montserrat', sans-serif; 
+    font-size: 1.6em; 
+    font-weight: 800; 
+    letter-spacing: 1px; 
+    display: flex;
+    align-items: center;
+}
+
         *, *::before, *::after { box-sizing: border-box; }
         html, body {
             max-width: 100vw; overflow-x: hidden; margin: 0; padding: 0;
