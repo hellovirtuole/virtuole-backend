@@ -891,5 +891,9 @@ def apply_ambassador():
     supabase.table('ambassador_applications').insert({"name": name, "email": email, "motivation": request.form.get('motivation'), "status": "pending"}).execute()
     return "Application logged."
 
+@app.route('/static/logo.png')
+def serve_logo():
+    return send_from_directory('templates', 'logo.png')
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
