@@ -63,15 +63,15 @@
         }
         
         .logo-container { display: flex; align-items: center; text-decoration: none; gap: 10px;}
-        .logo-img { height: 35px; width: auto; border-radius: 5px; } /* Update src in HTML */
+        .logo-img { height: 35px; width: auto; border-radius: 5px; } 
         .logo-text { font-family: 'Montserrat', sans-serif; font-size: 1.6em; font-weight: 800; letter-spacing: 1px; }
-        .logo-text .virt { color: var(--text-main); } 
+        .logo-text .virt { color: var(--text-main); transition: 0.3s;} 
         .logo-text .uole { color: var(--primary); } 
 
-        .nav-center { display: flex; gap: 15px; align-items: center; }
-        .nav-center a { color: var(--text-muted); text-decoration: none; font-weight: 500; font-size: 0.95em; padding: 8px 16px; border-radius: 20px; transition: 0.3s; }
-        .nav-center a:hover { color: var(--text-main); }
-        .nav-center a.active { background-color: rgba(56, 178, 172, 0.15); color: var(--primary); font-weight: 600; }
+        .nav-center { display: flex; gap: 10px; align-items: center; }
+        .nav-link { color: var(--text-muted); text-decoration: none; font-weight: 500; font-size: 0.95em; padding: 8px 16px; border-radius: 20px; transition: 0.3s; cursor: pointer;}
+        .nav-link:hover { color: var(--text-main); background-color: rgba(255,255,255,0.05); }
+        .nav-link.active { background-color: rgba(56, 178, 172, 0.15); color: var(--primary); font-weight: 600; }
 
         .dropdown { position: relative; display: inline-block; }
         .dropdown-content {
@@ -80,33 +80,39 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.5); border-radius: 8px;
             overflow: hidden; z-index: 1001; border: 1px solid var(--card-border); backdrop-filter: blur(10px);
         }
-        .dropdown-content a { color: var(--text-main); padding: 12px 16px; display: block; font-size: 0.9em; border-bottom: 1px solid var(--card-border); border-radius: 0; }
+        .dropdown-content a { color: var(--text-main); padding: 12px 16px; display: block; font-size: 0.9em; border-bottom: 1px solid var(--card-border); border-radius: 0; text-decoration: none;}
         .dropdown-content a:hover { background-color: var(--primary); color: white; }
         .dropdown:hover .dropdown-content { display: block; }
 
-        .nav-right { display: flex; align-items: center; gap: 15px; }
-        .theme-toggle { background: none; border: none; font-size: 1.4em; cursor: pointer; color: var(--text-main); transition: 0.3s; }
+        .nav-right { display: flex; align-items: center; gap: 20px; }
+        
+        /* SLIDING TOGGLE SWITCH */
+        .theme-switch-wrapper { display: flex; align-items: center; gap: 8px; }
+        .theme-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
+        .theme-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--card-bg); transition: .4s; border-radius: 34px; border: 1px solid var(--card-border); }
+        .slider:before { position: absolute; content: "☀️"; font-size: 12px; display: flex; align-items: center; justify-content: center; height: 20px; width: 20px; left: 2px; bottom: 2px; background-color: #fff; transition: .4s; border-radius: 50%; color: #f59e0b;}
+        .light-mode .slider:before { content: "🌙"; color: #475569; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
         .login-btn { background: #ffffff; color: #000000 !important; padding: 10px 24px; border-radius: 50px; font-weight: 700; text-decoration: none; transition: 0.3s; }
         .light-mode .login-btn { background: var(--primary); color: white !important; }
         .login-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2); }
         .hamburger { display: none; font-size: 1.8em; color: var(--text-main); cursor: pointer; }
 
-        /* HERO */
+        /* ORIGINAL HERO */
         .hero { text-align: center; padding: 160px 20px 60px; position: relative; z-index: 1; }
         .hero-pill { background: rgba(56, 178, 172, 0.1); border: 1px solid var(--primary); color: var(--primary); padding: 6px 16px; border-radius: 50px; font-size: 0.85em; font-weight: 600; display: inline-block; margin-bottom: 20px; letter-spacing: 1px; }
         .hero h1 { font-family: 'Montserrat', sans-serif; font-size: 4.5em; margin: 0 0 24px 0; line-height: 1.1; letter-spacing: -1px; }
-        .hero span { color: var(--primary); }
-        .hero p { font-size: 1.2em; color: var(--text-muted); max-width: 650px; margin: 0 auto 40px auto; line-height: 1.7; }
+        .hero h1 span { color: var(--primary); }
+        .hero p { font-size: 1.25em; color: var(--text-muted); max-width: 650px; margin: 0 auto 40px auto; line-height: 1.7; }
         
         .hero-buttons { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 40px; }
         .cta-btn { background: white; color: black; padding: 16px 40px; font-size: 1.1em; font-weight: 700; border-radius: 8px; text-decoration: none; transition: 0.3s; }
         .light-mode .cta-btn { background: var(--primary); color: white; }
         .verify-hero-btn { background: transparent; color: var(--text-main); border: 1px solid var(--card-border); padding: 16px 40px; font-size: 1.1em; font-weight: 600; border-radius: 8px; text-decoration: none; transition: 0.3s; display: flex; align-items: center; gap: 10px;}
         .verify-hero-btn:hover { background: var(--card-bg); }
-
-        .hero-tags { display: flex; justify-content: center; gap: 30px; color: var(--text-muted); font-size: 0.9em; font-weight: 500; flex-wrap: wrap; }
-        .hero-tags span { display: flex; align-items: center; gap: 5px; }
-        .hero-tags span::before { content: "✓"; color: var(--primary); font-weight: bold; }
 
         /* ABOUT US */
         .about-section { max-width: 1000px; margin: 0 auto 80px; padding: 50px 20px; text-align: center; border-bottom: 1px solid var(--card-border); border-top: 1px solid var(--card-border);}
@@ -153,7 +159,7 @@
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* PROGRAMS GRID */
+        /* OUR PROGRAMS GRID */
         .domains { padding: 80px 20px; text-align: center; }
         .domains h2 { font-family: 'Montserrat', sans-serif; font-size: 3em; margin-bottom: 50px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; }
@@ -171,13 +177,6 @@
         .show-more-btn { margin-top: 40px; background: transparent; border: 2px solid var(--primary); color: var(--primary); padding: 12px 35px; border-radius: 50px; cursor: pointer; font-weight: 600; font-size: 1.1em; transition: 0.3s; }
         .show-more-btn:hover { background: var(--primary); color: white; }
 
-        /* AMBASSADOR BANNER */
-        .ambassador-banner { padding: 100px 20px; text-align: center; max-width: 1000px; margin: 0 auto; }
-        .ambassador-banner h2 { font-family: 'Montserrat', sans-serif; font-size: 2.8em; margin-bottom: 20px; }
-        .ambassador-banner p { color: var(--text-muted); margin: 0 auto 30px auto; font-size: 1.1em; line-height: 1.6; }
-        .perks-list { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 40px; }
-        .perk { background: rgba(56, 178, 172, 0.1); border: 1px solid rgba(56, 178, 172, 0.2); padding: 10px 20px; border-radius: 50px; color: var(--primary); font-weight: 600; font-size: 0.9em; }
-
         /* REVIEWS SLIDER */
         .infinite-slider-section { padding: 80px 0; background: var(--bg-footer); overflow: hidden; width: 100vw; margin-left: calc(-50vw + 50%); border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border);}
         .infinite-slider-section h2 { text-align: center; font-family: 'Montserrat', sans-serif; font-size: 2.5em; margin-bottom: 40px; }
@@ -189,31 +188,14 @@
         .slide-text { color: var(--text-muted); line-height: 1.5; font-style: italic; margin-bottom: 15px; font-size: 0.95em;}
         .slide-author { font-weight: bold; color: var(--primary); }
 
-        /* BOTTOM CTA */
-        .bottom-cta {
-            position: relative; padding: 120px 20px; text-align: center; 
-            background: #030712; overflow: hidden; 
-            border-top: 1px solid var(--card-border); width: 100vw; margin-left: calc(-50vw + 50%);
-        }
+        /* BOTTOM CTA (Grid) */
+        .bottom-cta { position: relative; padding: 120px 20px; text-align: center; background: #030712; overflow: hidden; border-top: 1px solid var(--card-border); width: 100vw; margin-left: calc(-50vw + 50%); }
         .light-mode .bottom-cta { background: #0f172a; } 
-        
-        .animated-grid-bg {
-            position: absolute; top: 0; left: 0; width: 200%; height: 200%;
-            background-image: linear-gradient(rgba(56, 178, 172, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(56, 178, 172, 0.1) 1px, transparent 1px);
-            background-size: 40px 40px; animation: panGrid 20s linear infinite; z-index: 0; opacity: 0.6;
-        }
+        .animated-grid-bg { position: absolute; top: 0; left: 0; width: 200%; height: 200%; background-image: linear-gradient(rgba(56, 178, 172, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(56, 178, 172, 0.1) 1px, transparent 1px); background-size: 40px 40px; animation: panGrid 20s linear infinite; z-index: 0; opacity: 0.6; }
         @keyframes panGrid { 0% { transform: translate(0, 0); } 100% { transform: translate(-40px, -40px); } }
-
         .bottom-cta-content { position: relative; z-index: 1; max-width: 800px; margin: auto; }
-        .bottom-cta-pill { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 16px; border-radius: 50px; font-size: 0.85em; font-weight: 600; display: inline-block; margin-bottom: 25px; letter-spacing: 1px; }
         .bottom-cta h2 { font-family: 'Montserrat', sans-serif; font-size: 4em; margin-bottom: 25px; color: #fff; line-height: 1.1; letter-spacing: -1px;}
-        .bottom-cta h2 span { color: var(--primary); }
         .bottom-cta p { color: #9ca3af; font-size: 1.2em; margin-bottom: 40px; line-height: 1.6; }
-        
-        .bottom-tags { display: flex; justify-content: center; gap: 30px; color: #6b7280; font-size: 0.95em; font-weight: 600; flex-wrap: wrap; margin-top: 50px;}
-        .bottom-tags span { display: flex; align-items: center; gap: 8px; }
-        .bottom-tags span::before { content: "✓"; color: var(--primary); font-weight: bold; border: 1px solid var(--primary); border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px;}
 
         /* MEGA FOOTER */
         .mega-footer { background: var(--bg-footer); border-top: 1px solid var(--card-border); padding: 80px 5% 20px; font-size: 0.95em; }
@@ -234,9 +216,10 @@
 
         .footer-bottom { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--card-border); padding-top: 25px; flex-wrap: wrap; gap: 20px; color: var(--text-muted); font-size: 0.9em; }
         
-        /* Updated Social Icons */
-        .social-circles { display: flex; gap: 10px; }
-        .social-circles a { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); text-decoration: none; transition: 0.3s; font-weight: 600; font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.5px;}
+        /* Proper SVG Social Icons */
+        .social-circles { display: flex; gap: 12px; }
+        .social-circles a { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-muted); transition: 0.3s; }
+        .social-circles a svg { width: 20px; height: 20px; fill: currentColor; }
         .social-circles a:hover { background: var(--primary); border-color: var(--primary); color: white; }
         
         .legal-links a { color: var(--text-muted); text-decoration: none; margin-left: 15px; transition: 0.3s; }
@@ -262,10 +245,9 @@
 
     <div class="glow-bg"></div>
 
-    <!-- 1. NAVIGATION -->
+    <!-- 1. FIXED NAVIGATION -->
     <nav>
         <a href="/" class="logo-container">
-            <!-- Add your Logo Image Path below -->
             <img src="/static/logo.png" alt="Logo" class="logo-img" onerror="this.style.display='none'">
             <div class="logo-text"><span class="virt">VIRTU</span><span class="uole">OLE</span></div>
         </a>
@@ -276,27 +258,37 @@
             <div class="dropdown">
                 <a href="#domains" class="nav-link">Internships ▾</a>
                 <div class="dropdown-content">
-                    <a href="#domains">Apply / Enroll</a>
+                    <a href="#domains">Apply / State Internship</a>
                     <a href="/verify.html">Verify Certificate</a>
                     <a href="/offer-letter">Download Documents</a>
                 </div>
             </div>
 
+            <!-- Ambassador added after Internships -->
+            <a href="/apply-ambassador" class="nav-link">Ambassadors</a>
+
             <div class="dropdown">
-                <a href="#" class="nav-link">Policies & Support ▾</a>
+                <a href="#" class="nav-link">More ▾</a>
                 <div class="dropdown-content">
                     <a href="/feedback">Feedback & Reviews</a>
                     <a href="/terms">Terms & Conditions</a>
                     <a href="/privacy">Privacy Policy</a>
                     <a href="/refund">Return Policy</a>
                     <a href="/cookies">Cookies Policy</a>
-                    <a href="/contact">Contact Support</a>
                 </div>
             </div>
+            
+            <a href="/contact" class="nav-link">Contact Us</a>
         </div>
 
         <div class="nav-right">
-            <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Mode">☀️</button>
+            <!-- Modern Slider Toggle -->
+            <label class="theme-switch-wrapper">
+                <div class="theme-switch">
+                    <input type="checkbox" id="theme-toggle">
+                    <span class="slider"></span>
+                </div>
+            </label>
             <a href="/login" class="login-btn">Login / Register</a>
             <span class="hamburger" id="hamburger">☰</span>
         </div>
@@ -322,47 +314,47 @@
 
     <!-- 4. WHY CHOOSE VIRTUOLE -->
     <div class="why-choose">
-        <h2>The Virtuole <span>Advantage</span></h2>
-        <p>Forging industry-ready developers through rigorous, uncompromised technical evaluation.</p>
+        <h2>Why Choose <span>Virtuole?</span></h2>
+        <p>Empowering the next generation of tech leaders through practical learning and industry-aligned internships.</p>
         
         <div class="benefits-grid">
             <div class="benefit-card">
                 <div class="icon-box bg-orange">⚡</div>
-                <h3>Simulated Corporate Sprints</h3>
-                <p>Abandon passive tutorials. Our tracks are structured as real-world development mandates. You receive architectural specifications and must execute them just as you would in a senior engineering role.</p>
+                <h3>Structured Assignment-Based Internships</h3>
+                <p>Our internships are built around predefined industry-style projects. You receive a set of curated assignments and complete selected ones to demonstrate real skills instead of passive learning.</p>
             </div>
             <div class="benefit-card">
                 <div class="icon-box bg-blue">📅</div>
-                <h3>Asynchronous Execution</h3>
-                <p>Deploy on your own timeline. You are granted a strict 30-day window to build your project. There are no mandatory live lectures—just pure, unadulterated output.</p>
+                <h3>Flexible Learning Schedule</h3>
+                <p>Work on assignments at your own pace while managing college, work, or personal commitments. No rigid class timings.</p>
             </div>
             <div class="benefit-card">
                 <div class="icon-box bg-green">🛡️</div>
-                <h3>Government-Backed Verification</h3>
-                <p>Upon passing our grading matrix, secure an official MSME-registered certificate, fortified with a unique cryptographic tracking ID to prove your competence to employers.</p>
+                <h3>Verified Certificates</h3>
+                <p>Earn an MSME registered certificate with a unique verification ID after completing required assignments successfully.</p>
             </div>
             <div class="benefit-card">
                 <div class="icon-box bg-purple">💼</div>
-                <h3>Enterprise-Level Portfolio</h3>
-                <p>Tackle complex algorithmic challenges, database integrations, and full-stack deployments that genuinely stand out to technical recruiters.</p>
+                <h3>Real Portfolio Projects</h3>
+                <p>Choose from multiple practical projects designed to reflect real-world development tasks and strengthen your portfolio.</p>
             </div>
         </div>
     </div>
 
-    <!-- 5. INTERNSHIP JOURNEY SECTION -->
+    <!-- 5. INTERNSHIP JOURNEY -->
     <div class="journey-section">
         <h2>INTERNSHIP <span>Journey</span></h2>
         <p>From application to certification — complete real-world projects, submit your work, and earn globally verifiable credentials. <strong>Virtuole believes everyone should get the opportunity to prove themselves.</strong></p>
         
         <div class="tabs-container">
             <div class="tab active" onclick="switchTab('apply')"><span>01</span> Apply</div>
-            <div class="tab" onclick="switchTab('review')"><span>02</span> Profile Review</div>
+            <div class="tab" onclick="switchTab('review')"><span>02</span> Review</div>
             <div class="tab" onclick="switchTab('offer')"><span>03</span> Offer Letter</div>
-            <div class="tab" onclick="switchTab('tasks')"><span>04</span> Assigned Tasks</div>
-            <div class="tab" onclick="switchTab('code')"><span>05</span> Code & Build</div>
-            <div class="tab" onclick="switchTab('submit')"><span>06</span> Submit Project</div>
-            <div class="tab" onclick="switchTab('evaluate')"><span>07</span> Evaluation</div>
-            <div class="tab" onclick="switchTab('certify')"><span>08</span> Certification</div>
+            <div class="tab" onclick="switchTab('tasks')"><span>04</span> Get Tasks</div>
+            <div class="tab" onclick="switchTab('code')"><span>05</span> Code/Project</div>
+            <div class="tab" onclick="switchTab('submit')"><span>06</span> Submit</div>
+            <div class="tab" onclick="switchTab('evaluate')"><span>07</span> Evaluate</div>
+            <div class="tab" onclick="switchTab('certify')"><span>08</span> Certify</div>
         </div>
 
         <div id="content-apply" class="tab-content-box active">
@@ -407,7 +399,7 @@
         </div>
     </div>
 
-    <!-- 6. PROGRAMS GRID -->
+    <!-- 6. OUR PROGRAMS (Renamed from Engineering Domains) -->
     <div id="domains" class="domains">
         <h2 style="font-family: 'Montserrat', sans-serif; font-size: 2.5em; margin-bottom: 40px;">Our Programs</h2>
         <div class="grid">
@@ -423,33 +415,20 @@
                         <option value="expert">Expert (₹{{ program.price_expert }})</option>
                     </select>
                 </div>
-                <a href="/login?program_id={{ program.id }}" class="enroll-btn" onclick="this.href='/login?program_id={{ program.id }}&track=' + document.getElementById('track-{{ program.id }}').value">Apply / Enroll →</a>
+                <a href="/login?program_id={{ program.id }}" class="enroll-btn" onclick="this.href='/login?program_id={{ program.id }}&track=' + document.getElementById('track-{{ program.id }}').value">Enroll Now</a>
             </div>
             {% endfor %}
         </div>
         {% if offered_programs|length > 3 %}
         <div style="text-align: center;">
-            <button id="show-more-btn" class="show-more-btn">View All Programs →</button>
+            <button id="show-more-btn" class="show-more-btn">Look All Programs</button>
         </div>
         {% endif %}
     </div>
 
-    <!-- 7. AMBASSADOR BANNER -->
-    <div class="ambassador-banner">
-        <h2>Lead the Virtuole GTM Ambassador Program</h2>
-        <p>Drive the tech revolution on your campus. As a Go-To-Market Ambassador, you bypass standard hurdles and unlock a completely different tier of platform benefits.</p>
-        <div class="perks-list">
-            <span class="perk">👕 Premium Swag Boxes</span>
-            <span class="perk">⭐ Guaranteed Elite LORs</span>
-            <span class="perk">📈 Rank Multipliers</span>
-            <span class="perk">🤝 Industry Networking</span>
-        </div>
-        <a href="/apply-ambassador" style="background: #9f7aea; color: white; padding: 16px 45px; font-size: 1.1em; font-weight: 800; border-radius: 8px; text-decoration: none; display: inline-block; transition: 0.3s; margin-top: 10px;">Apply to the Program</a>
-    </div>
-
-    <!-- 8. REVIEWS SLIDER -->
+    <!-- 7. REVIEWS SLIDER -->
     <div class="infinite-slider-section">
-        <h2 style="color: var(--text-main);">Intern Testimonials</h2>
+        <h2 style="color: var(--text-main);">What Our Interns Say</h2>
         <div class="slider-track">
             <!-- Set 1 -->
             <div class="slide-card"><div class="slide-stars">★★★★★</div><div class="slide-text">"The evaluation matrix is tough but fair. Definitely bridged the gap between college and industry."</div><div class="slide-author">- Ankit S.</div></div>
@@ -471,17 +450,16 @@
         </div>
     </div>
 
-    <!-- 9. BOTTOM CTA SECTION -->
+    <!-- 8. BOTTOM CTA SECTION (Animated Grid) -->
     <div class="bottom-cta">
         <div class="animated-grid-bg"></div>
         <div class="bottom-cta-content">
-            <div class="bottom-cta-pill">⚡ DEPLOY YOUR POTENTIAL</div>
             <h2>Build Skills. <span>Create Projects.</span><br>Grow Your Career.</h2>
-            <p>Stop waiting for opportunities. Create them. Connect to the Virtuole platform today to build production software and earn verifiable MSME credentials.</p>
+            <p>Start your virtual internship journey with Virtuole. Work on practical projects, improve your skills, and earn a verified certificate to showcase your achievements.</p>
             
             <div class="hero-buttons" style="margin-top: 30px;">
                 <a href="/login" class="cta-btn" style="background: white; color: black;">Start Internship →</a>
-                <a href="/contact" class="verify-hero-btn" style="border-color: rgba(255,255,255,0.3); color: white;">✉ Contact Support</a>
+                <a href="/contact" class="verify-hero-btn" style="border-color: rgba(255,255,255,0.3); color: white;">✉ Talk to Support</a>
             </div>
             
             <div class="bottom-tags">
@@ -492,7 +470,7 @@
         </div>
     </div>
 
-    <!-- 10. MEGA FOOTER -->
+    <!-- 9. MEGA FOOTER -->
     <footer class="mega-footer">
         <div class="footer-top">
             <div class="footer-brand">
@@ -500,7 +478,7 @@
                     <img src="/static/logo.png" alt="Logo" class="logo-img" onerror="this.style.display='none'">
                     <div class="logo-text"><span class="virt">VIRTU</span><span class="uole">OLE</span></div>
                 </a>
-                <p>Empowering the next generation of tech leaders through virtual internships, hands-on coding practice, and industry-standard architecture building.</p>
+                <p>Empowering the next generation of tech leaders through virtual internships, hands-on coding practice, and industry-standard mentorship.</p>
             </div>
             
             <div class="footer-newsletter">
@@ -516,7 +494,7 @@
         <div class="footer-links-grid">
             <div class="footer-col">
                 <h4>Explore</h4>
-                <a href="/login">Intern Dashboard</a>
+                <a href="/login">Skill Course Dashboard</a>
                 <a href="#domains">Skill Courses</a>
                 <a href="/verify.html">Certificate Verification</a>
                 <a href="/login">Internship Registration</a>
@@ -550,92 +528,14 @@
             <div class="copyright">
                 © 2026 Virtuole. A registered MSME entity. All rights reserved.
             </div>
+            
+            <!-- SVGs for Social Logos -->
             <div class="social-circles">
-                <a href="#" title="Instagram">IG</a>
-                <a href="#" title="LinkedIn">IN</a>
-                <a href="#" title="YouTube">YT</a>
-                <a href="#" title="Telegram">TG</a>
-            </div>
-            <div class="legal-links">
-                <a href="/privacy">Privacy Policy</a>
-                <a href="/terms">Terms of Service</a>
-                <a href="/cookies">Cookies Policy</a>
-            </div>
-        </div>
-    </footer>
-
-    <!-- SCRIPTS -->
-    <script>
-        // Hamburger Menu
-        const hamburger = document.getElementById('hamburger');
-        const navLinks = document.getElementById('nav-center');
-        hamburger.addEventListener('click', () => {
-            navLinks.classList.toggle('active');
-            hamburger.textContent = navLinks.classList.contains('active') ? '✕' : '☰';
-        });
-
-        // Theme Toggle
-        const themeToggle = document.getElementById('theme-toggle');
-        const body = document.body;
-        if(localStorage.getItem('theme') === 'light') {
-            body.classList.add('light-mode');
-            themeToggle.textContent = '🌙';
-        }
-        themeToggle.addEventListener('click', () => {
-            body.classList.toggle('light-mode');
-            if(body.classList.contains('light-mode')) {
-                localStorage.setItem('theme', 'light');
-                themeToggle.textContent = '🌙';
-            } else {
-                localStorage.setItem('theme', 'dark');
-                themeToggle.textContent = '☀️';
-            }
-        });
-
-        // Active Navigation Highlight via Scroll Spy
-        const sections = document.querySelectorAll("div[id]");
-        const navItems = document.querySelectorAll(".nav-link");
-
-        window.addEventListener("scroll", () => {
-            let current = "";
-            sections.forEach((section) => {
-                const sectionTop = section.offsetTop;
-                // If scroll position is past the section top
-                if (scrollY >= sectionTop - 150) {
-                    current = section.getAttribute("id");
-                }
-            });
-
-            navItems.forEach((li) => {
-                li.classList.remove("active");
-                if (li.getAttribute("href").includes(current) && current !== "") {
-                    li.classList.add("active");
-                }
-            });
-
-            // Ensure "Home" is active if at the very top
-            if(scrollY < 200) {
-                navItems.forEach(li => li.classList.remove("active"));
-                document.querySelector('.nav-link[href="#top"]').classList.add('active');
-            }
-        });
-
-        // Show More Programs Logic
-        const showMoreBtn = document.getElementById('show-more-btn');
-        if (showMoreBtn) {
-            showMoreBtn.addEventListener('click', () => {
-                document.querySelectorAll('.hidden-program').forEach(card => card.classList.remove('hidden-program'));
-                showMoreBtn.style.display = 'none'; 
-            });
-        }
-
-        // Interactive Journey Tabs
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content-box').forEach(c => c.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-            document.getElementById('content-' + tabId).classList.add('active');
-        }
-    </script>
-</body>
-</html>
+                <a href="#" title="LinkedIn">
+                    <svg viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                </a>
+                <a href="#" title="Instagram">
+                    <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 1.76-6.98 6.223-.058 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 1.76 6.78 6.223 6.98 1.28.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-1.762 6.979-6.221.059-1.281.073-1.689.073-4.949 0-3.259-.014-3.667-.072-4.947-.196-4.354-1.778-6.78-6.221-6.979-1.28-.059-1.689-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                </a>
+                <a href="#" title="YouTube">
+                    <svg viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-1Normally I can help with things like this, but I don't seem to have access to that content. You can try again or ask me for something else.
