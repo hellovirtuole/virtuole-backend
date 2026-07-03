@@ -7,7 +7,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Inter:wght@400;500;600;700&display=swap');
         
-        /* GLOBAL LIGHT / DARK MODE CSS VARIABLES */
+        /* LIGHT / DARK MODE CSS VARIABLES */
         :root {
             --bg-main: #030712;
             --bg-footer: #050b14;
@@ -42,29 +42,20 @@
 
         *, *::before, *::after { box-sizing: border-box; }
         
-        /* MOBILE HORIZONTAL SCROLL FIX - BODY LOCK */
+        /* HORIZONTAL SCROLL FIX: Added width: 100% */
         html, body {
-            overflow-x: hidden !important;
-            width: 100vw !important;
-            max-width: 100% !important;
-            position: relative;
-            margin: 0; 
-            padding: 0;
-            font-family: 'Inter', sans-serif; 
-            background: var(--bg-main); 
-            color: var(--text-main); 
-            scroll-behavior: smooth; 
-            transition: background 0.4s ease, color 0.4s ease;
+            width: 100%; max-width: 100vw; overflow-x: hidden; margin: 0; padding: 0;
+            font-family: 'Inter', sans-serif; background: var(--bg-main); color: var(--text-main); 
+            scroll-behavior: smooth; transition: background 0.4s ease, color 0.4s ease;
         }
 
         .glow-bg {
             position: absolute; width: 600px; height: 600px;
             background: radial-gradient(circle, rgba(56, 178, 172, 0.15) 0%, rgba(0,0,0,0) 70%);
-            top: -200px; right: 0 !important; z-index: -1; pointer-events: none;
-            max-width: 100vw !important;
+            top: -200px; right: -100px; z-index: -1; pointer-events: none;
         }
 
-        /* HERO SECTION */
+        /* HERO */
         .hero { text-align: center; padding: 160px 20px 60px; position: relative; z-index: 1; }
         .hero-pill { background: rgba(56, 178, 172, 0.1); border: 1px solid var(--primary); color: var(--primary); padding: 6px 16px; border-radius: 50px; font-size: 0.85em; font-weight: 600; display: inline-block; margin-bottom: 20px; letter-spacing: 1px; }
         .hero h1 { font-family: 'Montserrat', sans-serif; font-size: 4.5em; margin: 0 0 24px 0; line-height: 1.1; letter-spacing: -1px; }
@@ -81,13 +72,13 @@
         .hero-tags span { display: flex; align-items: center; gap: 5px; }
         .hero-tags span::before { content: "✓"; color: var(--primary); font-weight: bold; }
 
-        /* ABOUT SECTION */
+        /* ABOUT US */
         .about-section { max-width: 1000px; margin: 0 auto 80px; padding: 50px 20px; text-align: center; border-bottom: 1px solid var(--card-border); border-top: 1px solid var(--card-border);}
         .about-section h2 { font-family: 'Montserrat', sans-serif; font-size: 2.5em; margin-bottom: 20px; }
         .about-section h2 span { color: var(--primary); }
         .about-section p { color: var(--text-muted); font-size: 1.15em; line-height: 1.7; max-width: 800px; margin: auto; }
 
-        /* WHY CHOOSE */
+        /* WHY CHOOSE VIRTUOLE */
         .why-choose { max-width: 1200px; margin: 0 auto 80px; padding: 0 20px; text-align: center; }
         .why-choose h2 { font-family: 'Montserrat', sans-serif; font-size: 2.8em; margin-bottom: 10px; }
         .why-choose h2 span { color: var(--primary); font-style: italic; }
@@ -103,7 +94,7 @@
         .benefit-card h3 { font-family: 'Montserrat', sans-serif; font-size: 1.3em; margin-bottom: 12px; color: var(--text-main); }
         .benefit-card p { color: var(--text-muted); font-size: 0.95em; line-height: 1.6; }
 
-        /* INTERNSHIP JOURNEY */
+        /* INTERNSHIP JOURNEY TABS */
         .journey-section { padding: 80px 20px; max-width: 1200px; margin: auto; text-align: center; }
         .journey-section h2 { font-family: 'Montserrat', sans-serif; font-size: 2.8em; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;}
         .journey-section h2 span { color: var(--primary); font-family: 'Times New Roman', serif; font-style: italic; text-transform: none; letter-spacing: 0;}
@@ -123,6 +114,7 @@
         .tab-content-box h4 { color: var(--primary); font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
         .tab-content-box h3 { font-family: 'Montserrat', sans-serif; font-size: 1.8em; margin-bottom: 20px; color: var(--text-main); }
         .tab-content-box p { color: var(--text-muted); line-height: 1.7; font-size: 1.05em; }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         /* PROGRAMS GRID */
@@ -139,11 +131,8 @@
         .show-more-btn { margin-top: 40px; background: transparent; border: 2px solid var(--primary); color: var(--primary); padding: 12px 35px; border-radius: 50px; cursor: pointer; font-weight: 600; font-size: 1.1em; transition: 0.3s; }
         .show-more-btn:hover { background: var(--primary); color: white; }
 
-        /* INFINITE AUTO-MOVING SLIDER */
-        .infinite-slider-section { 
-            padding: 80px 0; background: var(--bg-footer); overflow: hidden; 
-            width: 100%; border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border);
-        }
+        /* INFINITE AUTO-MOVING SLIDER (Full Width Fix) */
+        .infinite-slider-section { padding: 80px 0; background: var(--bg-footer); overflow: hidden; width: 100%; border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border);}
         .infinite-slider-section h2 { text-align: center; font-family: 'Montserrat', sans-serif; font-size: 2.5em; margin-bottom: 40px; }
         .slider-track { display: flex; width: calc(350px * 14); animation: scroll 40s linear infinite; }
         .slider-track:hover { animation-play-state: paused; }
@@ -160,10 +149,11 @@
         .perks-list { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 40px; }
         .perk { background: rgba(56, 178, 172, 0.1); border: 1px solid rgba(56, 178, 172, 0.2); padding: 10px 20px; border-radius: 50px; color: var(--primary); font-weight: 600; font-size: 0.9em; }
 
-        /* BOTTOM CTA */
+        /* BOTTOM CTA (Full Width Fix) */
         .bottom-cta {
             position: relative; padding: 120px 20px; text-align: center; 
-            background: #030712; overflow: hidden; border-top: 1px solid var(--card-border); width: 100%;
+            background: #030712; overflow: hidden; 
+            border-top: 1px solid var(--card-border); width: 100%;
         }
         .light-mode .bottom-cta { background: #0f172a; } 
         
@@ -172,7 +162,8 @@
             background-image: linear-gradient(rgba(56, 178, 172, 0.1) 1px, transparent 1px),
             linear-gradient(90deg, rgba(56, 178, 172, 0.1) 1px, transparent 1px);
             background-size: 40px 40px;
-            animation: panGrid 20s linear infinite; z-index: 0; opacity: 0.6;
+            animation: panGrid 20s linear infinite;
+            z-index: 0; opacity: 0.6;
         }
         @keyframes panGrid { 0% { transform: translate(0, 0); } 100% { transform: translate(-40px, -40px); } }
 
@@ -181,22 +172,52 @@
         .bottom-cta h2 { font-family: 'Montserrat', sans-serif; font-size: 4em; margin-bottom: 25px; color: #fff; line-height: 1.1; letter-spacing: -1px;}
         .bottom-cta h2 span { color: var(--primary); }
         .bottom-cta p { color: #9ca3af; font-size: 1.2em; margin-bottom: 40px; line-height: 1.6; }
+        
         .bottom-tags { display: flex; justify-content: center; gap: 30px; color: #6b7280; font-size: 0.95em; font-weight: 600; flex-wrap: wrap; margin-top: 50px;}
         .bottom-tags span { display: flex; align-items: center; gap: 8px; }
         .bottom-tags span::before { content: "✓"; color: var(--primary); font-weight: bold; border: 1px solid var(--primary); border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px;}
 
-        /* INDEX.HTML PAGE-SPECIFIC MOBILE RESIZING */
+        /* PAGE-SPECIFIC MOBILE RESIZING FIXES */
         @media (max-width: 850px) {
-            .hero h1 { font-size: 2.3em; }
+            /* Shrink massive text */
+            .hero h1 { font-size: 2.2em; }
             .bottom-cta h2 { font-size: 2.2em; }
-            .about-section h2, .why-choose h2, .journey-section h2, .domains h2 { font-size: 1.9em; }
+            .about-section h2, .why-choose h2, .journey-section h2 { font-size: 2em; }
+            .domains h2 { font-size: 2em !important; }
+
+            /* Override the 320px minimum width on cards so they shrink to the phone screen */
             .grid { grid-template-columns: 1fr; gap: 20px; }
-            .hero-buttons { flex-direction: column; width: 100%; padding: 0; gap: 15px; }
+            .benefit-card { margin: 0 10px; }
+
+            /* Stack the Hero buttons vertically so they don't break the layout */
+            .hero-buttons { flex-direction: column; width: 100%; padding: 0 10px; }
             .cta-btn, .verify-hero-btn { width: 100%; justify-content: center; text-align: center; }
-            
-            /* Ensures full-width sections don't break the body lock */
+        }
+
+        /* ========================================= */
+        /* FINAL MOBILE HORIZONTAL SCROLL FIX        */
+        /* ========================================= */
+
+        /* 1. Lock the body so it physically cannot scroll sideways */
+        html, body {
+            overflow-x: hidden !important;
+            width: 100vw !important;
+            max-width: 100% !important;
+            position: relative;
+        }
+
+        /* 2. Stop the background glow from pushing past the screen edge */
+        .glow-bg {
+            right: 0 !important;
+            max-width: 100vw !important;
+        }
+
+        /* 3. Ensure full width sections don't break boundaries */
+        @media (max-width: 850px) {
             .infinite-slider-section, .bottom-cta {
-                width: 100% !important; margin-left: 0 !important; box-sizing: border-box !important;
+                width: 100% !important;
+                margin-left: 0 !important;
+                box-sizing: border-box !important;
             }
         }
     </style>
@@ -445,9 +466,10 @@
                 }
             });
 
+            // Highlight Home if at very top
             if(scrollY < 150) {
                 navItems.forEach(li => li.classList.remove("active"));
-                const homeLink = document.querySelector('.nav-link[href="/"]');
+                const homeLink = document.querySelector('.nav-link[href="#top"]');
                 if(homeLink) homeLink.classList.add('active');
             }
         });
