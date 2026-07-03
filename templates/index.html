@@ -281,30 +281,48 @@
         .legal-links a { color: var(--text-muted); text-decoration: none; margin-left: 15px; transition: 0.3s; }
         .legal-links a:hover { color: var(--text-main); }
 
-        /* MOBILE FIXES */
-        @media (max-width: 850px) {
-            nav { padding: 15px 20px; }
-            .nav-center {
-                position: absolute; top: 70px; right: -50%; flex-direction: column; background: var(--nav-bg);
-                width: 50%; /* Takes exactly half screen */
-                height: 100vh;
-                text-align: left; padding: 30px 20px; gap: 20px; border-left: 1px solid var(--card-border);
-                align-items: flex-start;
-                transition: 0.3s ease;
-            }
-            .nav-center.active { right: 0; }
-            .dropdown-content { position: static; box-shadow: none; border: none; display: none; background: transparent; padding-left: 15px;}
-            .dropdown:hover .dropdown-content { display: block; }
-            .hamburger { display: block; }
-            
-            /* Move Login Button to Menu */
-            .desktop-login-btn { display: none !important; }
-            .mobile-login-btn { display: inline-block !important; width: 100%; text-align: center; margin-top: 20px;}
+       /* MOBILE FIXES */
+@media (max-width: 850px) {
+    /* 1. Mobile Navigation Logic */
+    nav { padding: 15px 20px; }
+    .nav-center {
+        position: absolute; top: 70px; right: -100%; flex-direction: column; background: var(--nav-bg);
+        width: 65%; /* Increased slightly for better tap targets on small screens */
+        height: 100vh;
+        text-align: left; padding: 30px 20px; gap: 20px; border-left: 1px solid var(--card-border);
+        align-items: flex-start;
+        transition: 0.3s ease;
+    }
+    .nav-center.active { right: 0; }
+    .dropdown-content { position: static; box-shadow: none; border: none; display: none; background: transparent; padding-left: 15px;}
+    .dropdown:hover .dropdown-content { display: block; }
+    .hamburger { display: block; }
+    .desktop-login-btn { display: none !important; }
+    .mobile-login-btn { display: inline-block !important; width: 100%; text-align: center; margin-top: 20px;}
 
-            .hero h1 { font-size: 3em; }
-            .bottom-cta h2 { font-size: 2.5em; }
-            .footer-newsletter form { flex-direction: column; }
-        }
+    /* 2. THE RESIZING FIXES (Stops the screen from stretching) */
+    
+    /* Shrink massive text */
+    .hero h1 { font-size: 2.2em; }
+    .bottom-cta h2 { font-size: 2.2em; }
+    .about-section h2, .why-choose h2, .journey-section h2 { font-size: 2em; }
+    .domains h2 { font-size: 2em !important; }
+
+    /* Override the 320px minimum width on cards so they shrink to the phone screen */
+    .grid { grid-template-columns: 1fr; gap: 20px; }
+    .benefit-card { margin: 0 10px; }
+
+    /* Stack the Hero buttons vertically so they don't break the layout */
+    .hero-buttons { flex-direction: column; width: 100%; padding: 0 10px; }
+    .cta-btn, .verify-hero-btn { width: 100%; justify-content: center; text-align: center; }
+
+    /* Fix Footer alignment for narrow screens */
+    .footer-newsletter form { flex-direction: column; }
+    .footer-top { flex-direction: column; align-items: center; text-align: center; }
+    .logo-container { justify-content: center; }
+    .footer-bottom { flex-direction: column; text-align: center; gap: 15px; }
+    .legal-links a { margin: 0 10px; display: inline-block; margin-bottom: 5px; }
+}
     </style>
 </head>
 <body>
