@@ -850,6 +850,9 @@ def verify_page_redirect(): return render_template('verify.html')
 @app.route('/offer-letter')
 def offer_letter_page(): return render_template('offer.html')
 
+@app.route('/blog')
+def blog():return render_template('blog.html')
+
 @app.route('/view-offer', methods=['GET'])
 def view_public_offer():
     enrollment_id = request.args.get('enrollment_id')
