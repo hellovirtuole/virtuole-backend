@@ -7,7 +7,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Inter:wght@400;500;600;700&display=swap');
         
-        /* LIGHT / DARK MODE CSS VARIABLES */
         :root {
             --bg-main: #030712;
             --bg-footer: #050b14;
@@ -40,33 +39,11 @@
             --tab-active: linear-gradient(135deg, #0ea5e9, #3b82f6);
         }
 
-        .logo-container { 
-    display: flex; 
-    align-items: center; 
-    text-decoration: none; 
-    gap: 12px;
-    height: 40px; /* This locks the height to match your text */
-}
-
-.logo-img { 
-    height: 100%;       /* Forces the logo to be the same height as the container */
-    width: auto;        /* Maintains aspect ratio */
-    object-fit: contain; /* Ensures the whole logo is visible without cropping */
-    display: block; 
-}
-
-.logo-text { 
-    font-family: 'Montserrat', sans-serif; 
-    font-size: 1.6em; 
-    font-weight: 800; 
-    letter-spacing: 1px; 
-    display: flex;
-    align-items: center;
-}
-
         *, *::before, *::after { box-sizing: border-box; }
+        
+        /* Fixed Horizontal Scroll Bug */
         html, body {
-            max-width: 100vw; overflow-x: hidden; margin: 0; padding: 0;
+            width: 100%; max-width: 100vw; overflow-x: hidden; margin: 0; padding: 0;
             font-family: 'Inter', sans-serif; background: var(--bg-main); color: var(--text-main); 
             scroll-behavior: smooth; transition: background 0.4s ease, color 0.4s ease;
         }
@@ -77,18 +54,11 @@
             top: -200px; right: -100px; z-index: -1; pointer-events: none;
         }
 
-        /* FIXED NAVBAR */
-        nav { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 15px 5%; background: var(--nav-bg); 
-            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-            position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; 
-            border-bottom: 1px solid var(--card-border); transition: 0.4s ease;
-        }
-        
-        .logo-container { display: flex; align-items: center; text-decoration: none; gap: 10px;}
-        .logo-img { height: 35px; width: auto; border-radius: 5px; } 
-        .logo-text { font-family: 'Montserrat', sans-serif; font-size: 1.6em; font-weight: 800; letter-spacing: 1px; }
+        /* NAVBAR STYLES */
+        nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 5%; background: var(--nav-bg); backdrop-filter: blur(16px); position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; border-bottom: 1px solid var(--card-border); transition: 0.4s ease; }
+        .logo-container { display: flex; align-items: center; text-decoration: none; gap: 12px; height: 40px; }
+        .logo-img { height: 100%; width: auto; object-fit: contain; display: block; }
+        .logo-text { font-family: 'Montserrat', sans-serif; font-size: 1.6em; font-weight: 800; letter-spacing: 1px; display: flex; align-items: center;}
         .logo-text .virt { color: var(--text-main); transition: 0.3s;} 
         .logo-text .uole { color: var(--primary); } 
 
@@ -98,19 +68,21 @@
         .nav-link.active { background-color: rgba(56, 178, 172, 0.15); color: var(--primary); font-weight: 600; }
 
         .dropdown { position: relative; display: inline-block; }
+        
+        /* Fixed Dropdown Background (Darker) */
         .dropdown-content {
             display: none; position: absolute; top: 100%; left: 0;
-            background-color: var(--card-bg); min-width: 200px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5); border-radius: 8px;
-            overflow: hidden; z-index: 1001; border: 1px solid var(--card-border); backdrop-filter: blur(10px);
+            background-color: rgba(8, 12, 20, 0.98); min-width: 200px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8); border-radius: 8px;
+            overflow: hidden; z-index: 1001; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px);
         }
+        .light-mode .dropdown-content { background-color: rgba(241, 245, 249, 0.98); border-color: rgba(0,0,0,0.1); }
+        
         .dropdown-content a { color: var(--text-main); padding: 12px 16px; display: block; font-size: 0.9em; border-bottom: 1px solid var(--card-border); border-radius: 0; text-decoration: none;}
         .dropdown-content a:hover { background-color: var(--primary); color: white; }
         .dropdown:hover .dropdown-content { display: block; }
 
         .nav-right { display: flex; align-items: center; gap: 20px; }
-        
-        /* SLIDING TOGGLE SWITCH */
         .theme-switch-wrapper { display: flex; align-items: center; gap: 8px; }
         .theme-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
         .theme-switch input { opacity: 0; width: 0; height: 0; }
@@ -123,33 +95,29 @@
         .login-btn { background: #ffffff; color: #000000 !important; padding: 10px 24px; border-radius: 50px; font-weight: 700; text-decoration: none; transition: 0.3s; }
         .light-mode .login-btn { background: var(--primary); color: white !important; }
         .login-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2); }
-        .light-mode .login-btn:hover { box-shadow: 0 5px 15px rgba(14, 165, 233, 0.3); }
         .hamburger { display: none; font-size: 1.8em; color: var(--text-main); cursor: pointer; }
+        .mobile-login-btn { display: none; }
 
-        /* HERO */
+        /* HERO & CONTENT STYLES */
         .hero { text-align: center; padding: 160px 20px 60px; position: relative; z-index: 1; }
         .hero-pill { background: rgba(56, 178, 172, 0.1); border: 1px solid var(--primary); color: var(--primary); padding: 6px 16px; border-radius: 50px; font-size: 0.85em; font-weight: 600; display: inline-block; margin-bottom: 20px; letter-spacing: 1px; }
         .hero h1 { font-family: 'Montserrat', sans-serif; font-size: 4.5em; margin: 0 0 24px 0; line-height: 1.1; letter-spacing: -1px; }
         .hero h1 span { color: var(--primary); }
         .hero p { font-size: 1.25em; color: var(--text-muted); max-width: 650px; margin: 0 auto 40px auto; line-height: 1.7; }
-        
         .hero-buttons { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 40px; }
         .cta-btn { background: white; color: black; padding: 16px 40px; font-size: 1.1em; font-weight: 700; border-radius: 8px; text-decoration: none; transition: 0.3s; }
         .light-mode .cta-btn { background: var(--primary); color: white; }
         .verify-hero-btn { background: transparent; color: var(--text-main); border: 1px solid var(--card-border); padding: 16px 40px; font-size: 1.1em; font-weight: 600; border-radius: 8px; text-decoration: none; transition: 0.3s; display: flex; align-items: center; gap: 10px;}
         .verify-hero-btn:hover { background: var(--card-bg); }
-
         .hero-tags { display: flex; justify-content: center; gap: 30px; color: var(--text-muted); font-size: 0.9em; font-weight: 500; flex-wrap: wrap; }
         .hero-tags span { display: flex; align-items: center; gap: 5px; }
         .hero-tags span::before { content: "✓"; color: var(--primary); font-weight: bold; }
 
-        /* ABOUT US */
         .about-section { max-width: 1000px; margin: 0 auto 80px; padding: 50px 20px; text-align: center; border-bottom: 1px solid var(--card-border); border-top: 1px solid var(--card-border);}
         .about-section h2 { font-family: 'Montserrat', sans-serif; font-size: 2.5em; margin-bottom: 20px; }
         .about-section h2 span { color: var(--primary); }
         .about-section p { color: var(--text-muted); font-size: 1.15em; line-height: 1.7; max-width: 800px; margin: auto; }
 
-        /* WHY CHOOSE VIRTUOLE */
         .why-choose { max-width: 1200px; margin: 0 auto 80px; padding: 0 20px; text-align: center; }
         .why-choose h2 { font-family: 'Montserrat', sans-serif; font-size: 2.8em; margin-bottom: 10px; }
         .why-choose h2 span { color: var(--primary); font-style: italic; }
@@ -165,21 +133,17 @@
         .benefit-card h3 { font-family: 'Montserrat', sans-serif; font-size: 1.3em; margin-bottom: 12px; color: var(--text-main); }
         .benefit-card p { color: var(--text-muted); font-size: 0.95em; line-height: 1.6; }
 
-        /* INTERNSHIP JOURNEY TABS */
         .journey-section { padding: 80px 20px; max-width: 1200px; margin: auto; text-align: center; }
         .journey-section h2 { font-family: 'Montserrat', sans-serif; font-size: 2.8em; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;}
         .journey-section h2 span { color: var(--primary); font-family: 'Times New Roman', serif; font-style: italic; text-transform: none; letter-spacing: 0;}
         .journey-section > p { color: var(--text-muted); max-width: 700px; margin: 0 auto 40px auto; font-size: 1.1em; line-height: 1.6; }
-        
         .tabs-container { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 15px; justify-content: flex-start; scrollbar-width: none; }
         .tabs-container::-webkit-scrollbar { display: none; }
         @media (min-width: 1000px) { .tabs-container { justify-content: center; } }
-        
         .tab { background: var(--tab-bg); border: 1px solid var(--card-border); padding: 20px 25px; border-radius: 12px; min-width: 130px; cursor: pointer; transition: 0.3s; color: var(--text-muted); font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 10px; }
         .tab span { font-size: 0.8em; opacity: 0.6; }
         .tab:hover { border-color: var(--primary); color: var(--text-main); }
         .tab.active { background: var(--tab-active); color: white; border-color: transparent; transform: scale(1.05); box-shadow: 0 10px 20px rgba(56, 178, 172, 0.3); }
-
         .tab-content-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 40px; margin-top: 30px; text-align: left; display: none; animation: fadeIn 0.4s ease; }
         .tab-content-box.active { display: block; }
         .tab-content-box h4 { color: var(--primary); font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
@@ -188,7 +152,6 @@
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* PROGRAMS GRID */
         .domains { padding: 80px 20px; text-align: center; }
         .domains h2 { font-family: 'Montserrat', sans-serif; font-size: 3em; margin-bottom: 50px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; }
@@ -202,8 +165,8 @@
         .show-more-btn { margin-top: 40px; background: transparent; border: 2px solid var(--primary); color: var(--primary); padding: 12px 35px; border-radius: 50px; cursor: pointer; font-weight: 600; font-size: 1.1em; transition: 0.3s; }
         .show-more-btn:hover { background: var(--primary); color: white; }
 
-        /* INFINITE AUTO-MOVING SLIDER (Full Width) */
-        .infinite-slider-section { padding: 80px 0; background: var(--bg-footer); overflow: hidden; width: 100vw; margin-left: calc(-50vw + 50%); border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border);}
+        /* Full Width Slider Fixed for mobile */
+        .infinite-slider-section { padding: 80px 0; background: var(--bg-footer); overflow: hidden; width: 100%; border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border);}
         .infinite-slider-section h2 { text-align: center; font-family: 'Montserrat', sans-serif; font-size: 2.5em; margin-bottom: 40px; }
         .slider-track { display: flex; width: calc(350px * 14); animation: scroll 40s linear infinite; }
         .slider-track:hover { animation-play-state: paused; }
@@ -213,42 +176,27 @@
         .slide-text { color: var(--text-muted); line-height: 1.5; font-style: italic; margin-bottom: 15px; font-size: 0.95em;}
         .slide-author { font-weight: bold; color: var(--primary); }
 
-        /* AMBASSADOR BANNER (Detailed) */
         .ambassador-banner { padding: 100px 20px; text-align: center; max-width: 1000px; margin: 0 auto; }
         .ambassador-banner h2 { font-family: 'Montserrat', sans-serif; font-size: 2.8em; margin-bottom: 20px; }
         .ambassador-banner p { color: var(--text-muted); margin: 0 auto 30px auto; font-size: 1.1em; line-height: 1.6; }
         .perks-list { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 40px; }
         .perk { background: rgba(56, 178, 172, 0.1); border: 1px solid rgba(56, 178, 172, 0.2); padding: 10px 20px; border-radius: 50px; color: var(--primary); font-weight: 600; font-size: 0.9em; }
 
-        /* THE NEW "INSPIRED" CTA SECTION AT THE BOTTOM (With Interactive Grid Background) */
-        .bottom-cta {
-            position: relative; padding: 120px 20px; text-align: center; 
-            background: #030712; overflow: hidden; 
-            border-top: 1px solid var(--card-border); width: 100vw; margin-left: calc(-50vw + 50%);
-        }
+        /* Full Width CTA Fixed for mobile */
+        .bottom-cta { position: relative; padding: 120px 20px; text-align: center; background: #030712; overflow: hidden; border-top: 1px solid var(--card-border); width: 100%; }
         .light-mode .bottom-cta { background: #0f172a; } 
-        
-        .animated-grid-bg {
-            position: absolute; top: 0; left: 0; width: 200%; height: 200%;
-            background-image: linear-gradient(rgba(56, 178, 172, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(56, 178, 172, 0.1) 1px, transparent 1px);
-            background-size: 40px 40px;
-            animation: panGrid 20s linear infinite;
-            z-index: 0; opacity: 0.6;
-        }
+        .animated-grid-bg { position: absolute; top: 0; left: 0; width: 200%; height: 200%; background-image: linear-gradient(rgba(56, 178, 172, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(56, 178, 172, 0.1) 1px, transparent 1px); background-size: 40px 40px; animation: panGrid 20s linear infinite; z-index: 0; opacity: 0.6; }
         @keyframes panGrid { 0% { transform: translate(0, 0); } 100% { transform: translate(-40px, -40px); } }
-
         .bottom-cta-content { position: relative; z-index: 1; max-width: 800px; margin: auto; }
         .bottom-cta-pill { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 16px; border-radius: 50px; font-size: 0.85em; font-weight: 600; display: inline-block; margin-bottom: 25px; letter-spacing: 1px; }
         .bottom-cta h2 { font-family: 'Montserrat', sans-serif; font-size: 4em; margin-bottom: 25px; color: #fff; line-height: 1.1; letter-spacing: -1px;}
         .bottom-cta h2 span { color: var(--primary); }
         .bottom-cta p { color: #9ca3af; font-size: 1.2em; margin-bottom: 40px; line-height: 1.6; }
-        
         .bottom-tags { display: flex; justify-content: center; gap: 30px; color: #6b7280; font-size: 0.95em; font-weight: 600; flex-wrap: wrap; margin-top: 50px;}
         .bottom-tags span { display: flex; align-items: center; gap: 8px; }
         .bottom-tags span::before { content: "✓"; color: var(--primary); font-weight: bold; border: 1px solid var(--primary); border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px;}
 
-        /* MEGA FOOTER */
+        /* FOOTER STYLES */
         .mega-footer { background: var(--bg-footer); border-top: 1px solid var(--card-border); padding: 80px 5% 20px; font-size: 0.95em; }
         .footer-top { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 40px; margin-bottom: 60px; }
         .footer-brand { max-width: 450px; }
@@ -259,33 +207,38 @@
         .footer-newsletter form { display: flex; gap: 10px; }
         .footer-newsletter input { flex: 1; padding: 12px 15px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--input-bg); color: var(--text-main); outline: none; }
         .footer-newsletter button { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.3s; white-space: nowrap;}
-        
         .footer-links-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-bottom: 40px; }
         .footer-col h4 { font-family: 'Montserrat', sans-serif; font-size: 1.2em; margin-bottom: 25px; color: var(--text-main); }
         .footer-col a, .footer-col p { display: block; color: var(--text-muted); text-decoration: none; margin-bottom: 15px; transition: 0.3s; line-height: 1.5;}
         .footer-col a:hover { color: var(--primary); }
-
         .footer-bottom { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--card-border); padding-top: 25px; flex-wrap: wrap; gap: 20px; color: var(--text-muted); font-size: 0.9em; }
-        
-        /* Proper SVG Social Icons (No Text) */
         .social-circles { display: flex; gap: 12px; }
         .social-circles a { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-muted); transition: 0.3s; }
         .social-circles a svg { width: 20px; height: 20px; fill: currentColor; }
         .social-circles a:hover { background: var(--primary); border-color: var(--primary); color: white; }
-        
         .legal-links a { color: var(--text-muted); text-decoration: none; margin-left: 15px; transition: 0.3s; }
         .legal-links a:hover { color: var(--text-main); }
 
+        /* MOBILE FIXES */
         @media (max-width: 850px) {
             nav { padding: 15px 20px; }
             .nav-center {
-                position: absolute; top: 65px; right: -100%; flex-direction: column; background: var(--nav-bg);
-                width: 100%; text-align: center; padding: 30px 0; gap: 20px; border-bottom: 1px solid var(--card-border);
+                position: absolute; top: 70px; right: -50%; flex-direction: column; background: var(--nav-bg);
+                width: 50%; /* Takes exactly half screen */
+                height: 100vh;
+                text-align: left; padding: 30px 20px; gap: 20px; border-left: 1px solid var(--card-border);
+                align-items: flex-start;
+                transition: 0.3s ease;
             }
             .nav-center.active { right: 0; }
-            .dropdown-content { position: static; box-shadow: none; border: none; display: none; background: transparent; }
+            .dropdown-content { position: static; box-shadow: none; border: none; display: none; background: transparent; padding-left: 15px;}
             .dropdown:hover .dropdown-content { display: block; }
             .hamburger { display: block; }
+            
+            /* Move Login Button to Menu */
+            .desktop-login-btn { display: none !important; }
+            .mobile-login-btn { display: inline-block !important; width: 100%; text-align: center; margin-top: 20px;}
+
             .hero h1 { font-size: 3em; }
             .bottom-cta h2 { font-size: 2.5em; }
             .footer-newsletter form { flex-direction: column; }
@@ -296,50 +249,7 @@
 
     <div class="glow-bg"></div>
 
-    <nav>
-        <a href="#top" class="logo-container">
-            <img "src=https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/logo/logo.png" alt="Logo" class="logo-img">
-            <div class="logo-text"><span class="virt">VIRTU</span><span class="uole">OLE</span></div>
-        </a>
-        
-        <div class="nav-center" id="nav-center">
-            <a href="#top" class="nav-link active">Home</a> 
-            
-            <div class="dropdown">
-                <a href="#domains" class="nav-link">Internships ▾</a>
-                <div class="dropdown-content">
-                    <a href="#domains">Apply / Enroll</a>
-                    <a href="/verify.html">Verify Certificate</a>
-                    <a href="/offer-letter">Download Documents</a>
-                </div>
-            </div>
-
-            <a href="/apply-ambassador" class="nav-link">Ambassadors</a>
-
-            <div class="dropdown">
-                <a href="#" class="nav-link">Policies & Support ▾</a>
-                <div class="dropdown-content">
-                    <a href="/feedback">Feedback & Reviews</a>
-                    <a href="/terms">Terms & Conditions</a>
-                    <a href="/privacy">Privacy Policy</a>
-                    <a href="/refund">Return Policy</a>
-                    <a href="/cookies">Cookies Policy</a>
-                    <a href="/contact">Contact Support</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="nav-right">
-            <label class="theme-switch-wrapper">
-                <div class="theme-switch">
-                    <input type="checkbox" id="theme-toggle">
-                    <span class="slider"></span>
-                </div>
-            </label>
-            <a href="/login" class="login-btn">Login / Register</a>
-            <span class="hamburger" id="hamburger">☰</span>
-        </div>
-    </nav>
+    {% include 'navbar.html' %}
 
     <div id="top" class="hero">
         <div class="hero-pill">⚡ ACCELERATE YOUR ENGINEERING</div>
@@ -524,93 +434,18 @@
         </div>
     </div>
 
-    <footer class="mega-footer">
-        <div class="footer-top">
-            <div class="footer-brand">
-                <a href="/" class="logo-container">
-                    <img src="{{ url_for('static', filename='logo.png') }}" alt="Virtuole Logo" class="logo-img" onerror="this.style.display='none'">
-                    <div class="logo-text"><span class="virt">VIRTU</span><span class="uole">OLE</span></div>
-                </a>
-                <p>Architecting the next generation of engineers through rigorous virtual internships, uncompromised coding mandates, and elite MSME-backed verification.</p>
-            </div>
-            
-            <div class="footer-newsletter">
-                <h3>Subscribe to the Matrix</h3>
-                <p>Receive immediate alerts on new engineering tracks, technical updates, and exclusive Virtuole resources.</p>
-                <form action="/subscribe" method="POST">
-                    <input type="email" name="email" placeholder="Enter your email" required>
-                    <button type="submit">Subscribe ↗</button>
-                </form>
-            </div>
-        </div>
-
-        <div class="footer-links-grid">
-            <div class="footer-col">
-                <h4>System Logs</h4>
-                <a href="/login">Intern Gateway</a>
-                <a href="#domains">Active Programs</a>
-                <a href="/verify.html">Credential Lookup</a>
-                <a href="/offer-letter">Retrieve Offer Letter</a>
-            </div>
-            <div class="footer-col">
-                <h4>Operations</h4>
-                <a href="#about">About Virtuole</a>
-                <a href="/terms">Terms of Execution</a>
-                <a href="/privacy">Privacy Protocol</a>
-                <a href="/refund">Return Policy</a>
-                <a href="/cookies">Cookies Protocol</a>
-            </div>
-            <div class="footer-col">
-                <h4>Infrastructure</h4>
-                <a href="/apply-ambassador">GTM Ambassador Portal</a>
-                <a href="/feedback">Submit System Feedback</a>
-                <a href="/contact">Support Hub</a>
-            </div>
-            <div class="footer-col">
-                <h4>Headquarters</h4>
-                <p><span class="contact-icon">📍</span> Bihar, India</p>
-                <p><span class="contact-icon">📞</span> +91 (Insert Phone)</p>
-                <p><span class="contact-icon">✉️</span> support@virtuole.in</p>
-                <p><span class="contact-icon">🌐</span> www.virtuole.in</p>
-            </div>
-        </div>
-
-        <div class="footer-bottom">
-            <div class="copyright">
-                © 2026 Virtuole. A registered MSME entity. All rights reserved.
-            </div>
-            
-            <div class="social-circles">
-                <a href="#" aria-label="LinkedIn">
-                    <svg viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
-                </a>
-                <a href="#" aria-label="Instagram">
-                    <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 1.76-6.98 6.223-.058 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 1.76 6.78 6.223 6.98 1.28.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-1.762 6.979-6.221.059-1.281.073-1.689.073-4.949 0-3.259-.014-3.667-.072-4.947-.196-4.354-1.778-6.78-6.221-6.979-1.28-.059-1.689-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-                </a>
-                <a href="#" aria-label="YouTube">
-                    <svg viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
-                </a>
-                <a href="#" aria-label="Telegram">
-                    <svg viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.892-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-                </a>
-            </div>
-            
-            <div class="legal-links">
-                <a href="/privacy">Privacy Protocol</a>
-                <a href="/terms">Terms of Execution</a>
-                <a href="/cookies">Cookies</a>
-            </div>
-        </div>
-    </footer>
+    {% include 'footer.html' %}
 
     <script>
         // Hamburger Menu Logic
         const hamburger = document.getElementById('hamburger');
         const navLinks = document.getElementById('nav-center');
-        hamburger.addEventListener('click', () => {
-            navLinks.classList.toggle('active');
-            hamburger.textContent = navLinks.classList.contains('active') ? '✕' : '☰';
-        });
+        if (hamburger) {
+            hamburger.addEventListener('click', () => {
+                navLinks.classList.toggle('active');
+                hamburger.textContent = navLinks.classList.contains('active') ? '✕' : '☰';
+            });
+        }
 
         // Light/Dark Theme Toggle Logic
         const themeToggle = document.getElementById('theme-toggle');
@@ -618,18 +453,20 @@
         
         if(localStorage.getItem('theme') === 'light') {
             body.classList.add('light-mode');
-            themeToggle.checked = true;
+            if(themeToggle) themeToggle.checked = true;
         }
 
-        themeToggle.addEventListener('change', () => {
-            if(themeToggle.checked) {
-                body.classList.add('light-mode');
-                localStorage.setItem('theme', 'light');
-            } else {
-                body.classList.remove('light-mode');
-                localStorage.setItem('theme', 'dark');
-            }
-        });
+        if(themeToggle) {
+            themeToggle.addEventListener('change', () => {
+                if(themeToggle.checked) {
+                    body.classList.add('light-mode');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    body.classList.remove('light-mode');
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        }
 
         // Active Navigation Highlight via Scroll
         const sections = document.querySelectorAll("div[id]");
@@ -651,7 +488,6 @@
                 }
             });
 
-            // Highlight Home if at very top
             if(scrollY < 150) {
                 navItems.forEach(li => li.classList.remove("active"));
                 const homeLink = document.querySelector('.nav-link[href="#top"]');
@@ -659,7 +495,6 @@
             }
         });
 
-        // Show More Programs Logic
         const showMoreBtn = document.getElementById('show-more-btn');
         if (showMoreBtn) {
             showMoreBtn.addEventListener('click', () => {
@@ -668,7 +503,6 @@
             });
         }
 
-        // Internship Journey Tabs
         function switchTab(tabId) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content-box').forEach(c => c.classList.remove('active'));
