@@ -843,9 +843,10 @@ def terms_page(): return render_template('terms.html')
 def refund_page(): return render_template('refund.html')
 @app.route('/privacy')
 def privacy_page(): return render_template('privacy.html')
+@app.route('/cookies')
+def cookies_page(): return render_template('cookies.html')
 @app.route('/verify.html')
 def verify_page_redirect(): return render_template('verify.html')
-
 @app.route('/offer-letter')
 def offer_letter_page(): return render_template('offer.html')
 
