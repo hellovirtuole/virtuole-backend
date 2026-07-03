@@ -7,146 +7,190 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Inter:wght@400;500;600&display=swap');
         
+        /* 1. LIGHT / DARK MODE CSS VARIABLES */
+        :root {
+            --bg-main: #030712;
+            --bg-footer: #050b14;
+            --nav-bg: rgba(3, 7, 18, 0.85);
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+            --card-bg: rgba(17, 24, 39, 0.6);
+            --card-border: rgba(255,255,255,0.05);
+            --primary: #38b2ac;
+            --primary-hover: #2c7a7b;
+            --secondary: #ecc94b;
+            --input-bg: #111827;
+        }
+
+        .light-mode {
+            --bg-main: #f8fafc;
+            --bg-footer: #f1f5f9;
+            --nav-bg: rgba(255, 255, 255, 0.95);
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --card-bg: #ffffff;
+            --card-border: rgba(0, 0, 0, 0.1);
+            --primary: #0ea5e9;
+            --primary-hover: #0284c7;
+            --secondary: #d97706;
+            --input-bg: #ffffff;
+        }
+
         *, *::before, *::after { box-sizing: border-box; }
         html, body {
             max-width: 100vw;
             overflow-x: hidden; 
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             font-family: 'Inter', sans-serif; 
-            background: #030712; 
-            color: #f9fafb; 
+            background: var(--bg-main); 
+            color: var(--text-main); 
             scroll-behavior: smooth; 
+            transition: background 0.4s ease, color 0.4s ease;
         }
 
         .glow-bg {
-            position: absolute;
-            width: 600px; height: 600px;
+            position: absolute; width: 600px; height: 600px;
             background: radial-gradient(circle, rgba(56, 178, 172, 0.15) 0%, rgba(0,0,0,0) 70%);
-            top: -200px; right: -100px;
-            z-index: -1; pointer-events: none;
+            top: -200px; right: -100px; z-index: -1; pointer-events: none;
         }
 
+        /* 2. FIXED NAVBAR */
         nav { 
             display: flex; justify-content: space-between; align-items: center; 
-            padding: 15px 50px; 
-            background: rgba(3, 7, 18, 0.85); 
+            padding: 15px 50px; background: var(--nav-bg); 
             backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
             position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; 
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
+            border-bottom: 1px solid var(--card-border); 
+            transition: 0.4s ease;
         }
-        .logo { font-family: 'Montserrat', sans-serif; font-size: 1.6em; font-weight: 800; letter-spacing: 2px; text-decoration: none; }
-        .logo .virt { color: #f3f4f6; } 
-        .logo .uole { color: #38b2ac; } 
+        .logo { font-family: 'Montserrat', sans-serif; font-size: 1.6em; font-weight: 800; letter-spacing: 2px; text-decoration: none; color: var(--text-main); }
+        .logo span { color: var(--primary); } 
 
         .nav-center { display: flex; gap: 30px; align-items: center; }
-        .nav-center a { color: #d1d5db; text-decoration: none; font-weight: 500; font-size: 0.95em; transition: color 0.3s; }
-        .nav-center a:hover { color: #38b2ac; }
+        .nav-center a { color: var(--text-muted); text-decoration: none; font-weight: 500; font-size: 0.95em; transition: color 0.3s; }
+        .nav-center a:hover { color: var(--primary); }
+        .nav-center a.active { color: var(--primary); font-weight: 700; } /* Highlight Current Page */
 
         .dropdown { position: relative; display: inline-block; }
         .dropdown-content {
             display: none; position: absolute; top: 100%; left: 0;
-            background-color: #111827; min-width: 220px;
+            background-color: var(--card-bg); min-width: 220px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5); border-radius: 8px;
-            overflow: hidden; z-index: 1001; border: 1px solid rgba(255,255,255,0.05);
+            overflow: hidden; z-index: 1001; border: 1px solid var(--card-border);
+            backdrop-filter: blur(10px);
         }
-        .dropdown-content a { color: #d1d5db; padding: 12px 16px; display: block; font-size: 0.9em; border-bottom: 1px solid rgba(255,255,255,0.02); }
-        .dropdown-content a:hover { background-color: #1f2937; color: #38b2ac; }
+        .dropdown-content a { color: var(--text-main); padding: 12px 16px; display: block; font-size: 0.9em; border-bottom: 1px solid var(--card-border); }
+        .dropdown-content a:hover { background-color: var(--primary); color: white; }
         .dropdown:hover .dropdown-content { display: block; }
 
         .nav-right { display: flex; align-items: center; gap: 15px; }
-        .login-btn { 
-            background: #38b2ac; padding: 10px 24px; border-radius: 8px; color: white !important; 
-            font-weight: 600; border: none; cursor: pointer; text-decoration: none; transition: all 0.3s ease; 
-        }
-        .login-btn:hover { background: #2c7a7b; box-shadow: 0 0 20px rgba(56, 178, 172, 0.4); }
-        
-        .hamburger { display: none; font-size: 1.8em; color: #f3f4f6; cursor: pointer; }
+        .theme-toggle { background: none; border: none; font-size: 1.4em; cursor: pointer; color: var(--text-main); transition: 0.3s; }
+        .login-btn { background: var(--primary); padding: 10px 24px; border-radius: 8px; color: white !important; font-weight: 600; text-decoration: none; transition: 0.3s; }
+        .login-btn:hover { background: var(--primary-hover); }
+        .hamburger { display: none; font-size: 1.8em; color: var(--text-main); cursor: pointer; }
 
-        .hero { text-align: center; padding: 160px 20px 120px; position: relative; z-index: 1; margin-top: 50px; }
+        /* 3. HERO */
+        .hero { text-align: center; padding: 160px 20px 80px; position: relative; z-index: 1; margin-top: 50px; }
         .hero h1 { font-family: 'Montserrat', sans-serif; font-size: 4.5em; margin: 0 0 24px 0; line-height: 1.1; letter-spacing: -1px; }
-        .hero span { background: linear-gradient(to right, #38b2ac, #ecc94b); -webkit-background-clip: text; color: transparent; }
-        .hero p { font-size: 1.25em; color: #9ca3af; max-width: 650px; margin: 0 auto 40px auto; line-height: 1.7; }
+        .hero span { color: var(--primary); }
+        .hero p { font-size: 1.25em; color: var(--text-muted); max-width: 650px; margin: 0 auto 40px auto; line-height: 1.7; }
         
         .hero-buttons { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 50px; }
-        .cta-btn { background: #ecc94b; color: #111827; padding: 16px 40px; font-size: 1.1em; font-weight: 600; border-radius: 8px; text-decoration: none; transition: all 0.3s ease; }
+        .cta-btn { background: var(--secondary); color: #111827; padding: 16px 40px; font-size: 1.1em; font-weight: 600; border-radius: 8px; text-decoration: none; transition: 0.3s; }
         .cta-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(236, 201, 75, 0.3); }
-        .verify-hero-btn { background: rgba(255,255,255,0.03); color: #e5e7eb; border: 1px solid rgba(255,255,255,0.1); padding: 16px 40px; font-size: 1.1em; font-weight: 600; border-radius: 8px; text-decoration: none; transition: all 0.3s ease; }
-        .verify-hero-btn:hover { background: rgba(255,255,255,0.1); }
+        .verify-hero-btn { background: transparent; color: var(--text-main); border: 1px solid var(--card-border); padding: 16px 40px; font-size: 1.1em; font-weight: 600; border-radius: 8px; text-decoration: none; transition: 0.3s; }
+        .verify-hero-btn:hover { background: var(--card-bg); }
 
-        .trust-banner {
-            background: linear-gradient(90deg, rgba(31, 41, 55, 0.8) 0%, rgba(17, 24, 39, 0.9) 100%);
-            border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05);
-            padding: 60px 20px; text-align: center;
-        }
-        .trust-banner h3 { color: #ecc94b; font-size: 2em; margin: 0 0 15px 0; font-family: 'Montserrat', sans-serif; }
-        .trust-banner p { color: #d1d5db; max-width: 800px; margin: 0 auto; font-size: 1.1em; line-height: 1.6; }
-        .trust-grid { display: flex; justify-content: center; gap: 40px; margin-top: 40px; flex-wrap: wrap; }
-        .trust-item { text-align: center; max-width: 250px; }
-        .trust-item h4 { color: white; margin-bottom: 10px; font-size: 1.2em; }
-        .trust-item p { color: #9ca3af; font-size: 0.9em; }
+        /* 4. WHY CHOOSE VIRTUOLE */
+        .why-choose { max-width: 1200px; margin: 0 auto 80px; padding: 0 20px; text-align: center; }
+        .why-choose h2 { font-family: 'Montserrat', sans-serif; font-size: 2.5em; margin-bottom: 40px; }
+        .benefits-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; }
+        .benefit-card { background: var(--card-bg); border: 1px solid var(--card-border); padding: 30px; border-radius: 12px; transition: 0.3s; }
+        .benefit-card:hover { transform: translateY(-5px); border-color: var(--primary); }
+        .benefit-icon { font-size: 2.5em; margin-bottom: 15px; }
+        .benefit-card h3 { font-size: 1.2em; margin-bottom: 10px; color: var(--text-main); }
+        .benefit-card p { color: var(--text-muted); font-size: 0.95em; line-height: 1.5; }
 
-        .domains { padding: 100px 20px; text-align: center; position: relative; z-index: 1; }
-        .domains h2 { font-family: 'Montserrat', sans-serif; font-size: 3em; margin-bottom: 60px; }
+        /* 5. PROGRAMS */
+        .domains { padding: 80px 20px; text-align: center; }
+        .domains h2 { font-family: 'Montserrat', sans-serif; font-size: 3em; margin-bottom: 50px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; }
-        
-        .card { 
-            background: rgba(17, 24, 39, 0.6); backdrop-filter: blur(10px);
-            padding: 40px 30px; border-radius: 16px; text-align: left; 
-            border: 1px solid rgba(255,255,255,0.05); border-top: 4px solid #38b2ac; 
-            transition: all 0.4s ease; display: flex; flex-direction: column; 
-        }
-        .card:hover { transform: translateY(-10px); background: rgba(31, 41, 55, 0.8); border-color: rgba(56, 178, 172, 0.4); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+        .card { background: var(--card-bg); backdrop-filter: blur(10px); padding: 40px 30px; border-radius: 16px; text-align: left; border: 1px solid var(--card-border); border-top: 4px solid var(--primary); transition: 0.4s; display: flex; flex-direction: column; }
+        .card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
         .card h3 { font-family: 'Montserrat', sans-serif; font-size: 1.5em; margin: 0 0 15px 0; }
-        .card p { color: #9ca3af; line-height: 1.6; margin-bottom: 30px; }
-        
-        .level-selector { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.05); }
-        .level-selector label { font-size: 0.8em; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 8px; display: block; }
-        .level-selector select { width: 100%; padding: 12px; border-radius: 6px; background: #111827; border: 1px solid rgba(56, 178, 172, 0.3); color: #ecc94b; font-weight: 600; outline: none; }
-        
-        .enroll-btn { background: rgba(56, 178, 172, 0.1); border: 1px solid #38b2ac; color: #38b2ac; padding: 14px; border-radius: 8px; font-weight: 600; text-align: center; text-decoration: none; transition: 0.3s; margin-top: auto; }
-        .enroll-btn:hover { background: #38b2ac; color: white; }
+        .card p { color: var(--text-muted); line-height: 1.6; margin-bottom: 30px; }
+        .level-selector { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 25px; border: 1px solid var(--card-border); }
+        .level-selector label { font-size: 0.8em; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 8px; display: block; }
+        .level-selector select { width: 100%; padding: 12px; border-radius: 6px; background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-main); font-weight: 600; outline: none; }
+        .enroll-btn { background: transparent; border: 1px solid var(--primary); color: var(--primary); padding: 14px; border-radius: 8px; font-weight: 600; text-align: center; text-decoration: none; transition: 0.3s; margin-top: auto; }
+        .enroll-btn:hover { background: var(--primary); color: white; }
         
         .hidden-program { display: none !important; }
-        .show-more-btn { margin-top: 40px; background: transparent; border: 2px solid #38b2ac; color: #38b2ac; padding: 12px 35px; border-radius: 50px; cursor: pointer; font-weight: 600; font-size: 1.1em; transition: 0.3s; }
-        .show-more-btn:hover { background: #38b2ac; color: white; }
+        .show-more-btn { margin-top: 40px; background: transparent; border: 2px solid var(--primary); color: var(--primary); padding: 12px 35px; border-radius: 50px; cursor: pointer; font-weight: 600; font-size: 1.1em; transition: 0.3s; }
+        .show-more-btn:hover { background: var(--primary); color: white; }
 
-        .reviews { padding: 100px 20px; max-width: 1200px; margin: auto; text-align: center; }
-        .reviews h2 { font-family: 'Montserrat', sans-serif; font-size: 2.5em; margin-bottom: 50px; }
-        .reviews-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-        .review-card { background: rgba(31, 41, 55, 0.4); padding: 25px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: left; }
-        .stars { color: #ecc94b; margin-bottom: 10px; font-size: 1.2em; }
-        .reviewer { font-weight: bold; margin-top: 15px; color: #38b2ac; }
-
-        .ambassador-banner { padding: 100px 20px; text-align: center; background: #030712; border-top: 1px solid rgba(255,255,255,0.05); }
-        .ambassador-banner h2 { font-family: 'Montserrat', sans-serif; font-size: 2.5em; margin-bottom: 20px; }
+        /* 6. INFINITE AUTO-MOVING SLIDER (Full Width) */
+        .infinite-slider-section { padding: 80px 0; background: var(--bg-footer); overflow: hidden; width: 100vw; margin-left: calc(-50vw + 50%); }
+        .infinite-slider-section h2 { text-align: center; font-family: 'Montserrat', sans-serif; font-size: 2.5em; margin-bottom: 40px; }
         
-        .newsletter { background: rgba(17, 24, 39, 0.5); padding: 70px 20px; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .newsletter h2 { font-family: 'Montserrat', sans-serif; font-size: 2.5em; margin-bottom: 15px; }
-        .newsletter form { display: flex; justify-content: center; gap: 10px; max-width: 600px; margin: 30px auto 0; flex-wrap: wrap; }
-        .newsletter input { flex: 1; padding: 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: #111827; color: white; font-size: 1em; min-width: 250px; outline: none;}
-        .newsletter input:focus { border-color: #38b2ac; }
-        .newsletter button { background: #ecc94b; color: #111827; border: none; padding: 16px 30px; border-radius: 8px; font-weight: 700; font-size: 1em; cursor: pointer; transition: 0.3s; }
-        .newsletter button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(236, 201, 75, 0.3); }
+        .slider-track { display: flex; width: calc(350px * 14); animation: scroll 40s linear infinite; }
+        .slider-track:hover { animation-play-state: paused; }
+        
+        @keyframes scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(calc(-350px * 7)); } /* Scroll half the duplicated track */
+        }
 
-        footer { background: #030712; padding: 40px; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); color: #6b7280; font-size: 0.9em; }
+        .slide-card { width: 320px; background: var(--card-bg); padding: 25px; border-radius: 12px; border: 1px solid var(--card-border); margin: 0 15px; flex-shrink: 0; display: flex; flex-direction: column; justify-content: space-between;}
+        .slide-stars { color: var(--secondary); margin-bottom: 10px; font-size: 1.2em; }
+        .slide-text { color: var(--text-muted); line-height: 1.5; font-style: italic; margin-bottom: 15px; font-size: 0.95em;}
+        .slide-author { font-weight: bold; color: var(--primary); }
+
+        /* 7. AMBASSADOR */
+        .ambassador-banner { padding: 100px 20px; text-align: center; border-top: 1px solid var(--card-border); }
+        .ambassador-banner h2 { font-family: 'Montserrat', sans-serif; font-size: 2.5em; margin-bottom: 20px; }
+
+        /* 8. MEGA FOOTER (Inspired by Reference) */
+        .mega-footer { background: var(--bg-footer); border-top: 1px solid var(--card-border); padding: 60px 5% 20px; font-size: 0.95em; }
+        .footer-top { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 40px; margin-bottom: 50px; }
+        .footer-brand { max-width: 400px; }
+        .footer-brand p { color: var(--text-muted); line-height: 1.6; margin-top: 15px; }
+        
+        .footer-newsletter { background: var(--card-bg); border: 1px solid var(--card-border); padding: 30px; border-radius: 12px; flex: 1; max-width: 500px; }
+        .footer-newsletter h3 { font-family: 'Montserrat', sans-serif; margin-bottom: 10px; font-size: 1.4em; }
+        .footer-newsletter p { color: var(--text-muted); margin-bottom: 20px; font-size: 0.9em; line-height: 1.4; }
+        .footer-newsletter form { display: flex; gap: 10px; }
+        .footer-newsletter input { flex: 1; padding: 12px 15px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--input-bg); color: var(--text-main); outline: none; }
+        .footer-newsletter button { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.3s; white-space: nowrap;}
+        .footer-newsletter button:hover { background: var(--primary-hover); }
+
+        .footer-links-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-bottom: 40px; }
+        .footer-col h4 { font-family: 'Montserrat', sans-serif; font-size: 1.2em; margin-bottom: 20px; color: var(--text-main); }
+        .footer-col a, .footer-col p { display: block; color: var(--text-muted); text-decoration: none; margin-bottom: 12px; transition: 0.3s; line-height: 1.5;}
+        .footer-col a:hover { color: var(--primary); }
+        .contact-icon { color: var(--primary); margin-right: 10px; }
+
+        .footer-bottom { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--card-border); padding-top: 25px; flex-wrap: wrap; gap: 20px; color: var(--text-muted); font-size: 0.9em; }
+        .social-circles { display: flex; gap: 10px; }
+        .social-circles a { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); text-decoration: none; transition: 0.3s; }
+        .social-circles a:hover { background: var(--primary); border-color: var(--primary); }
+        .legal-links a { color: var(--text-muted); text-decoration: none; margin-left: 15px; transition: 0.3s; }
+        .legal-links a:hover { color: var(--text-main); }
 
         @media (max-width: 850px) {
             nav { padding: 15px 20px; }
             .nav-center {
                 position: absolute; top: 65px; right: -100%;
-                flex-direction: column; background: rgba(3, 7, 18, 0.95);
+                flex-direction: column; background: var(--nav-bg);
                 width: 100%; text-align: center; padding: 30px 0; gap: 20px;
-                transition: 0.4s ease; border-bottom: 1px solid rgba(255,255,255,0.05);
-                backdrop-filter: blur(20px);
+                transition: 0.4s ease; border-bottom: 1px solid var(--card-border);
             }
             .nav-center.active { right: 0; }
             .dropdown-content { position: static; box-shadow: none; border: none; display: none; background: transparent; }
             .dropdown:hover .dropdown-content { display: block; }
             .hamburger { display: block; }
             .hero h1 { font-size: 3em; }
-            .hero-buttons { flex-direction: column; }
-            .cta-btn, .verify-hero-btn { width: 100%; }
+            .footer-newsletter form { flex-direction: column; }
         }
     </style>
 </head>
@@ -154,14 +198,15 @@
 
     <div class="glow-bg"></div>
 
+    <!-- 1. NAVIGATION -->
     <nav>
-        <a href="/" class="logo"><span class="virt">VIRTU</span><span class="uole">OLE</span></a>
+        <a href="/" class="logo">VIRTU<span>OLE</span></a>
         
         <div class="nav-center" id="nav-center">
-            <a href="/">Home</a>
+            <a href="/" class="active">Home</a> <!-- Active Highlight -->
             
             <div class="dropdown">
-                <a href="#domains">Internship ▾</a>
+                <a href="#domains">Internships ▾</a>
                 <div class="dropdown-content">
                     <a href="#domains">Apply / State Internship</a>
                     <a href="/verify.html">Verify Certificate</a>
@@ -173,9 +218,7 @@
                 <a href="#">More ▾</a>
                 <div class="dropdown-content">
                     <a href="/feedback">Feedback & Reviews</a>
-                    <a href="/terms">Terms & Conditions</a>
-                    <a href="/privacy">Privacy Policies</a>
-                    <a href="/refund">Return Policy</a>
+                    <a href="/contact">Help Center</a>
                 </div>
             </div>
             
@@ -183,11 +226,13 @@
         </div>
 
         <div class="nav-right">
+            <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Mode">☀️</button>
             <a href="/login" class="login-btn">Login / Register</a>
             <span class="hamburger" id="hamburger">☰</span>
         </div>
     </nav>
 
+    <!-- 2. HERO -->
     <div class="hero">
         <h1>Build Real Projects.<br>Get <span>Certified.</span></h1>
         <p>Bridge the gap between theoretical knowledge and industry demands. Join our virtual internship program, build production-grade architectures, and earn an official MSME-registered credential.</p>
@@ -195,30 +240,37 @@
         <div class="hero-buttons">
             <a href="/login" class="cta-btn">Start Your Free Internship</a>
             <a href="/verify.html" class="verify-hero-btn">Verify Credential</a>
-            <a href="/offer-letter" style="color: #38b2ac; text-decoration: none; font-weight: bold; margin: 0 15px; display: flex; align-items: center;">Get Offer Letter</a>
         </div>
     </div>
 
-    <div class="trust-banner">
-        <h3>Zero Upfront Cost. Pure Merit.</h3>
-        <p>Start coding immediately. You only pay a nominal VIRTUOLE processing fee when you are ready to submit your final code for official grading and certification. Score 100% to unlock an Elite Founder's Letter of Recommendation.</p>
-        
-        <div class="trust-grid">
-            <div class="trust-item">
-                <h4>1. Register for Free</h4>
-                <p>Receive your official Offer Letter and project constraints instantly.</p>
+    <!-- 3. WHY CHOOSE VIRTUOLE -->
+    <div class="why-choose">
+        <h2>Why Choose Virtuole?</h2>
+        <div class="benefits-grid">
+            <div class="benefit-card">
+                <div class="benefit-icon">🏢</div>
+                <h3>MSME Certified</h3>
+                <p>Earn an official credential registered under the Government of India, adding immense weight to your resume.</p>
             </div>
-            <div class="trust-item">
-                <h4>2. Build the Project</h4>
-                <p>Take 30 days to build a production-grade architecture.</p>
+            <div class="benefit-card">
+                <div class="benefit-icon">💸</div>
+                <h3>Zero Upfront Cost</h3>
+                <p>Start coding immediately. You only pay a nominal processing fee when you are ready to submit your final code.</p>
             </div>
-            <div class="trust-item">
-                <h4>3. Submit & Pay</h4>
-                <p>Pay only the evaluation fee when you submit your code.</p>
+            <div class="benefit-card">
+                <div class="benefit-icon">⚙️</div>
+                <h3>Production Realism</h3>
+                <p>No basic tutorials. Build scalable architectures, handle edge cases, and experience real sprint deadlines.</p>
+            </div>
+            <div class="benefit-card">
+                <div class="benefit-icon">🌟</div>
+                <h3>Elite LORs</h3>
+                <p>Score 100% on the evaluation matrix to unlock an exclusive Founder's Letter of Recommendation.</p>
             </div>
         </div>
     </div>
 
+    <!-- 4. PROGRAMS GRID -->
     <div id="domains" class="domains">
         <h2>Our Internship Domains</h2>
         <div class="grid">
@@ -244,59 +296,138 @@
         {% endif %}
     </div>
 
-    <div class="reviews">
-        <h2>What Our Interns Say</h2>
-        <div class="reviews-grid">
-            <div class="review-card"><div class="stars">★★★★★</div><p>"The evaluation matrix is tough but fair. Definitely bridged the gap between college and industry."</p><div class="reviewer">- Ankit S.</div></div>
-            <div class="review-card"><div class="stars">★★★★★</div><p>"Got my MSME certificate seamlessly. Highly recommend the backend track!"</p><div class="reviewer">- Priya M.</div></div>
-            <div class="review-card"><div class="stars">★★★★★</div><p>"The mentor feedback helped me rewrite my API logic entirely. Amazing platform."</p><div class="reviewer">- Rahul K.</div></div>
-            <div class="review-card"><div class="stars">★★★★★</div><p>"Very transparent pricing. No hidden fees until you submit for grading."</p><div class="reviewer">- Sneha V.</div></div>
-            <div class="review-card"><div class="stars">★★★★★</div><p>"The Founder's LOR helped me land a great placement at a startup!"</p><div class="reviewer">- Aman D.</div></div>
-            <div class="review-card"><div class="stars">★★★★★</div><p>"Real-world scenarios instead of boring multiple-choice questions."</p><div class="reviewer">- Karan P.</div></div>
-            <div class="review-card"><div class="stars">★★★★☆</div><p>"Tough 30-day deadline, but it really prepares you for real job sprints."</p><div class="reviewer">- Neha R.</div></div>
-            <div class="review-card"><div class="stars">★★★★★</div><p>"Downloading the offer letter instantly gave me the proof I needed for college."</p><div class="reviewer">- Vikas T.</div></div>
-            <div class="review-card"><div class="stars">★★★★★</div><p>"The Ambassador program gave me a great platform to network with other devs."</p><div class="reviewer">- Rohan B.</div></div>
-            <div class="review-card"><div class="stars">★★★★★</div><p>"Strict but worth it. The credentials actually hold weight in interviews."</p><div class="reviewer">- Shweta C.</div></div>
-        </div>
-        <p style="margin-top: 40px; color: #9ca3af;">Have feedback? Submit it on our <a href="/feedback" style="color: #38b2ac;">Feedback Page</a>.</p>
-    </div>
-
+    <!-- 5. AMBASSADOR -->
     <div class="ambassador-banner">
-        <h2 style="color: #f9fafb;">Join the Ambassador Program</h2>
-        <p style="color: #9ca3af; max-width: 600px; margin: 0 auto 40px auto; font-size: 1.1em;">
+        <h2>Join the Ambassador Program</h2>
+        <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto 40px auto; font-size: 1.1em;">
             Become the face of Virtuole on your campus. Gain exclusive access to premium swag, merit-based rewards, and a fast track to corporate internship opportunities.
         </p>
         <a href="/apply-ambassador" style="background: #9f7aea; color: white; padding: 16px 45px; font-size: 1.1em; font-weight: 800; border-radius: 8px; text-decoration: none; display: inline-block; transition: 0.3s;">Apply to Become an Ambassador</a>
     </div>
 
-    <!-- Stay Updated moved to the bottom -->
-    <div class="newsletter">
-        <h2>Stay Updated</h2>
-        <p style="color: #9ca3af; max-width: 600px; margin: 0 auto; font-size: 1.1em;">Subscribe to get new opportunity details and newly listed program alerts directly in your inbox.</p>
-        <form action="/subscribe" method="POST">
-            <input type="email" name="email" placeholder="Enter your email address" required>
-            <button type="submit">Subscribe Us</button>
-        </form>
+    <!-- 6. FULL-WIDTH INFINITE SLIDER FOR REVIEWS -->
+    <div class="infinite-slider-section">
+        <h2>What Our Interns Say</h2>
+        <!-- The track contains two identical sets of reviews to create a seamless infinite loop -->
+        <div class="slider-track">
+            <!-- Set 1 -->
+            <div class="slide-card"><div class="slide-stars">★★★★★</div><div class="slide-text">"The evaluation matrix is tough but fair. Definitely bridged the gap between college and industry."</div><div class="slide-author">- Ankit S.</div></div>
+            <div class="slide-card"><div class="slide-stars">★★★★★</div><div class="slide-text">"Got my MSME certificate seamlessly. Highly recommend the backend track!"</div><div class="slide-author">- Priya M.</div></div>
+            <div class="slide-card"><div class="slide-stars">★★★★★</div><div class="slide-text">"The mentor feedback helped me rewrite my API logic entirely. Amazing platform."</div><div class="slide-author">- Rahul K.</div></div>
+            <div class="slide-card"><div class="slide-stars">★★★★★</div><div class="slide-text">"Very transparent pricing. No hidden fees until you submit for grading."</div><div class="slide-author">- Sneha V.</div></div>
+            <div class="slide-card"><div class="slide-stars">★★★★★</div><div class="slide-text">"The Founder's LOR helped me land a great placement at a startup!"</div><div class="slide-author">- Aman D.</div></div>
+            <div class="slide-card"><div class="slide-stars">★★★★☆</div><div class="slide-text">"Tough 30-day deadline, but it really prepares you for real job sprints."</div><div class="slide-author">- Neha R.</div></div>
+            <div class="slide-card"><div class="slide-stars">★★★★★</div><div class="slide-text">"Downloading the offer letter instantly gave me the proof I needed for college."</div><div class="slide-author">- Vikas T.</div></div>
+            
+            <!-- Set 2 (Exact Duplicate for Seamless Looping) -->
+            <div class="slide-card"><div class="slide-stars">★★★★★</div><div class="slide-text">"The evaluation matrix is tough but fair. Definitely bridged the gap between college and industry."</div><div class="slide-author">- Ankit S.</div></div>
+            <div class="slide-card"><div class="slide-stars">★★★★★</div><div class="slide-text">"Got my MSME certificate seamlessly. Highly recommend the backend track!"</div><div class="slide-author">- Priya M.</div></div>
+            <div class="slide-card"><div class="slide-stars">★★★★★</div><div class="slide-text">"The mentor feedback helped me rewrite my API logic entirely. Amazing platform."</div><div class="slide-author">- Rahul K.</div></div>
+            <div class="slide-card"><div class="slide-stars">★★★★★</div><div class="slide-text">"Very transparent pricing. No hidden fees until you submit for grading."</div><div class="slide-author">- Sneha V.</div></div>
+            <div class="slide-card"><div class="slide-stars">★★★★★</div><div class="slide-text">"The Founder's LOR helped me land a great placement at a startup!"</div><div class="slide-author">- Aman D.</div></div>
+            <div class="slide-card"><div class="slide-stars">★★★★☆</div><div class="slide-text">"Tough 30-day deadline, but it really prepares you for real job sprints."</div><div class="slide-author">- Neha R.</div></div>
+            <div class="slide-card"><div class="slide-stars">★★★★★</div><div class="slide-text">"Downloading the offer letter instantly gave me the proof I needed for college."</div><div class="slide-author">- Vikas T.</div></div>
+        </div>
     </div>
 
-    <footer>
-        <div style="margin-bottom: 20px;">
-            <a href="/terms" style="color:#6b7280; text-decoration:none; margin:0 10px;">Terms</a> | 
-            <a href="/refund" style="color:#6b7280; text-decoration:none; margin:0 10px;">Refunds</a> | 
-            <a href="/privacy" style="color:#6b7280; text-decoration:none; margin:0 10px;">Privacy</a>
+    <!-- 7. MEGA FOOTER (Inspired by Design) -->
+    <footer class="mega-footer">
+        <div class="footer-top">
+            <div class="footer-brand">
+                <a href="/" class="logo">VIRTU<span>OLE</span></a>
+                <p>Empowering the next generation of tech leaders through virtual internships, hands-on coding practice, and industry-standard architecture building.</p>
+            </div>
+            
+            <div class="footer-newsletter">
+                <h3>Join our Newsletter</h3>
+                <p>Get the latest internship updates, tech tutorials, and exclusive resources weekly.</p>
+                <form action="/subscribe" method="POST">
+                    <input type="email" name="email" placeholder="Enter your email" required>
+                    <button type="submit">Subscribe ↗</button>
+                </form>
+            </div>
         </div>
-        © 2026 Virtuole. A registered MSME entity under Vishal Kumar. All rights reserved.
+
+        <div class="footer-links-grid">
+            <div class="footer-col">
+                <h4>Explore</h4>
+                <a href="/login">Intern Dashboard</a>
+                <a href="#domains">Skill Courses</a>
+                <a href="/verify.html">Certificate Verification</a>
+                <a href="/login">Internship Registration</a>
+                <a href="/offer-letter">Download Offer Letter</a>
+            </div>
+            <div class="footer-col">
+                <h4>Company</h4>
+                <a href="/contact">About Us</a>
+                <a href="/contact">Support Hub</a>
+                <a href="/terms">Terms & Conditions</a>
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/refund">Return Policy</a>
+            </div>
+            <div class="footer-col">
+                <h4>Resources</h4>
+                <a href="/apply-ambassador">Ambassador Portal</a>
+                <a href="/feedback">Feedback Center</a>
+                <a href="/contact">Help Center</a>
+            </div>
+            <div class="footer-col">
+                <h4>Contact Us</h4>
+                <p><span class="contact-icon">📍</span> Bihar, India</p>
+                <p><span class="contact-icon">📞</span> +91 (Insert Phone)</p>
+                <p><span class="contact-icon">✉️</span> support@virtuole.in</p>
+                <p><span class="contact-icon">🌐</span> www.virtuole.in</p>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div class="copyright">
+                © 2026 Virtuole. A registered MSME entity under Vishal Kumar. All rights reserved.
+            </div>
+            <div class="social-circles">
+                <a href="#">in</a>
+                <a href="#">tw</a>
+                <a href="#">ig</a>
+            </div>
+            <div class="legal-links">
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/terms">Terms of Service</a>
+                <a href="/refund">Cookies Policy</a>
+            </div>
+        </div>
     </footer>
 
+    <!-- SCRIPTS -->
     <script>
+        // Hamburger Menu
         const hamburger = document.getElementById('hamburger');
         const navLinks = document.getElementById('nav-center');
-        
         hamburger.addEventListener('click', () => {
             navLinks.classList.toggle('active');
             hamburger.textContent = navLinks.classList.contains('active') ? '✕' : '☰';
         });
 
+        // Light/Dark Theme Toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+        
+        if(localStorage.getItem('theme') === 'light') {
+            body.classList.add('light-mode');
+            themeToggle.textContent = '🌙';
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('light-mode');
+            if(body.classList.contains('light-mode')) {
+                localStorage.setItem('theme', 'light');
+                themeToggle.textContent = '🌙';
+            } else {
+                localStorage.setItem('theme', 'dark');
+                themeToggle.textContent = '☀️';
+            }
+        });
+
+        // Show More Programs Logic
         const showMoreBtn = document.getElementById('show-more-btn');
         if (showMoreBtn) {
             showMoreBtn.addEventListener('click', () => {
