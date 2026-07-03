@@ -7,7 +7,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Inter:wght@400;500;600;700&display=swap');
         
-        /* 1. LIGHT / DARK MODE CSS VARIABLES */
+        /* LIGHT / DARK MODE CSS VARIABLES */
         :root {
             --bg-main: #030712;
             --bg-footer: #050b14;
@@ -42,14 +42,9 @@
 
         *, *::before, *::after { box-sizing: border-box; }
         html, body {
-            max-width: 100vw;
-            overflow-x: hidden; 
-            margin: 0; padding: 0;
-            font-family: 'Inter', sans-serif; 
-            background: var(--bg-main); 
-            color: var(--text-main); 
-            scroll-behavior: smooth; 
-            transition: background 0.4s ease, color 0.4s ease;
+            max-width: 100vw; overflow-x: hidden; margin: 0; padding: 0;
+            font-family: 'Inter', sans-serif; background: var(--bg-main); color: var(--text-main); 
+            scroll-behavior: smooth; transition: background 0.4s ease, color 0.4s ease;
         }
 
         .glow-bg {
@@ -58,32 +53,30 @@
             top: -200px; right: -100px; z-index: -1; pointer-events: none;
         }
 
-        /* 2. FIXED NAVBAR */
+        /* FIXED NAVBAR */
         nav { 
             display: flex; justify-content: space-between; align-items: center; 
-            padding: 15px 50px; background: var(--nav-bg); 
+            padding: 15px 5%; background: var(--nav-bg); 
             backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
             position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; 
-            border-bottom: 1px solid var(--card-border); 
-            transition: 0.4s ease;
+            border-bottom: 1px solid var(--card-border); transition: 0.4s ease;
         }
-        .logo { font-family: 'Montserrat', sans-serif; font-size: 1.6em; font-weight: 800; letter-spacing: 2px; text-decoration: none; color: var(--text-main); }
+        .logo { font-family: 'Montserrat', sans-serif; font-size: 1.6em; font-weight: 800; letter-spacing: 1px; text-decoration: none; color: var(--primary); }
         .logo span { color: var(--primary); } 
 
-        .nav-center { display: flex; gap: 30px; align-items: center; }
-        .nav-center a { color: var(--text-muted); text-decoration: none; font-weight: 500; font-size: 0.95em; transition: color 0.3s; padding: 8px 16px; border-radius: 20px;}
-        .nav-center a:hover { color: var(--primary); }
-        .nav-center a.active { background-color: rgba(56, 178, 172, 0.15); color: var(--primary); font-weight: 700; }
+        .nav-center { display: flex; gap: 15px; align-items: center; }
+        .nav-center a { color: var(--text-muted); text-decoration: none; font-weight: 500; font-size: 0.95em; padding: 8px 16px; border-radius: 20px; transition: 0.3s; }
+        .nav-center a:hover { color: var(--text-main); }
+        .nav-center a.active { background-color: rgba(56, 178, 172, 0.15); color: var(--primary); font-weight: 600; }
 
         .dropdown { position: relative; display: inline-block; }
         .dropdown-content {
             display: none; position: absolute; top: 100%; left: 0;
-            background-color: var(--card-bg); min-width: 220px;
+            background-color: var(--card-bg); min-width: 200px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5); border-radius: 8px;
-            overflow: hidden; z-index: 1001; border: 1px solid var(--card-border);
-            backdrop-filter: blur(10px);
+            overflow: hidden; z-index: 1001; border: 1px solid var(--card-border); backdrop-filter: blur(10px);
         }
-        .dropdown-content a { color: var(--text-main); padding: 12px 16px; display: block; font-size: 0.9em; border-bottom: 1px solid var(--card-border); border-radius: 0;}
+        .dropdown-content a { color: var(--text-main); padding: 12px 16px; display: block; font-size: 0.9em; border-bottom: 1px solid var(--card-border); border-radius: 0; }
         .dropdown-content a:hover { background-color: var(--primary); color: white; }
         .dropdown:hover .dropdown-content { display: block; }
 
@@ -92,21 +85,27 @@
         .login-btn { background: #ffffff; color: #000000 !important; padding: 10px 24px; border-radius: 50px; font-weight: 700; text-decoration: none; transition: 0.3s; }
         .light-mode .login-btn { background: var(--primary); color: white !important; }
         .login-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2); }
+        .light-mode .login-btn:hover { box-shadow: 0 5px 15px rgba(14, 165, 233, 0.3); }
         .hamburger { display: none; font-size: 1.8em; color: var(--text-main); cursor: pointer; }
 
-        /* 3. ORIGINAL HERO RESTORED (Top Section) */
-        .hero { text-align: center; padding: 180px 20px 80px; position: relative; z-index: 1; }
+        /* HERO */
+        .hero { text-align: center; padding: 160px 20px 60px; position: relative; z-index: 1; }
+        .hero-pill { background: rgba(56, 178, 172, 0.1); border: 1px solid var(--primary); color: var(--primary); padding: 6px 16px; border-radius: 50px; font-size: 0.85em; font-weight: 600; display: inline-block; margin-bottom: 20px; letter-spacing: 1px; }
         .hero h1 { font-family: 'Montserrat', sans-serif; font-size: 4.5em; margin: 0 0 24px 0; line-height: 1.1; letter-spacing: -1px; }
-        .hero h1 span { background: linear-gradient(to right, var(--primary), var(--secondary)); -webkit-background-clip: text; color: transparent; }
-        .hero p { font-size: 1.25em; color: var(--text-muted); max-width: 650px; margin: 0 auto 40px auto; line-height: 1.7; }
+        .hero span { color: var(--primary); }
+        .hero p { font-size: 1.2em; color: var(--text-muted); max-width: 650px; margin: 0 auto 40px auto; line-height: 1.7; }
         
-        .hero-buttons { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
-        .cta-btn { background: var(--secondary); color: #111827; padding: 16px 40px; font-size: 1.1em; font-weight: 600; border-radius: 8px; text-decoration: none; transition: 0.3s; }
-        .cta-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(236, 201, 75, 0.3); }
-        .verify-hero-btn { background: transparent; color: var(--text-main); border: 1px solid var(--card-border); padding: 16px 40px; font-size: 1.1em; font-weight: 600; border-radius: 8px; text-decoration: none; transition: 0.3s; }
+        .hero-buttons { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 40px; }
+        .cta-btn { background: white; color: black; padding: 16px 40px; font-size: 1.1em; font-weight: 700; border-radius: 8px; text-decoration: none; transition: 0.3s; }
+        .light-mode .cta-btn { background: var(--primary); color: white; }
+        .verify-hero-btn { background: transparent; color: var(--text-main); border: 1px solid var(--card-border); padding: 16px 40px; font-size: 1.1em; font-weight: 600; border-radius: 8px; text-decoration: none; transition: 0.3s; display: flex; align-items: center; gap: 10px;}
         .verify-hero-btn:hover { background: var(--card-bg); }
 
-        /* 4. WHY CHOOSE VIRTUOLE */
+        .hero-tags { display: flex; justify-content: center; gap: 30px; color: var(--text-muted); font-size: 0.9em; font-weight: 500; flex-wrap: wrap; }
+        .hero-tags span { display: flex; align-items: center; gap: 5px; }
+        .hero-tags span::before { content: "✓"; color: var(--primary); font-weight: bold; }
+
+        /* WHY CHOOSE VIRTUOLE */
         .why-choose { max-width: 1200px; margin: 0 auto 80px; padding: 0 20px; text-align: center; }
         .why-choose h2 { font-family: 'Montserrat', sans-serif; font-size: 2.8em; margin-bottom: 10px; }
         .why-choose h2 span { color: var(--primary); font-style: italic; }
@@ -122,7 +121,7 @@
         .benefit-card h3 { font-family: 'Montserrat', sans-serif; font-size: 1.3em; margin-bottom: 12px; color: var(--text-main); }
         .benefit-card p { color: var(--text-muted); font-size: 0.95em; line-height: 1.6; }
 
-        /* 5. INTERNSHIP JOURNEY TABS */
+        /* INTERNSHIP JOURNEY TABS */
         .journey-section { padding: 80px 20px; max-width: 1200px; margin: auto; text-align: center; }
         .journey-section h2 { font-family: 'Montserrat', sans-serif; font-size: 2.8em; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;}
         .journey-section h2 span { color: var(--primary); font-family: 'Times New Roman', serif; font-style: italic; text-transform: none; letter-spacing: 0;}
@@ -142,9 +141,10 @@
         .tab-content-box h4 { color: var(--primary); font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
         .tab-content-box h3 { font-family: 'Montserrat', sans-serif; font-size: 1.8em; margin-bottom: 20px; color: var(--text-main); }
         .tab-content-box p { color: var(--text-muted); line-height: 1.7; font-size: 1.05em; }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* 6. PROGRAMS GRID */
+        /* PROGRAMS GRID */
         .domains { padding: 80px 20px; text-align: center; }
         .domains h2 { font-family: 'Montserrat', sans-serif; font-size: 3em; margin-bottom: 50px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; }
@@ -158,12 +158,8 @@
         .show-more-btn { margin-top: 40px; background: transparent; border: 2px solid var(--primary); color: var(--primary); padding: 12px 35px; border-radius: 50px; cursor: pointer; font-weight: 600; font-size: 1.1em; transition: 0.3s; }
         .show-more-btn:hover { background: var(--primary); color: white; }
 
-        /* 7. AMBASSADOR */
-        .ambassador-banner { padding: 100px 20px; text-align: center; border-top: 1px solid var(--card-border); }
-        .ambassador-banner h2 { font-family: 'Montserrat', sans-serif; font-size: 2.5em; margin-bottom: 20px; }
-
-        /* 8. INFINITE SLIDER FOR REVIEWS */
-        .infinite-slider-section { padding: 80px 0; background: var(--bg-footer); overflow: hidden; width: 100vw; margin-left: calc(-50vw + 50%); }
+        /* INFINITE AUTO-MOVING SLIDER (Full Width) */
+        .infinite-slider-section { padding: 80px 0; background: var(--bg-footer); overflow: hidden; width: 100vw; margin-left: calc(-50vw + 50%); border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border);}
         .infinite-slider-section h2 { text-align: center; font-family: 'Montserrat', sans-serif; font-size: 2.5em; margin-bottom: 40px; }
         .slider-track { display: flex; width: calc(350px * 14); animation: scroll 40s linear infinite; }
         .slider-track:hover { animation-play-state: paused; }
@@ -173,13 +169,20 @@
         .slide-text { color: var(--text-muted); line-height: 1.5; font-style: italic; margin-bottom: 15px; font-size: 0.95em;}
         .slide-author { font-weight: bold; color: var(--primary); }
 
-        /* 9. THE NEW INSPIRED "BOTTOM CTA" SECTION (With Interactive Animated Grid) */
+        /* AMBASSADOR BANNER (Detailed) */
+        .ambassador-banner { padding: 100px 20px; text-align: center; max-width: 1000px; margin: 0 auto; }
+        .ambassador-banner h2 { font-family: 'Montserrat', sans-serif; font-size: 2.8em; margin-bottom: 20px; }
+        .ambassador-banner p { color: var(--text-muted); margin: 0 auto 30px auto; font-size: 1.1em; line-height: 1.6; }
+        .perks-list { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 40px; }
+        .perk { background: rgba(56, 178, 172, 0.1); border: 1px solid rgba(56, 178, 172, 0.2); padding: 10px 20px; border-radius: 50px; color: var(--primary); font-weight: 600; font-size: 0.9em; }
+
+        /* THE NEW "INSPIRED" CTA SECTION AT THE BOTTOM (With Interactive Grid Background) */
         .bottom-cta {
             position: relative; padding: 120px 20px; text-align: center; 
             background: #030712; overflow: hidden; 
             border-top: 1px solid var(--card-border); width: 100vw; margin-left: calc(-50vw + 50%);
         }
-        .light-mode .bottom-cta { background: #0f172a; } /* Stays dark/professional even in light mode */
+        .light-mode .bottom-cta { background: #0f172a; } 
         
         .animated-grid-bg {
             position: absolute; top: 0; left: 0; width: 200%; height: 200%;
@@ -201,7 +204,7 @@
         .bottom-tags span { display: flex; align-items: center; gap: 8px; }
         .bottom-tags span::before { content: "✓"; color: var(--primary); font-weight: bold; border: 1px solid var(--primary); border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px;}
 
-        /* 10. MEGA FOOTER */
+        /* MEGA FOOTER */
         .mega-footer { background: var(--bg-footer); border-top: 1px solid var(--card-border); padding: 80px 5% 20px; font-size: 0.95em; }
         .footer-top { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 40px; margin-bottom: 60px; }
         .footer-brand { max-width: 450px; }
@@ -247,142 +250,148 @@
 
     <!-- NAVIGATION -->
     <nav>
-        <a href="/" class="logo">VIRTU<span>OLE</span></a>
+        <a href="/" class="logo">VIRTUOLE</a>
         
         <div class="nav-center" id="nav-center">
             <a href="/" class="active">Home</a> 
             
             <div class="dropdown">
-                <a href="#domains">Internships ▾</a>
+                <a href="#domains">Architectures ▾</a>
                 <div class="dropdown-content">
-                    <a href="#domains">Apply / State Internship</a>
+                    <a href="#domains">Apply / Enroll</a>
                     <a href="/verify.html">Verify Certificate</a>
                     <a href="/offer-letter">Download Documents</a>
                 </div>
             </div>
 
             <div class="dropdown">
-                <a href="#">More ▾</a>
+                <a href="#">Policies & Support ▾</a>
                 <div class="dropdown-content">
                     <a href="/feedback">Feedback & Reviews</a>
                     <a href="/terms">Terms & Conditions</a>
                     <a href="/privacy">Privacy Policy</a>
                     <a href="/refund">Return Policy</a>
                     <a href="/cookies">Cookies Policy</a>
-                    <a href="/contact">Contact Us</a>
+                    <a href="/contact">Contact Support</a>
                 </div>
             </div>
         </div>
 
         <div class="nav-right">
             <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Mode">☀️</button>
-            <a href="/login" class="login-btn">Join Now →</a>
+            <a href="/login" class="login-btn">Login / Register</a>
             <span class="hamburger" id="hamburger">☰</span>
         </div>
     </nav>
 
-    <!-- ORIGINAL FRONT HERO -->
+    <!-- HERO -->
     <div class="hero">
-        <h1>Build Real Projects.<br>Get <span>Certified.</span></h1>
-        <p>Bridge the gap between theoretical knowledge and industry demands. Join our virtual internship program, build production-grade architectures, and earn an official MSME-registered credential.</p>
+        <div class="hero-pill">⚡ ACCELERATE YOUR ENGINEERING</div>
+        <h1>Design Complex Systems.<br>Earn Elite <span>Credentials.</span></h1>
+        <p>Virtuole bridges the gap between theoretical academia and rigorous industry execution. Deploy production-grade architectures and secure an official, government-backed MSME verification.</p>
         
         <div class="hero-buttons">
-            <a href="/login" class="cta-btn">Start Your Free Internship</a>
-            <a href="/verify.html" class="verify-hero-btn">Verify Credential</a>
-            <a href="/offer-letter" class="verify-hero-btn" style="color: var(--primary); border-color: var(--primary); margin-left: 10px;">Get Offer Letter</a>
+            <a href="/login" class="cta-btn">Register Gateway →</a>
+            <a href="/verify.html" class="verify-hero-btn">🔍 Verify a Certificate</a>
+        </div>
+        
+        <div class="hero-tags">
+            <span>MSME-Registered Entity</span>
+            <span>Zero Upfront Enrollment Fees</span>
+            <span>Merit-Based LORs</span>
         </div>
     </div>
 
     <!-- WHY CHOOSE VIRTUOLE -->
     <div class="why-choose">
-        <h2>Why Choose <span>Virtuole?</span></h2>
-        <p>Empowering the next generation of tech leaders through practical learning and industry-aligned internships.</p>
+        <h2>The Virtuole <span>Advantage</span></h2>
+        <p>Forging industry-ready developers through rigorous, uncompromised technical evaluation.</p>
         
         <div class="benefits-grid">
             <div class="benefit-card">
                 <div class="icon-box bg-orange">⚡</div>
-                <h3>Structured Assignment-Based Internships</h3>
-                <p>Our internships are built around predefined industry-style projects. You receive a set of curated assignments and complete selected ones to demonstrate real skills instead of passive learning.</p>
+                <h3>Simulated Corporate Sprints</h3>
+                <p>Abandon passive tutorials. Our tracks are structured as real-world development mandates. You receive architectural specifications and must execute them just as you would in a senior engineering role.</p>
             </div>
             <div class="benefit-card">
                 <div class="icon-box bg-blue">📅</div>
-                <h3>Flexible Learning Schedule</h3>
-                <p>Work on assignments at your own pace while managing college, work, or personal commitments. No rigid class timings.</p>
+                <h3>Asynchronous Execution</h3>
+                <p>Deploy on your own timeline. You are granted a strict 30-day window to build your project. There are no mandatory live lectures—just pure, unadulterated output.</p>
             </div>
             <div class="benefit-card">
                 <div class="icon-box bg-green">🛡️</div>
-                <h3>Verified Certificates</h3>
-                <p>Earn an MSME registered certificate with a unique verification ID after completing required assignments successfully.</p>
+                <h3>Government-Backed Verification</h3>
+                <p>Upon passing our grading matrix, secure an official MSME-registered certificate, fortified with a unique cryptographic tracking ID to prove your competence to employers.</p>
             </div>
             <div class="benefit-card">
                 <div class="icon-box bg-purple">💼</div>
-                <h3>Real Portfolio Projects</h3>
-                <p>Choose from multiple practical projects designed to reflect real-world development tasks and strengthen your portfolio.</p>
+                <h3>Enterprise-Level Portfolio</h3>
+                <p>Tackle complex algorithmic challenges, database integrations, and full-stack deployments that genuinely stand out to technical recruiters.</p>
             </div>
         </div>
     </div>
 
     <!-- INTERNSHIP JOURNEY SECTION -->
     <div class="journey-section">
-        <h2>INTERNSHIP <span>Journey</span></h2>
-        <p>From application to certification — complete real-world projects, submit your work, and earn globally verifiable credentials. <strong>Virtuole believes everyone should get the opportunity to prove themselves.</strong></p>
+        <h2>THE DEPLOYMENT <span>Matrix</span></h2>
+        <p>Navigate the Virtuole ecosystem. From onboarding to achieving your verified elite credentials, we believe every developer deserves the infrastructure to prove their raw talent.</p>
         
         <div class="tabs-container">
-            <div class="tab active" onclick="switchTab('apply')"><span>01</span> Apply</div>
-            <div class="tab" onclick="switchTab('review')"><span>02</span> Review</div>
-            <div class="tab" onclick="switchTab('offer')"><span>03</span> Offer Letter</div>
-            <div class="tab" onclick="switchTab('tasks')"><span>04</span> Get Tasks</div>
-            <div class="tab" onclick="switchTab('code')"><span>05</span> Code/Project</div>
-            <div class="tab" onclick="switchTab('submit')"><span>06</span> Submit</div>
-            <div class="tab" onclick="switchTab('evaluate')"><span>07</span> Evaluate</div>
-            <div class="tab" onclick="switchTab('certify')"><span>08</span> Certify</div>
+            <div class="tab active" onclick="switchTab('apply')"><span>01</span> Gateway</div>
+            <div class="tab" onclick="switchTab('review')"><span>02</span> Profile</div>
+            <div class="tab" onclick="switchTab('offer')"><span>03</span> Mandate</div>
+            <div class="tab" onclick="switchTab('tasks')"><span>04</span> Specs</div>
+            <div class="tab" onclick="switchTab('code')"><span>05</span> Execute</div>
+            <div class="tab" onclick="switchTab('submit')"><span>06</span> Commit</div>
+            <div class="tab" onclick="switchTab('evaluate')"><span>07</span> Matrix</div>
+            <div class="tab" onclick="switchTab('certify')"><span>08</span> Verify</div>
         </div>
 
         <div id="content-apply" class="tab-content-box active">
-            <h4>STEP 1 — SUBMIT YOUR APPLICATION</h4>
-            <h3>Begin Your Internship Journey</h3>
-            <p>Choose the internship domain that aligns with your interests and career goals. Fill out the application form with your details and officially register your profile on the Virtuole Gateway. Whether you are a beginner or a graduate, this step initializes your learning profile.</p>
+            <h4>PHASE 1 — INITIALIZATION</h4>
+            <h3>Establish Your Gateway Profile</h3>
+            <p>Select the domain that aligns with your engineering trajectory. Create your secure identity on the Virtuole Gateway to initialize your learning environment. No initial credit card or upfront payment is required.</p>
         </div>
         <div id="content-review" class="tab-content-box">
-            <h4>STEP 2 — PROFILE REVIEW</h4>
-            <h3>Gateway Allocation</h3>
-            <p>Once registered, our automated system validates your credentials and prepares your personalized internship dashboard. You will instantly gain access to the secure intern environment where your tracks are assigned.</p>
+            <h4>PHASE 2 — ALLOCATION</h4>
+            <h3>Dashboard Generation</h3>
+            <p>Our automated systems validate your identity and generate your personalized intern dashboard. This isolated environment tracks your 30-day deadlines, active tasks, and evaluation history securely.</p>
         </div>
         <div id="content-offer" class="tab-content-box">
-            <h4>STEP 3 — OFFICIAL DOCUMENTATION</h4>
-            <h3>Receive Your Offer Letter</h3>
-            <p>Upon successful enrollment into a track, your official Virtuole MSME Offer Letter is dynamically generated. You can download and save this document immediately to submit to your college or university.</p>
+            <h4>PHASE 3 — OFFICIAL DOCUMENTATION</h4>
+            <h3>Secure Your Offer Mandate</h3>
+            <p>Once you select a track, an official, time-stamped Virtuole MSME Offer Letter is dynamically generated. Instantly download this documentation for your university or corporate compliance requirements.</p>
         </div>
         <div id="content-tasks" class="tab-content-box">
-            <h4>STEP 4 — ARCHITECTURE SPECS</h4>
-            <h3>Unlock Your Project Mandate</h3>
-            <p>Access the detailed specifications for your chosen tier (Beginner, Intermediate, or Expert). These mandates simulate real client requirements and technical constraints you would face in the industry.</p>
+            <h4>PHASE 4 — ARCHITECTURE</h4>
+            <h3>Unlock Technical Specifications</h3>
+            <p>Access the highly detailed system requirements for your chosen tier (Beginner, Intermediate, or Expert). These simulate the exact constraints and edge cases a project manager would hand you in the industry.</p>
         </div>
         <div id="content-code" class="tab-content-box">
-            <h4>STEP 5 — DEVELOPMENT PHASE</h4>
-            <h3>Build and Execute</h3>
-            <p>You have exactly 30 days to write, debug, and perfect your code. Utilize your local environment, refer to documentation, and build a project that satisfies the strict architectural requirements.</p>
+            <h4>PHASE 5 — SPRINT EXECUTION</h4>
+            <h3>Build and Compile</h3>
+            <p>You have exactly 30 days to engineer your solution. Utilize your preferred IDE, read the documentation, and build software that withstands our architectural requirements. No hand-holding.</p>
         </div>
         <div id="content-submit" class="tab-content-box">
-            <h4>STEP 6 — SUBMISSION</h4>
-            <h3>Submit Your Architecture</h3>
-            <p>Upload your repository links and demonstration videos to the Virtuole platform. At this stage, you clear the nominal evaluation fee to initiate the grading matrix protocol.</p>
+            <h4>PHASE 6 — COMMIT</h4>
+            <h3>Submit Your Repository</h3>
+            <p>Push your final code to a public repository and record a brief technical defense video. At this stage, you clear the minimal evaluation fee to push your code into the mentor grading matrix.</p>
         </div>
         <div id="content-evaluate" class="tab-content-box">
-            <h4>STEP 7 — EXPERT GRADING</h4>
-            <h3>Strict Merit Evaluation</h3>
-            <p>Our mentors review your code for efficiency, edge-case handling, and originality. If you score above 80%, you pass. If you fail, you receive detailed feedback and exactly 24 hours to patch your code and resubmit.</p>
+            <h4>PHASE 7 — MENTOR REVIEW</h4>
+            <h3>Strict Merit Grading</h3>
+            <p>Virtuole mentors audit your submission for efficiency, algorithmic complexity, and structure. Score above 80% to pass. Fail, and you receive precise architectural feedback with exactly 24 hours to patch your code.</p>
         </div>
         <div id="content-certify" class="tab-content-box">
-            <h4>STEP 8 — CREDENTIALS</h4>
-            <h3>Earn Your Verification</h3>
-            <p>Upon passing, your globally verifiable MSME Certificate is generated instantly. Achieve a flawless 100% score to also unlock the highly coveted Elite Founder's Letter of Recommendation.</p>
+            <h4>PHASE 8 — DEPLOYMENT</h4>
+            <h3>Earn Elite Credentials</h3>
+            <p>Pass the matrix, and your verifiable MSME Certificate is permanently logged. Achieve a flawless 100% defense score to unlock the highly coveted Elite Founder's Letter of Recommendation.</p>
         </div>
     </div>
 
     <!-- PROGRAMS GRID -->
     <div id="domains" class="domains">
-        <h2 style="font-family: 'Montserrat', sans-serif; font-size: 2.5em; margin-bottom: 40px;">Explore Domains</h2>
+        <h2 style="font-family: 'Montserrat', sans-serif; font-size: 2.5em; margin-bottom: 40px;">Engineering Domains</h2>
         <div class="grid">
             {% for program in offered_programs %}
             <div class="card {% if loop.index > 3 %}hidden-program{% endif %}">
@@ -393,29 +402,33 @@
                         <option value="beginner">Beginner</option>
                     </select>
                 </div>
-                <a href="/login?program_id={{ program.id }}" class="enroll-btn" onclick="this.href='/login?program_id={{ program.id }}&track=beginner'">Apply Now →</a>
+                <a href="/login?program_id={{ program.id }}" class="enroll-btn" onclick="this.href='/login?program_id={{ program.id }}&track=beginner'">Enroll in Track →</a>
             </div>
             {% endfor %}
         </div>
         {% if offered_programs|length > 3 %}
         <div style="text-align: center;">
-            <button id="show-more-btn" class="show-more-btn">View All Domains →</button>
+            <button id="show-more-btn" class="show-more-btn">View All Architectures →</button>
         </div>
         {% endif %}
     </div>
 
     <!-- AMBASSADOR BANNER -->
     <div class="ambassador-banner">
-        <h2>Join the Ambassador Program</h2>
-        <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto 40px auto; font-size: 1.1em;">
-            Become the face of Virtuole on your campus. Gain exclusive access to premium swag, merit-based rewards, and a fast track to corporate internship opportunities.
-        </p>
-        <a href="/apply-ambassador" style="background: #9f7aea; color: white; padding: 16px 45px; font-size: 1.1em; font-weight: 800; border-radius: 8px; text-decoration: none; display: inline-block; transition: 0.3s;">Apply to Become an Ambassador</a>
+        <h2>Lead the Virtuole GTM Ambassador Program</h2>
+        <p>Drive the tech revolution on your campus. As a Go-To-Market Ambassador, you bypass standard hurdles and unlock a completely different tier of platform benefits.</p>
+        <div class="perks-list">
+            <span class="perk">👕 Premium Swag Boxes</span>
+            <span class="perk">⭐ Guaranteed Elite LORs</span>
+            <span class="perk">📈 Rank Multipliers (Advocate to Lead)</span>
+            <span class="perk">🤝 Industry Networking</span>
+        </div>
+        <a href="/apply-ambassador" style="background: #9f7aea; color: white; padding: 16px 45px; font-size: 1.1em; font-weight: 800; border-radius: 8px; text-decoration: none; display: inline-block; transition: 0.3s; margin-top: 10px;">Apply to the Program</a>
     </div>
 
     <!-- REVIEWS SLIDER -->
     <div class="infinite-slider-section">
-        <h2 style="color: var(--text-main);">What Our Interns Say</h2>
+        <h2 style="color: var(--text-main);">Intern Testimonials</h2>
         <div class="slider-track">
             <!-- Set 1 -->
             <div class="slide-card"><div class="slide-stars">★★★★★</div><div class="slide-text">"The evaluation matrix is tough but fair. Definitely bridged the gap between college and industry."</div><div class="slide-author">- Ankit S.</div></div>
@@ -436,23 +449,23 @@
         </div>
     </div>
 
-    <!-- NEW "INSPIRED" CTA SECTION AT THE BOTTOM (With Interactive Grid Background) -->
+    <!-- BOTTOM CTA SECTION (Animated Grid) -->
     <div class="bottom-cta">
         <div class="animated-grid-bg"></div>
         <div class="bottom-cta-content">
-            <div class="bottom-cta-pill">⚡ BEGIN YOUR JOURNEY</div>
-            <h2>Build Skills. <span>Create Projects.</span><br>Grow Your Career.</h2>
-            <p>Start your virtual internship journey with Virtuole. Work on practical projects, improve your skills, and earn a verified MSME certificate to showcase your achievements.</p>
+            <div class="bottom-cta-pill">⚡ DEPLOY YOUR POTENTIAL</div>
+            <h2>Architect the Future.<br>Elevate Your <span>Engineering.</span></h2>
+            <p>Stop waiting for opportunities. Create them. Connect to the Virtuole platform today to build production software and earn verifiable MSME credentials.</p>
             
             <div class="hero-buttons" style="margin-top: 30px;">
-                <a href="/login" class="cta-btn" style="background: white; color: black;">Start Internship →</a>
-                <a href="/contact" class="verify-hero-btn" style="border-color: rgba(255,255,255,0.3); color: white;">✉ Talk to Support</a>
+                <a href="/login" class="cta-btn" style="background: white; color: black;">Initialize Profile →</a>
+                <a href="/contact" class="verify-hero-btn" style="border-color: rgba(255,255,255,0.3); color: white;">✉ Contact Operations</a>
             </div>
             
             <div class="bottom-tags">
-                <span>Verified Certificates</span>
-                <span>Project-Based Learning</span>
-                <span>Career-Focused Skills</span>
+                <span>Cryptographically Verified</span>
+                <span>Real Architecture Specs</span>
+                <span>Elite Grading Matrix</span>
             </div>
         </div>
     </div>
@@ -461,13 +474,13 @@
     <footer class="mega-footer">
         <div class="footer-top">
             <div class="footer-brand">
-                <a href="/" class="logo">VIRTU<span>OLE</span></a>
-                <p>Empowering the next generation of tech leaders through virtual internships, hands-on coding practice, and industry-standard architecture building.</p>
+                <a href="/" class="logo">VIRTUOLE</a>
+                <p>Architecting the next generation of engineers through rigorous virtual internships, uncompromised coding mandates, and elite MSME-backed verification.</p>
             </div>
             
             <div class="footer-newsletter">
-                <h3>Join our Newsletter</h3>
-                <p>Get the latest internship updates, tech tutorials, and exclusive resources weekly.</p>
+                <h3>Subscribe to the Matrix</h3>
+                <p>Receive immediate alerts on new engineering tracks, technical updates, and exclusive Virtuole resources.</p>
                 <form action="/subscribe" method="POST">
                     <input type="email" name="email" placeholder="Enter your email" required>
                     <button type="submit">Subscribe ↗</button>
@@ -477,30 +490,28 @@
 
         <div class="footer-links-grid">
             <div class="footer-col">
-                <h4>Explore</h4>
-                <a href="/login">Intern Dashboard</a>
-                <a href="#domains">Skill Courses</a>
-                <a href="/verify.html">Certificate Verification</a>
-                <a href="/login">Internship Registration</a>
-                <a href="/offer-letter">Download Offer Letter</a>
+                <h4>System Logs</h4>
+                <a href="/login">Intern Gateway</a>
+                <a href="#domains">Active Architectures</a>
+                <a href="/verify.html">Credential Lookup</a>
+                <a href="/offer-letter">Retrieve Offer Letter</a>
             </div>
             <div class="footer-col">
-                <h4>Company</h4>
-                <a href="/contact">About Us</a>
-                <a href="/contact">Support Hub</a>
-                <a href="/terms">Terms & Conditions</a>
-                <a href="/privacy">Privacy Policy</a>
+                <h4>Operations</h4>
+                <a href="/contact">About Virtuole</a>
+                <a href="/terms">Terms of Execution</a>
+                <a href="/privacy">Privacy Protocol</a>
                 <a href="/refund">Return Policy</a>
-                <a href="/cookies">Cookies Policy</a>
+                <a href="/cookies">Cookies Protocol</a>
             </div>
             <div class="footer-col">
-                <h4>Resources</h4>
-                <a href="/apply-ambassador">Ambassador Portal</a>
-                <a href="/feedback">Feedback Center</a>
-                <a href="/contact">Help Center</a>
+                <h4>Infrastructure</h4>
+                <a href="/apply-ambassador">GTM Ambassador Portal</a>
+                <a href="/feedback">Submit System Feedback</a>
+                <a href="/contact">Support Hub</a>
             </div>
             <div class="footer-col">
-                <h4>Contact Us</h4>
+                <h4>Headquarters</h4>
                 <p><span class="contact-icon">📍</span> Bihar, India</p>
                 <p><span class="contact-icon">📞</span> +91 (Insert Phone)</p>
                 <p><span class="contact-icon">✉️</span> support@virtuole.in</p>
@@ -518,16 +529,15 @@
                 <a href="#">ig</a>
             </div>
             <div class="legal-links">
-                <a href="/privacy">Privacy Policy</a>
-                <a href="/terms">Terms of Service</a>
-                <a href="/cookies">Cookies Policy</a>
+                <a href="/privacy">Privacy Protocol</a>
+                <a href="/terms">Terms of Execution</a>
+                <a href="/cookies">Cookies</a>
             </div>
         </div>
     </footer>
 
     <!-- SCRIPTS -->
     <script>
-        // Hamburger Menu
         const hamburger = document.getElementById('hamburger');
         const navLinks = document.getElementById('nav-center');
         hamburger.addEventListener('click', () => {
@@ -535,7 +545,6 @@
             hamburger.textContent = navLinks.classList.contains('active') ? '✕' : '☰';
         });
 
-        // Light/Dark Theme Toggle
         const themeToggle = document.getElementById('theme-toggle');
         const body = document.body;
         if(localStorage.getItem('theme') === 'light') {
@@ -553,7 +562,6 @@
             }
         });
 
-        // Show More Programs Logic
         const showMoreBtn = document.getElementById('show-more-btn');
         if (showMoreBtn) {
             showMoreBtn.addEventListener('click', () => {
@@ -562,11 +570,9 @@
             });
         }
 
-        // Interactive Journey Tabs
         function switchTab(tabId) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content-box').forEach(c => c.classList.remove('active'));
-            
             event.currentTarget.classList.add('active');
             document.getElementById('content-' + tabId).classList.add('active');
         }
