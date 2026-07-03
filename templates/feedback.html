@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Feedback | Virtuole</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Inter:wght@400;500;600&display=swap');
+        
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body {
+            max-width: 100vw; overflow-x: hidden; margin: 0; padding: 0;
+            font-family: 'Inter', sans-serif; background: #030712; color: #f9fafb;
+        }
+
+        .glow-bg {
+            position: absolute; width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(56, 178, 172, 0.15) 0%, rgba(0,0,0,0) 70%);
+            top: -200px; right: -100px; z-index: -1; pointer-events: none;
+        }
+
+        nav { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 15px 50px; background: rgba(3, 7, 18, 0.85); 
+            backdrop-filter: blur(16px); position: sticky; top: 0; z-index: 1000; 
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
+        }
+        .logo { font-family: 'Montserrat', sans-serif; font-size: 1.6em; font-weight: 800; text-decoration: none; }
+        .logo .virt { color: #f3f4f6; } 
+        .logo .uole { color: #38b2ac; } 
+        .back-btn { color: #d1d5db; text-decoration: none; font-weight: 500; transition: 0.3s; }
+        .back-btn:hover { color: #38b2ac; }
+
+        .container { max-width: 1100px; margin: 80px auto; padding: 0 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+
+        .info-box, .form-box { 
+            background: rgba(17, 24, 39, 0.6); backdrop-filter: blur(10px);
+            padding: 40px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);
+            border-top: 4px solid #38b2ac;
+        }
+        
+        .info-box h2, .form-box h2 { font-family: 'Montserrat', sans-serif; color: #ecc94b; margin-bottom: 20px; }
+        
+        /* Scrollable Reviews Section */
+        .reviews-list { max-height: 400px; overflow-y: auto; padding-right: 15px; }
+        .reviews-list::-webkit-scrollbar { width: 6px; }
+        .reviews-list::-webkit-scrollbar-thumb { background: rgba(56, 178, 172, 0.5); border-radius: 4px; }
+        
+        .review-item { border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px; margin-bottom: 15px; }
+        .review-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .stars { color: #ecc94b; margin-bottom: 5px; font-size: 1em; }
+        .review-text { color: #9ca3af; font-size: 0.95em; line-height: 1.5; font-style: italic; }
+        .reviewer { font-weight: 600; margin-top: 8px; color: #38b2ac; font-size: 0.9em; }
+
+        /* Form Styling */
+        .form-box p { color: #9ca3af; margin-bottom: 25px; line-height: 1.6; }
+        .form-box input, .form-box textarea { 
+            width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 8px; 
+            border: 1px solid rgba(56, 178, 172, 0.3); background: #111827; 
+            color: #f9fafb; font-family: inherit; outline: none;
+        }
+        .form-box input:focus, .form-box textarea:focus { border-color: #38b2ac; }
+        .form-box button { width: 100%; background: #ecc94b; color: #111827; border: none; padding: 16px; border-radius: 8px; font-weight: bold; font-size: 1em; cursor: pointer; transition: 0.3s; }
+        .form-box button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(236, 201, 75, 0.3); }
+
+        .success-msg { background: rgba(56, 178, 172, 0.1); border-left: 4px solid #38b2ac; color: #38b2ac; padding: 12px; margin-bottom: 20px; font-size: 0.9em; text-align: left; }
+
+        @media (max-width: 850px) { 
+            .container { grid-template-columns: 1fr; } 
+            nav { padding: 15px 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="glow-bg"></div>
+
+    <nav>
+        <a href="/" class="logo"><span class="virt">VIRTU</span><span class="uole">OLE</span></a>
+        <a href="/" class="back-btn">&larr; Back to Home</a>
+    </nav>
+
+    <div class="container">
+        <!-- Recent Reviews Box -->
+        <div class="info-box">
+            <h2>Recent Feedback</h2>
+            <div class="reviews-list">
+                <div class="review-item">
+                    <div class="stars">★★★★★</div>
+                    <div class="review-text">"The evaluation matrix is tough but fair. Definitely bridged the gap between college and industry."</div>
+                    <div class="reviewer">- Ankit S.</div>
+                </div>
+                <div class="review-item">
+                    <div class="stars">★★★★★</div>
+                    <div class="review-text">"Got my MSME certificate seamlessly. Highly recommend the backend track!"</div>
+                    <div class="reviewer">- Priya M.</div>
+                </div>
+                <div class="review-item">
+                    <div class="stars">★★★★★</div>
+                    <div class="review-text">"The Founder's LOR helped me land a great placement at a startup!"</div>
+                    <div class="reviewer">- Aman D.</div>
+                </div>
+                <div class="review-item">
+                    <div class="stars">★★★★☆</div>
+                    <div class="review-text">"Tough 30-day deadline, but it really prepares you for real job sprints."</div>
+                    <div class="reviewer">- Neha R.</div>
+                </div>
+                <div class="review-item">
+                    <div class="stars">★★★★★</div>
+                    <div class="review-text">"The Ambassador program gave me a great platform to network with other devs."</div>
+                    <div class="reviewer">- Rohan B.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submission Form Box -->
+        <div class="form-box">
+            <h2>Submit Feedback</h2>
+            <p>Your responses and reviews will be logged directly into our system to help us improve Virtuole.</p>
+            
+            {% if message %}
+                <div class="success-msg">✅ {{ message }}</div>
+            {% endif %}
+
+            <form action="/submit-feedback" method="POST">
+                <input type="text" name="name" placeholder="Your Full Name" required>
+                <input type="email" name="email" placeholder="Your Email Address" required>
+                <input type="text" name="subject" placeholder="Subject (e.g., General Feedback, Support)" required>
+                <textarea name="message" rows="5" placeholder="Write your review or feedback here..." required></textarea>
+                <button type="submit">Submit Feedback</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
