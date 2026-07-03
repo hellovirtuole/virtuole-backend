@@ -273,9 +273,8 @@
     <div class="glow-bg"></div>
 
     <nav>
-        <p>Checking if logo exists: <img src="/static/logo.png" style="width: 50px;"></p>
         <a href="/" class="logo-container">
-            <img src="/static/logo.png" alt="Logo" class="logo-img" onerror="this.style.display='none'">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Virtuole Logo" class="logo-img" onerror="this.style.display='none'">
             <div class="logo-text"><span class="virt">VIRTU</span><span class="uole">OLE</span></div>
         </a>
         
@@ -505,7 +504,7 @@
         <div class="footer-top">
             <div class="footer-brand">
                 <a href="/" class="logo-container">
-                    <img src="/static/logo.png" alt="Logo" class="logo-img" onerror="this.style.display='none'">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="Virtuole Logo" class="logo-img" onerror="this.style.display='none'">
                     <div class="logo-text"><span class="virt">VIRTU</span><span class="uole">OLE</span></div>
                 </a>
                 <p>Architecting the next generation of engineers through rigorous virtual internships, uncompromised coding mandates, and elite MSME-backed verification.</p>
