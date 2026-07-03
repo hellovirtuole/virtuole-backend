@@ -19,12 +19,7 @@
             top: -200px; right: -100px; z-index: -1; pointer-events: none;
         }
 
-        nav { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 15px 50px; background: rgba(3, 7, 18, 0.85); 
-            backdrop-filter: blur(16px); position: sticky; top: 0; z-index: 1000; 
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
-        }
+        
         .logo { font-family: 'Montserrat', sans-serif; font-size: 1.6em; font-weight: 800; text-decoration: none; }
         .logo .virt { color: #f3f4f6; } 
         .logo .uole { color: #38b2ac; } 
@@ -75,10 +70,7 @@
     {% include 'navbar.html' %}
     <div class="glow-bg"></div>
 
-    <nav>
-        <a href="/" class="logo"><span class="virt">VIRTU</span><span class="uole">OLE</span></a>
-        <a href="/" class="back-btn">&larr; Back to Home</a>
-    </nav>
+   
 
     <div class="container">
         <!-- Recent Reviews Box -->
