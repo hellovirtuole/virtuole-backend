@@ -1,0 +1,54 @@
+<nav>
+    <a href="/" class="logo-container">
+        <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/logo/logo.png" alt="Logo" class="logo-img" onerror="this.style.display='none'">
+        <div class="logo-text"><span class="virt">VIRTU</span><span class="uole">OLE</span></div>
+    </a>
+    
+    <div class="nav-center" id="nav-center">
+        <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Home</a> 
+        
+        <div class="dropdown">
+            <a href="/#domains" class="nav-link">Internships ▾</a>
+            <div class="dropdown-content">
+                <a href="/#domains">Apply / Enroll</a>
+                <a href="/verify.html">Verify Certificate</a>
+                <a href="/offer-letter">Download Documents</a>
+            </div>
+        </div>
+
+        <a href="/apply-ambassador" class="nav-link {% if 'ambassador' in request.path %}active{% endif %}">Ambassadors</a>
+        
+        <a href="/blog" class="nav-link {% if 'blog' in request.path %}active{% endif %}">Blog</a>
+
+        <div class="dropdown">
+            <a href="#" class="nav-link">Policies & Support ▾</a>
+            <div class="dropdown-content">
+                <a href="/feedback">Feedback & Reviews</a>
+                <a href="/terms">Terms & Conditions</a>
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/refund">Return Policy</a>
+                <a href="/cookies">Cookies Policy</a>
+                <a href="/contact">Contact Support</a>
+            </div>
+        </div>
+
+        <a href="/login" class="login-btn mobile-login-btn">Login / Register</a>
+    </div>
+
+    <div class="nav-right">
+        {% if request.path != '/' %}
+            <a href="javascript:history.back()" style="color: var(--text-muted); text-decoration: none; margin-right: 15px; font-weight: 500;">← Back</a>
+        {% endif %}
+
+        <label class="theme-switch-wrapper">
+            <div class="theme-switch">
+                <input type="checkbox" id="theme-toggle">
+                <span class="slider"></span>
+            </div>
+        </label>
+        
+        <a href="/login" class="login-btn desktop-login-btn">Login / Register</a>
+        
+        <span class="hamburger" id="hamburger">☰</span>
+    </div>
+</nav>
