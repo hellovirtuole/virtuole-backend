@@ -7,6 +7,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Inter:wght@400;500;600;700&display=swap');
         
+        /* 1. LIGHT / DARK MODE CSS VARIABLES */
         :root {
             --bg-main: #030712;
             --bg-footer: #050b14;
@@ -41,9 +42,14 @@
 
         *, *::before, *::after { box-sizing: border-box; }
         html, body {
-            max-width: 100vw; overflow-x: hidden; margin: 0; padding: 0;
-            font-family: 'Inter', sans-serif; background: var(--bg-main); color: var(--text-main); 
-            scroll-behavior: smooth; transition: background 0.4s ease, color 0.4s ease;
+            max-width: 100vw;
+            overflow-x: hidden; 
+            margin: 0; padding: 0;
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg-main); 
+            color: var(--text-main); 
+            scroll-behavior: smooth; 
+            transition: background 0.4s ease, color 0.4s ease;
         }
 
         .glow-bg {
@@ -52,29 +58,32 @@
             top: -200px; right: -100px; z-index: -1; pointer-events: none;
         }
 
-        /* --- NAVIGATION --- */
+        /* 2. FIXED NAVBAR */
         nav { 
             display: flex; justify-content: space-between; align-items: center; 
-            padding: 15px 5%; background: var(--nav-bg); 
-            backdrop-filter: blur(16px); position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; 
-            border-bottom: 1px solid var(--card-border); transition: 0.4s ease;
+            padding: 15px 50px; background: var(--nav-bg); 
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; 
+            border-bottom: 1px solid var(--card-border); 
+            transition: 0.4s ease;
         }
-        .logo { font-family: 'Montserrat', sans-serif; font-size: 1.6em; font-weight: 800; letter-spacing: 1px; text-decoration: none; color: var(--primary); }
+        .logo { font-family: 'Montserrat', sans-serif; font-size: 1.6em; font-weight: 800; letter-spacing: 2px; text-decoration: none; color: var(--text-main); }
         .logo span { color: var(--primary); } 
 
-        .nav-center { display: flex; gap: 15px; align-items: center; }
-        .nav-center a { color: var(--text-muted); text-decoration: none; font-weight: 500; font-size: 0.95em; padding: 8px 16px; border-radius: 20px; transition: 0.3s; }
-        .nav-center a:hover { color: var(--text-main); }
-        .nav-center a.active { background-color: rgba(56, 178, 172, 0.15); color: var(--primary); font-weight: 600; }
+        .nav-center { display: flex; gap: 30px; align-items: center; }
+        .nav-center a { color: var(--text-muted); text-decoration: none; font-weight: 500; font-size: 0.95em; transition: color 0.3s; padding: 8px 16px; border-radius: 20px;}
+        .nav-center a:hover { color: var(--primary); }
+        .nav-center a.active { background-color: rgba(56, 178, 172, 0.15); color: var(--primary); font-weight: 700; }
 
         .dropdown { position: relative; display: inline-block; }
         .dropdown-content {
             display: none; position: absolute; top: 100%; left: 0;
-            background-color: var(--card-bg); min-width: 200px;
+            background-color: var(--card-bg); min-width: 220px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5); border-radius: 8px;
-            overflow: hidden; z-index: 1001; border: 1px solid var(--card-border); backdrop-filter: blur(10px);
+            overflow: hidden; z-index: 1001; border: 1px solid var(--card-border);
+            backdrop-filter: blur(10px);
         }
-        .dropdown-content a { color: var(--text-main); padding: 12px 16px; display: block; font-size: 0.9em; border-bottom: 1px solid var(--card-border); border-radius: 0; }
+        .dropdown-content a { color: var(--text-main); padding: 12px 16px; display: block; font-size: 0.9em; border-bottom: 1px solid var(--card-border); border-radius: 0;}
         .dropdown-content a:hover { background-color: var(--primary); color: white; }
         .dropdown:hover .dropdown-content { display: block; }
 
@@ -83,27 +92,21 @@
         .login-btn { background: #ffffff; color: #000000 !important; padding: 10px 24px; border-radius: 50px; font-weight: 700; text-decoration: none; transition: 0.3s; }
         .light-mode .login-btn { background: var(--primary); color: white !important; }
         .login-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2); }
-        .light-mode .login-btn:hover { box-shadow: 0 5px 15px rgba(14, 165, 233, 0.3); }
         .hamburger { display: none; font-size: 1.8em; color: var(--text-main); cursor: pointer; }
 
-        /* --- HERO --- */
-        .hero { text-align: center; padding: 160px 20px 60px; position: relative; z-index: 1; }
-        .hero-pill { background: rgba(56, 178, 172, 0.1); border: 1px solid var(--primary); color: var(--primary); padding: 6px 16px; border-radius: 50px; font-size: 0.85em; font-weight: 600; display: inline-block; margin-bottom: 20px; letter-spacing: 1px; }
+        /* 3. ORIGINAL HERO RESTORED (Top Section) */
+        .hero { text-align: center; padding: 180px 20px 80px; position: relative; z-index: 1; }
         .hero h1 { font-family: 'Montserrat', sans-serif; font-size: 4.5em; margin: 0 0 24px 0; line-height: 1.1; letter-spacing: -1px; }
-        .hero span { color: var(--primary); }
-        .hero p { font-size: 1.2em; color: var(--text-muted); max-width: 650px; margin: 0 auto 40px auto; line-height: 1.7; }
+        .hero h1 span { background: linear-gradient(to right, var(--primary), var(--secondary)); -webkit-background-clip: text; color: transparent; }
+        .hero p { font-size: 1.25em; color: var(--text-muted); max-width: 650px; margin: 0 auto 40px auto; line-height: 1.7; }
         
-        .hero-buttons { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 40px; }
-        .cta-btn { background: white; color: black; padding: 16px 40px; font-size: 1.1em; font-weight: 700; border-radius: 8px; text-decoration: none; transition: 0.3s; }
-        .light-mode .cta-btn { background: var(--primary); color: white; }
-        .verify-hero-btn { background: transparent; color: var(--text-main); border: 1px solid var(--card-border); padding: 16px 40px; font-size: 1.1em; font-weight: 600; border-radius: 8px; text-decoration: none; transition: 0.3s; display: flex; align-items: center; gap: 10px;}
+        .hero-buttons { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+        .cta-btn { background: var(--secondary); color: #111827; padding: 16px 40px; font-size: 1.1em; font-weight: 600; border-radius: 8px; text-decoration: none; transition: 0.3s; }
+        .cta-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(236, 201, 75, 0.3); }
+        .verify-hero-btn { background: transparent; color: var(--text-main); border: 1px solid var(--card-border); padding: 16px 40px; font-size: 1.1em; font-weight: 600; border-radius: 8px; text-decoration: none; transition: 0.3s; }
         .verify-hero-btn:hover { background: var(--card-bg); }
 
-        .hero-tags { display: flex; justify-content: center; gap: 30px; color: var(--text-muted); font-size: 0.9em; font-weight: 500; flex-wrap: wrap; }
-        .hero-tags span { display: flex; align-items: center; gap: 5px; }
-        .hero-tags span::before { content: "✓"; color: var(--primary); font-weight: bold; }
-
-        /* --- WHY CHOOSE VIRTUOLE --- */
+        /* 4. WHY CHOOSE VIRTUOLE */
         .why-choose { max-width: 1200px; margin: 0 auto 80px; padding: 0 20px; text-align: center; }
         .why-choose h2 { font-family: 'Montserrat', sans-serif; font-size: 2.8em; margin-bottom: 10px; }
         .why-choose h2 span { color: var(--primary); font-style: italic; }
@@ -119,7 +122,7 @@
         .benefit-card h3 { font-family: 'Montserrat', sans-serif; font-size: 1.3em; margin-bottom: 12px; color: var(--text-main); }
         .benefit-card p { color: var(--text-muted); font-size: 0.95em; line-height: 1.6; }
 
-        /* --- INTERNSHIP JOURNEY TABS --- */
+        /* 5. INTERNSHIP JOURNEY TABS */
         .journey-section { padding: 80px 20px; max-width: 1200px; margin: auto; text-align: center; }
         .journey-section h2 { font-family: 'Montserrat', sans-serif; font-size: 2.8em; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;}
         .journey-section h2 span { color: var(--primary); font-family: 'Times New Roman', serif; font-style: italic; text-transform: none; letter-spacing: 0;}
@@ -139,10 +142,9 @@
         .tab-content-box h4 { color: var(--primary); font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
         .tab-content-box h3 { font-family: 'Montserrat', sans-serif; font-size: 1.8em; margin-bottom: 20px; color: var(--text-main); }
         .tab-content-box p { color: var(--text-muted); line-height: 1.7; font-size: 1.05em; }
-
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- PROGRAMS --- */
+        /* 6. PROGRAMS GRID */
         .domains { padding: 80px 20px; text-align: center; }
         .domains h2 { font-family: 'Montserrat', sans-serif; font-size: 3em; margin-bottom: 50px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; }
@@ -156,7 +158,11 @@
         .show-more-btn { margin-top: 40px; background: transparent; border: 2px solid var(--primary); color: var(--primary); padding: 12px 35px; border-radius: 50px; cursor: pointer; font-weight: 600; font-size: 1.1em; transition: 0.3s; }
         .show-more-btn:hover { background: var(--primary); color: white; }
 
-        /* --- REVIEWS SLIDER --- */
+        /* 7. AMBASSADOR */
+        .ambassador-banner { padding: 100px 20px; text-align: center; border-top: 1px solid var(--card-border); }
+        .ambassador-banner h2 { font-family: 'Montserrat', sans-serif; font-size: 2.5em; margin-bottom: 20px; }
+
+        /* 8. INFINITE SLIDER FOR REVIEWS */
         .infinite-slider-section { padding: 80px 0; background: var(--bg-footer); overflow: hidden; width: 100vw; margin-left: calc(-50vw + 50%); }
         .infinite-slider-section h2 { text-align: center; font-family: 'Montserrat', sans-serif; font-size: 2.5em; margin-bottom: 40px; }
         .slider-track { display: flex; width: calc(350px * 14); animation: scroll 40s linear infinite; }
@@ -167,7 +173,35 @@
         .slide-text { color: var(--text-muted); line-height: 1.5; font-style: italic; margin-bottom: 15px; font-size: 0.95em;}
         .slide-author { font-weight: bold; color: var(--primary); }
 
-        /* --- MEGA FOOTER --- */
+        /* 9. THE NEW INSPIRED "BOTTOM CTA" SECTION (With Interactive Animated Grid) */
+        .bottom-cta {
+            position: relative; padding: 120px 20px; text-align: center; 
+            background: #030712; overflow: hidden; 
+            border-top: 1px solid var(--card-border); width: 100vw; margin-left: calc(-50vw + 50%);
+        }
+        .light-mode .bottom-cta { background: #0f172a; } /* Stays dark/professional even in light mode */
+        
+        .animated-grid-bg {
+            position: absolute; top: 0; left: 0; width: 200%; height: 200%;
+            background-image: linear-gradient(rgba(56, 178, 172, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(56, 178, 172, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            animation: panGrid 20s linear infinite;
+            z-index: 0; opacity: 0.6;
+        }
+        @keyframes panGrid { 0% { transform: translate(0, 0); } 100% { transform: translate(-40px, -40px); } }
+
+        .bottom-cta-content { position: relative; z-index: 1; max-width: 800px; margin: auto; }
+        .bottom-cta-pill { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 16px; border-radius: 50px; font-size: 0.85em; font-weight: 600; display: inline-block; margin-bottom: 25px; letter-spacing: 1px; }
+        .bottom-cta h2 { font-family: 'Montserrat', sans-serif; font-size: 4em; margin-bottom: 25px; color: #fff; line-height: 1.1; letter-spacing: -1px;}
+        .bottom-cta h2 span { color: var(--primary); }
+        .bottom-cta p { color: #9ca3af; font-size: 1.2em; margin-bottom: 40px; line-height: 1.6; }
+        
+        .bottom-tags { display: flex; justify-content: center; gap: 30px; color: #6b7280; font-size: 0.95em; font-weight: 600; flex-wrap: wrap; margin-top: 50px;}
+        .bottom-tags span { display: flex; align-items: center; gap: 8px; }
+        .bottom-tags span::before { content: "✓"; color: var(--primary); font-weight: bold; border: 1px solid var(--primary); border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px;}
+
+        /* 10. MEGA FOOTER */
         .mega-footer { background: var(--bg-footer); border-top: 1px solid var(--card-border); padding: 80px 5% 20px; font-size: 0.95em; }
         .footer-top { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 40px; margin-bottom: 60px; }
         .footer-brand { max-width: 450px; }
@@ -202,6 +236,7 @@
             .dropdown:hover .dropdown-content { display: block; }
             .hamburger { display: block; }
             .hero h1 { font-size: 3em; }
+            .bottom-cta h2 { font-size: 2.5em; }
             .footer-newsletter form { flex-direction: column; }
         }
     </style>
@@ -212,7 +247,7 @@
 
     <!-- NAVIGATION -->
     <nav>
-        <a href="/" class="logo">VIRTUOLE</a>
+        <a href="/" class="logo">VIRTU<span>OLE</span></a>
         
         <div class="nav-center" id="nav-center">
             <a href="/" class="active">Home</a> 
@@ -229,11 +264,11 @@
             <div class="dropdown">
                 <a href="#">More ▾</a>
                 <div class="dropdown-content">
+                    <a href="/feedback">Feedback & Reviews</a>
                     <a href="/terms">Terms & Conditions</a>
                     <a href="/privacy">Privacy Policy</a>
                     <a href="/refund">Return Policy</a>
                     <a href="/cookies">Cookies Policy</a>
-                    <a href="/feedback">Feedback & Reviews</a>
                     <a href="/contact">Contact Us</a>
                 </div>
             </div>
@@ -246,21 +281,15 @@
         </div>
     </nav>
 
-    <!-- HERO -->
+    <!-- ORIGINAL FRONT HERO -->
     <div class="hero">
-        <div class="hero-pill">⚡ BEGIN YOUR JOURNEY</div>
-        <h1>Build Skills. Create Projects.<br>Grow Your <span>Career.</span></h1>
-        <p>Start your virtual internship journey with Virtuole. Work on practical projects, improve your skills, and earn a verified MSME certificate to showcase your achievements.</p>
+        <h1>Build Real Projects.<br>Get <span>Certified.</span></h1>
+        <p>Bridge the gap between theoretical knowledge and industry demands. Join our virtual internship program, build production-grade architectures, and earn an official MSME-registered credential.</p>
         
         <div class="hero-buttons">
-            <a href="/login" class="cta-btn">Start Internship →</a>
-            <a href="/contact" class="verify-hero-btn">✉ Talk to Support</a>
-        </div>
-        
-        <div class="hero-tags">
-            <span>Verified Certificates</span>
-            <span>Project-Based Learning</span>
-            <span>Career-Focused Skills</span>
+            <a href="/login" class="cta-btn">Start Your Free Internship</a>
+            <a href="/verify.html" class="verify-hero-btn">Verify Credential</a>
+            <a href="/offer-letter" class="verify-hero-btn" style="color: var(--primary); border-color: var(--primary); margin-left: 10px;">Get Offer Letter</a>
         </div>
     </div>
 
@@ -375,8 +404,18 @@
         {% endif %}
     </div>
 
+    <!-- AMBASSADOR BANNER -->
+    <div class="ambassador-banner">
+        <h2>Join the Ambassador Program</h2>
+        <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto 40px auto; font-size: 1.1em;">
+            Become the face of Virtuole on your campus. Gain exclusive access to premium swag, merit-based rewards, and a fast track to corporate internship opportunities.
+        </p>
+        <a href="/apply-ambassador" style="background: #9f7aea; color: white; padding: 16px 45px; font-size: 1.1em; font-weight: 800; border-radius: 8px; text-decoration: none; display: inline-block; transition: 0.3s;">Apply to Become an Ambassador</a>
+    </div>
+
     <!-- REVIEWS SLIDER -->
     <div class="infinite-slider-section">
+        <h2 style="color: var(--text-main);">What Our Interns Say</h2>
         <div class="slider-track">
             <!-- Set 1 -->
             <div class="slide-card"><div class="slide-stars">★★★★★</div><div class="slide-text">"The evaluation matrix is tough but fair. Definitely bridged the gap between college and industry."</div><div class="slide-author">- Ankit S.</div></div>
@@ -386,8 +425,7 @@
             <div class="slide-card"><div class="slide-stars">★★★★★</div><div class="slide-text">"The Founder's LOR helped me land a great placement at a startup!"</div><div class="slide-author">- Aman D.</div></div>
             <div class="slide-card"><div class="slide-stars">★★★★☆</div><div class="slide-text">"Tough 30-day deadline, but it really prepares you for real job sprints."</div><div class="slide-author">- Neha R.</div></div>
             <div class="slide-card"><div class="slide-stars">★★★★★</div><div class="slide-text">"Downloading the offer letter instantly gave me the proof I needed for college."</div><div class="slide-author">- Vikas T.</div></div>
-            
-            <!-- Set 2 (Exact Duplicate) -->
+            <!-- Set 2 -->
             <div class="slide-card"><div class="slide-stars">★★★★★</div><div class="slide-text">"The evaluation matrix is tough but fair. Definitely bridged the gap between college and industry."</div><div class="slide-author">- Ankit S.</div></div>
             <div class="slide-card"><div class="slide-stars">★★★★★</div><div class="slide-text">"Got my MSME certificate seamlessly. Highly recommend the backend track!"</div><div class="slide-author">- Priya M.</div></div>
             <div class="slide-card"><div class="slide-stars">★★★★★</div><div class="slide-text">"The mentor feedback helped me rewrite my API logic entirely. Amazing platform."</div><div class="slide-author">- Rahul K.</div></div>
@@ -398,11 +436,32 @@
         </div>
     </div>
 
+    <!-- NEW "INSPIRED" CTA SECTION AT THE BOTTOM (With Interactive Grid Background) -->
+    <div class="bottom-cta">
+        <div class="animated-grid-bg"></div>
+        <div class="bottom-cta-content">
+            <div class="bottom-cta-pill">⚡ BEGIN YOUR JOURNEY</div>
+            <h2>Build Skills. <span>Create Projects.</span><br>Grow Your Career.</h2>
+            <p>Start your virtual internship journey with Virtuole. Work on practical projects, improve your skills, and earn a verified MSME certificate to showcase your achievements.</p>
+            
+            <div class="hero-buttons" style="margin-top: 30px;">
+                <a href="/login" class="cta-btn" style="background: white; color: black;">Start Internship →</a>
+                <a href="/contact" class="verify-hero-btn" style="border-color: rgba(255,255,255,0.3); color: white;">✉ Talk to Support</a>
+            </div>
+            
+            <div class="bottom-tags">
+                <span>Verified Certificates</span>
+                <span>Project-Based Learning</span>
+                <span>Career-Focused Skills</span>
+            </div>
+        </div>
+    </div>
+
     <!-- MEGA FOOTER -->
     <footer class="mega-footer">
         <div class="footer-top">
             <div class="footer-brand">
-                <a href="/" class="logo">VIRTUOLE</a>
+                <a href="/" class="logo">VIRTU<span>OLE</span></a>
                 <p>Empowering the next generation of tech leaders through virtual internships, hands-on coding practice, and industry-standard architecture building.</p>
             </div>
             
