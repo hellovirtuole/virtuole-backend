@@ -323,6 +323,49 @@
     .footer-bottom { flex-direction: column; text-align: center; gap: 15px; }
     .legal-links a { margin: 0 10px; display: inline-block; margin-bottom: 5px; }
 }
+
+/* ========================================= */
+/* FINAL MOBILE HORIZONTAL SCROLL FIX        */
+/* ========================================= */
+
+/* 1. Lock the body so it physically cannot scroll sideways */
+html, body {
+    overflow-x: hidden !important;
+    width: 100vw !important;
+    max-width: 100% !important;
+    position: relative;
+}
+
+/* 2. Stop the background glow from pushing past the screen edge */
+.glow-bg {
+    right: 0 !important;
+    max-width: 100vw !important;
+}
+
+/* 3. Force the mobile menu to not stretch the page width */
+@media (max-width: 850px) {
+    .nav-center {
+        position: fixed !important; /* Fixed is the magic property here */
+        top: 70px;
+        right: -100%; /* Hides perfectly without stretching */
+        width: 65% !important; /* Takes up just over half the screen */
+        height: 100vh;
+        z-index: 1001;
+        transition: right 0.3s ease !important;
+    }
+    
+    .nav-center.active { 
+        right: 0 !important; 
+    }
+    
+    /* Ensure the slider section doesn't break boundaries */
+    .infinite-slider-section, .bottom-cta {
+        width: 100% !important;
+        margin-left: 0 !important;
+        box-sizing: border-box !important;
+    }
+}
+
     </style>
 </head>
 <body>
