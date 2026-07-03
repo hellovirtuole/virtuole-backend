@@ -815,6 +815,10 @@ def download_offer(enrollment_id):
 def contact_page():
     return render_template('contact.html')
 
+@app.route('/feedback')
+def feedback_page():
+    return render_template('feedback.html')
+
 @app.route('/submit-feedback', methods=['POST'])
 def submit_feedback():
     name = request.form.get('name')
@@ -822,21 +826,15 @@ def submit_feedback():
     subject = request.form.get('subject')
     message = request.form.get('message')
     
-    # Logs the feedback to your Vercel console for now
+    # Logs the feedback to your Vercel console
     print(f"NEW FEEDBACK: {name} | {email} | {subject} | {message}")
     
-    # You can later connect this to Supabase or send an email to support@virtuole.in
-    
-    return render_template('contact.html', message="Thank you! Your feedback has been successfully submitted.")
+    return render_template('feedback.html', message="Thank you! Your feedback has been successfully submitted.")
 
 @app.route('/subscribe', methods=['POST'])
 def subscribe_newsletter():
     email = request.form.get('email')
-    
-    # Logs the new subscriber to your Vercel console
     print(f"NEW SUBSCRIBER: {email}")
-    
-    # Redirects the user right back to the homepage seamlessly
     return redirect(url_for('home'))
 
 @app.route('/terms')
