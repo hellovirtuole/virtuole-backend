@@ -5,6 +5,7 @@
         backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
         position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; 
         border-bottom: 1px solid var(--card-border); transition: 0.4s ease;
+        box-sizing: border-box !important; /* FIX: Keeps menu button from sliding off screen */
     }
     .logo-container { display: flex; align-items: center; text-decoration: none; gap: 12px; height: 40px; }
     .logo-img { height: 100%; width: auto; object-fit: contain; display: block; }
@@ -58,7 +59,7 @@
         .nav-center {
             position: fixed !important; top: 70px; right: -100%; flex-direction: column; background: var(--nav-bg);
             width: 65% !important; height: 100vh; padding: 40px 24px; gap: 20px; z-index: 1001; transition: right 0.3s ease !important;
-            align-items: flex-start;
+            align-items: flex-start; box-sizing: border-box !important;
         }
         .nav-center.active { right: 0 !important; }
         .hamburger { display: block; }
@@ -77,11 +78,13 @@
             margin: 0 0 10px 0;
             padding: 12px;
             border-radius: 50px;
+            box-sizing: border-box !important;
         }
 
         .mobile-login-btn { 
             display: inline-block !important; width: 100%; text-align: center; 
             margin-top: 10px; background: var(--primary); color: #fff !important;
+            box-sizing: border-box !important;
         }
 
         /* Mobile Theme Toggle Row */
