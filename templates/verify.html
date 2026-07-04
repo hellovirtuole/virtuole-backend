@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credential Verification | Virtuole</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Inter:wght@400;500;600;700&display=swap');
+        
+        /* Universal box-sizing prevents padding from pushing elements off-screen */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            max-width: 100%;
+            overflow-x: hidden; /* Kills the blank side-scroll on mobile */
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #050b14 0%, #0a192f 50%, #050b14 100%);
+            color: #e2e8f0; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            position: relative; 
+            padding: 20px; 
+        }
+        
+        /* Animated Background Orbs */
+        .ambient-orb { 
+            position: absolute; 
+            border-radius: 50%; 
+            filter: blur(80px); 
+            z-index: -1; 
+            opacity: 0.4;
+            animation: float 10s infinite alternate ease-in-out;
+        }
+        .orb-1 { width: 400px; height: 400px; background: #38b2ac; top: -100px; left: -100px; }
+        .orb-2 { width: 300px; height: 300px; background: #ecc94b; bottom: -50px; right: -50px; animation-delay: -5s; opacity: 0.2;}
+
+        @keyframes float {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(30px, 50px); }
+        }
+        
+        /* Premium Frosted Glass Card */
+        .verify-box { 
+            width: 100%; 
+            max-width: 550px; 
+            background: rgba(13, 22, 38, 0.65); 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px);
+            padding: 50px 40px; 
+            border-radius: 20px; 
+            text-align: center; 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            border-top: 4px solid #38b2ac; 
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1); 
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp { 
+            from { opacity: 0; transform: translateY(30px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        
+        .logo { 
+            font-family: 'Montserrat', sans-serif; 
+            font-size: 2.2em; 
+            font-weight: 800; 
+            letter-spacing: 2px; 
+            margin-bottom: 5px; 
+            color: white; 
+            text-decoration: none; 
+            display: inline-block;
+        }
+        .logo span { color: #38b2ac; }
+        
+        h2 { margin: 15px 0 10px 0; font-family: 'Montserrat', sans-serif; color: #ffffff; font-size: 1.5em; letter-spacing: -0.5px;}
+        p { color: #94a3b8; font-size: 0.95em; margin-bottom: 35px; line-height: 1.6; }
+        
+        /* Centered Stacked Search Form */
+        .search-group { 
+            width: 100%; 
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .search-group input { 
+            width: 100%; 
+            padding: 16px 20px; 
+            border-radius: 12px; 
+            border: 1px solid rgba(56, 178, 172, 0.3); 
+            background: rgba(2, 6, 23, 0.5); 
+            color: white; 
+            font-size: 1.05em; 
+            font-family: 'Inter', sans-serif; 
+            outline: none; 
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+            text-align: center; /* Centers the typed ID */
+            margin-bottom: 25px; /* Pushes the button down */
+            letter-spacing: 1px;
+        }
+        .search-group input:focus { 
+            border-color: #38b2ac; 
+            background: rgba(2, 6, 23, 0.8);
+            box-shadow: 0 0 15px rgba(56, 178, 172, 0.2), inset 0 2px 4px rgba(0,0,0,0.2); 
+        }
+        .search-group input::placeholder { color: #475569; letter-spacing: normal; }
+        
+        /* The Centered Verify Button */
+        .search-btn { 
+            background: linear-gradient(135deg, #38b2ac 0%, #2c7a7b 100%); 
+            color: white; 
+            padding: 15px 45px; 
+            font-weight: 700; 
+            border: none; 
+            border-radius: 50px; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+            font-size: 1.05em; 
+            letter-spacing: 0.5px;
+            box-shadow: 0 6px 20px rgba(56, 178, 172, 0.3);
+            width: auto;
+            min-width: 200px;
+        }
+        .search-btn:hover { 
+            background: linear-gradient(135deg, #4fd1c5 0%, #319795 100%);
+            box-shadow: 0 8px 25px rgba(56, 178, 172, 0.5); 
+            transform: translateY(-2px);
+        }
+        
+        /* Shield Icon for Empty State */
+        .shield-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 15px auto;
+            color: #38b2ac;
+            opacity: 0.8;
+        }
+
+        /* Verified Result Badge */
+        .badge-wrapper {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            margin-top: 15px; /* Centers it perfectly below the logo */
+            margin-bottom: 30px;
+        }
+
+        .verified-badge { 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            background: rgba(16, 185, 129, 0.15); 
+            color: #34d399; 
+            border: 1px solid rgba(16, 185, 129, 0.4); 
+            padding: 10px 24px; 
+            border-radius: 50px; 
+            font-weight: 700; 
+            font-size: 0.85em; 
+            letter-spacing: 1.5px; 
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
+            animation: pulseGlow 2s infinite alternate;
+        }
+        @keyframes pulseGlow {
+            from { box-shadow: 0 0 10px rgba(16, 185, 129, 0.1); }
+            to { box-shadow: 0 0 25px rgba(16, 185, 129, 0.3); }
+        }
+        .verified-badge svg { margin-right: 8px; width: 20px; height: 20px; }
+        
+        .data-grid { 
+            text-align: left; 
+            background: rgba(2, 6, 23, 0.4); 
+            padding: 30px; 
+            border-radius: 16px; 
+            border: 1px solid rgba(255,255,255,0.05); 
+            margin-bottom: 35px; 
+            position: relative;
+            overflow: hidden;
+        }
+        .data-grid::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.03), transparent);
+            transform: skewX(-25deg); animation: shine 6s infinite;
+        }
+        @keyframes shine { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
+
+        .data-row { margin-bottom: 18px; }
+        .data-row:last-child { margin-bottom: 0; }
+        .data-label { font-size: 0.75em; color: #64748b; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 4px; font-weight: 700; }
+        .data-value { font-size: 1.15em; color: #f8fafc; font-weight: 500; }
+        .data-value.highlight { color: #ecc94b; font-weight: 800; font-family: 'Montserrat', sans-serif; font-size: 1.4em; text-shadow: 0 2px 10px rgba(236, 201, 75, 0.2);}
+
+        .split-row {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-end; 
+            margin-top: 25px; 
+            border-top: 1px solid rgba(255,255,255,0.05); 
+            padding-top: 20px;
+        }
+
+        /* Buttons */
+        .btn-group { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; }
+        .action-btn { 
+            padding: 14px 25px; 
+            border-radius: 10px; 
+            font-weight: 600; 
+            text-decoration: none; 
+            transition: all 0.3s ease; 
+            flex: 1; 
+            min-width: 200px; 
+            display: inline-block; 
+            text-align: center;
+            font-size: 0.95em;
+        }
+        .btn-cert { 
+            background: transparent; 
+            border: 2px solid #38b2ac; 
+            color: #38b2ac; 
+        }
+        .btn-cert:hover { 
+            background: #38b2ac; 
+            color: #0f172a; 
+            box-shadow: 0 5px 15px rgba(56, 178, 172, 0.2);
+        }
+        .btn-lor { 
+            background: linear-gradient(135deg, #ecc94b 0%, #d4af37 100%); 
+            color: #0f172a; 
+            border: none; 
+            box-shadow: 0 4px 10px rgba(236, 201, 75, 0.2);
+        }
+        .btn-lor:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 20px rgba(236, 201, 75, 0.4); 
+        }
+
+        .error-msg { 
+            background: rgba(239, 68, 68, 0.1); 
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-left: 4px solid #ef4444; 
+            color: #fca5a5; 
+            padding: 16px; 
+            border-radius: 8px; 
+            text-align: left; 
+            margin-bottom: 25px; 
+            font-size: 0.9em; 
+            line-height: 1.5;
+        }
+
+        
+        
+        .back-link { 
+            display: inline-block; 
+            margin-top: 25px; 
+            color: #64748b; 
+            text-decoration: none; 
+            font-size: 0.9em; 
+            font-weight: 500;
+            transition: color 0.3s; 
+        }
+        .back-link:hover { color: #38b2ac; }
+
+        /* Mobile Optimization Rules */
+        @media (max-width: 500px) {
+            .verify-box {
+                padding: 40px 20px;
+            }
+            .data-grid {
+                padding: 20px 15px;
+            }
+            .search-group input {
+                padding: 15px;
+            }
+            .split-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .split-row > div {
+                text-align: left !important;
+            }
+            .split-row > div:nth-child(2) {
+                margin-top: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-orb orb-1"></div>
+    <div class="ambient-orb orb-2"></div>
+    
+    <div class="verify-box">
+        <a href="/" class="logo">VIRTU<span>OLE</span></a>
+        
+        {% if verified_data %}
+            <div class="badge-wrapper">
+                <div class="verified-badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                    OFFICIAL CREDENTIAL VERIFIED
+                </div>
+            </div>
+            
+            <div class="data-grid">
+                <div class="data-row">
+                    <div class="data-label">Candidate Name</div>
+                    <div class="data-value">{{ verified_data.student_name }}</div>
+                </div>
+                <div class="data-row" style="margin-top: 20px;">
+                    <div class="data-label">Program & Architecture Track</div>
+                    <div class="data-value">{{ verified_data.program_title }} <span style="color:#94a3b8; font-size: 0.9em;">({{ verified_data.track_level | title }})</span></div>
+                </div>
+                
+                <div class="split-row">
+                    <div>
+                        <div class="data-label">Final Score</div>
+                        <div class="data-value highlight">{{ verified_data.score }}%</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="data-label">Date Issued</div>
+                        <div class="data-value" style="font-size: 1em;">{{ verified_data.evaluated_date }}</div>
+                    </div>
+                </div>
+                
+                <div class="data-row" style="margin-top: 20px;">
+                    <div class="data-label">Credential ID</div>
+                    <div class="data-value" style="font-family: monospace; font-size: 0.95em; color: #38b2ac;">{{ verified_data.enrollment_id }}</div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button type="button" class="action-btn btn-cert" onclick="window.print()">🖨️ Print / Save as PDF</button>
+            </div>
+
+            <a href="/verify-credential" class="back-link">&larr; Verify Another Credential</a>
+
+        {% else %}
+            
+            <svg class="shield-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <path d="M9 12l2 2 4-4"></path>
+            </svg>
+            
+            <h2>Credential Verification</h2>
+            <p>Enter the unique Credential ID found on the student's document to verify its VIRTUOLE authenticity.</p>
+            
+            {% if error %}
+                <div class="error-msg">
+                    <strong>Verification Failed:</strong> We could not find a valid VIRTUOLE credential matching that ID. Please check the ID and try again.
+                </div>
+            {% endif %}
+
+            <form action="/verify-credential" method="GET" class="search-group">
+                <input type="text" name="credential_id" placeholder="e.g., VT-E-123456" required autocomplete="off">
+                <button type="submit" class="search-btn">Verify Credential</button>
+            </form>
+
+           
+            <br>
+            <a href="/" class="back-link">&larr; Return to Main Site</a>
+        {% endif %}
+        
+    </div>
+</body>
+</html>

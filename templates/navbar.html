@@ -1,0 +1,250 @@
+<style>
+    nav { 
+        display: flex; justify-content: space-between; align-items: center; 
+        padding: 15px 5%; background: var(--nav-bg); 
+        backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+        position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; 
+        border-bottom: 1px solid var(--card-border); transition: 0.4s ease;
+        box-sizing: border-box !important; 
+    }
+    .logo-container { display: flex; align-items: center; text-decoration: none; gap: 12px; height: 40px; }
+    .logo-img { height: 100%; width: auto; object-fit: contain; display: block; }
+    .logo-text { font-family: 'Montserrat', sans-serif; font-size: 1.6em; font-weight: 800; letter-spacing: 1px; display: flex; align-items: center; }
+    
+    /* Logo Colors Locked */
+    .logo-text .virt { color: var(--text-main) !important; transition: 0.3s;} 
+    .logo-text .uole { color: var(--primary) !important; } 
+
+    .nav-center { display: flex; gap: 10px; align-items: center; }
+    
+    /* Stronger Hover and Active Highlights */
+    .nav-link { color: var(--text-muted); text-decoration: none; font-weight: 500; font-size: 0.95em; padding: 8px 16px; border-radius: 20px; transition: 0.3s; cursor: pointer;}
+    .nav-link:hover { color: var(--text-main); background-color: rgba(255, 255, 255, 0.1) !important; }
+    .nav-link.active { background-color: rgba(56, 178, 172, 0.15) !important; color: var(--primary) !important; font-weight: 600; }
+    
+    .dropdown { position: relative; display: inline-block; }
+    .dropdown-content {
+        display: none; position: absolute; top: 100%; left: 0;
+        background-color: rgba(8, 12, 20, 0.98); min-width: 200px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.8); border-radius: 8px;
+        overflow: hidden; z-index: 1001; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+    }
+    .light-mode .dropdown-content { background-color: rgba(241, 245, 249, 0.98); border-color: rgba(0,0,0,0.1); }
+    .dropdown-content a { color: var(--text-main); padding: 12px 16px; display: block; font-size: 0.9em; border-bottom: 1px solid var(--card-border); border-radius: 0; text-decoration: none; transition: 0.2s;}
+    .dropdown-content a:hover { background-color: var(--primary); color: white; padding-left: 20px; }
+    .dropdown:hover .dropdown-content { display: block; }
+    
+    .nav-right { display: flex; align-items: center; gap: 20px; }
+    .theme-switch-wrapper { display: flex; align-items: center; gap: 8px; }
+    .theme-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
+    .theme-switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--card-bg); transition: .4s; border-radius: 34px; border: 1px solid var(--card-border); }
+    .slider:before { position: absolute; content: "☀️"; font-size: 12px; display: flex; align-items: center; justify-content: center; height: 20px; width: 20px; left: 2px; bottom: 2px; background-color: #fff; transition: .4s; border-radius: 50%; color: #f59e0b;}
+    .light-mode .slider:before { content: "🌙"; color: #475569; }
+    input:checked + .slider { background-color: var(--primary); }
+    input:checked + .slider:before { transform: translateX(22px); }
+    
+    .login-btn { background: #ffffff; color: #000000 !important; padding: 10px 24px; border-radius: 50px; font-weight: 700; text-decoration: none; transition: 0.3s; }
+    .light-mode .login-btn { background: var(--primary); color: white !important; }
+    .login-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2); }
+    
+    /* White Back Button */
+    .back-btn { background-color: white !important; color: black !important; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: 600; margin-right: 15px; }
+    
+    .hamburger { display: none; font-size: 1.8em; color: var(--text-main); cursor: pointer; }
+    
+    /* Visibility Classes */
+    .mobile-only { display: none !important; }
+    .desktop-only { display: flex; }
+    .back-btn.desktop-only { display: inline-flex; }
+
+    @media (max-width: 850px) {
+        .nav-center {
+            position: fixed !important; top: 70px; right: -100%; flex-direction: column; background: var(--nav-bg);
+            width: 65% !important; height: 100vh; padding: 40px 24px; gap: 20px; z-index: 1001; transition: right 0.3s ease !important;
+            align-items: flex-start; box-sizing: border-box !important;
+        }
+        .nav-center.active { right: 0 !important; }
+        .hamburger { display: block; }
+        
+        /* Hide Desktop Elements */
+        .desktop-only { display: none !important; }
+        
+        /* Show Mobile Elements */
+        .mobile-only { display: flex !important; }
+        
+        /* Mobile Back Button Styling */
+        a.back-btn.mobile-only {
+            display: block !important; width: 100%; text-align: center;
+            margin: 0 0 10px 0; padding: 12px; border-radius: 50px; box-sizing: border-box !important;
+        }
+
+        .mobile-login-btn { 
+            display: inline-block !important; width: 100%; text-align: center; 
+            margin-top: 10px; background: var(--primary); color: #fff !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Mobile Theme Toggle Row */
+        .mobile-theme-row {
+            width: 100%; justify-content: space-between; align-items: center; margin-top: 15px;
+            padding-top: 20px; border-top: 1px solid var(--card-border); color: var(--text-main); font-weight: 600;
+        }
+    }
+</style>
+
+<nav>
+    <a href="/" class="logo-container">
+        <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/logo/logo.png" alt="Logo" class="logo-img" onerror="this.style.display='none'">
+        <div class="logo-text"><span class="virt">VIRTU</span><span class="uole">OLE</span></div>
+    </a>
+    
+    <div class="nav-center" id="nav-center">
+        {% if request.path != '/' %}
+            <a href="javascript:history.back()" class="back-btn mobile-only">← Back</a>
+        {% endif %}
+
+        <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Home</a> 
+        
+        <div class="dropdown">
+            <a href="/#domains" class="nav-link {% if 'verify' in request.path or 'offer' in request.path %}active{% endif %}">Internships ▾</a>
+            <div class="dropdown-content">
+                <a href="/#domains">Apply / Enroll</a>
+                <a href="/verify.html">Verify Certificate</a>
+                <a href="/offer-letter">Download Documents</a>
+            </div>
+        </div>
+        
+        <a href="/apply-ambassador" class="nav-link {% if 'ambassador' in request.path %}active{% endif %}">Ambassadors</a>
+        
+        <a href="/blog" class="nav-link {% if 'blog' in request.path %}active{% endif %}">Blog</a>
+        
+        <div class="dropdown">
+            <a href="#" class="nav-link {% if 'feedback' in request.path or 'terms' in request.path or 'privacy' in request.path or 'contact' in request.path %}active{% endif %}">Policies & Support ▾</a>
+            <div class="dropdown-content">
+                <a href="/feedback">Feedback & Reviews</a>
+                <a href="/terms">Terms & Conditions</a>
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/refund">Return Policy</a>
+                <a href="/cookies">Cookies Policy</a>
+                <a href="/contact">Contact Support</a>
+            </div>
+        </div>
+        
+        {% if 'login' not in request.path.lower() %}
+            <a href="/login" class="login-btn mobile-login-btn mobile-only">Login / Register</a>
+        {% endif %}
+
+        <div class="mobile-only mobile-theme-row">
+            <span>Theme Mode</span>
+            <label class="theme-switch-wrapper">
+                <div class="theme-switch">
+                    <input type="checkbox" class="nav-theme-toggle">
+                    <span class="slider"></span>
+                </div>
+            </label>
+        </div>
+    </div>
+    
+    <div class="nav-right">
+        {% if request.path != '/' %}
+            <a href="javascript:history.back()" class="back-btn desktop-only">← Back</a>
+        {% endif %}
+        
+        {% if 'login' not in request.path.lower() %}
+            <a href="/login" class="login-btn desktop-only">Login / Register</a>
+        {% endif %}
+        
+        <label class="theme-switch-wrapper desktop-only">
+            <div class="theme-switch">
+                <input type="checkbox" id="theme-toggle" class="nav-theme-toggle">
+                <span class="slider"></span>
+            </div>
+        </label>
+        
+        <span class="hamburger" id="hamburger">☰</span>
+    </div>
+</nav>
+
+<script>
+    /* =====================================================================
+       SHARED NAVBAR / SITE BEHAVIOUR
+       Loaded on every page that includes navbar.html, so theme + mobile menu
+       work site-wide. Functions used by inline onclick handlers are declared
+       globally; everything else is scoped inside the IIFE.
+    ===================================================================== */
+
+    // Homepage "journey" tabs (called from inline onclick="switchTab(this,'id')")
+    function switchTab(el, tabId) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content-box').forEach(c => c.classList.remove('active'));
+        if (el) el.classList.add('active');
+        const box = document.getElementById('content-' + tabId);
+        if (box) box.classList.add('active');
+    }
+
+    // Apply the saved theme immediately to avoid a flash of the wrong mode.
+    function applyTheme(isLight) {
+        document.body.classList.toggle('light-mode', isLight);
+        document.querySelectorAll('.nav-theme-toggle').forEach(t => { t.checked = isLight; });
+    }
+    applyTheme(localStorage.getItem('theme') === 'light');
+
+    // Wire up everything else once the full page has parsed. navbar.html is
+    // included near the top of <body>, so the hero/footer/buttons below it do
+    // not exist yet when this script first runs.
+    document.addEventListener('DOMContentLoaded', function () {
+        // ---- Mobile hamburger menu ----
+        const hamburger = document.getElementById('hamburger');
+        const navCenter = document.getElementById('nav-center');
+        if (hamburger && navCenter) {
+            hamburger.addEventListener('click', () => {
+                const open = navCenter.classList.toggle('active');
+                hamburger.textContent = open ? '✕' : '☰';
+            });
+            navCenter.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    navCenter.classList.remove('active');
+                    hamburger.textContent = '☰';
+                });
+            });
+        }
+
+        // ---- Light / Dark theme toggle (syncs every toggle on the page) ----
+        document.querySelectorAll('.nav-theme-toggle').forEach(toggle => {
+            toggle.checked = document.body.classList.contains('light-mode');
+            toggle.addEventListener('change', () => {
+                const isLight = toggle.checked;
+                localStorage.setItem('theme', isLight ? 'light' : 'dark');
+                applyTheme(isLight);
+            });
+        });
+
+        // ---- Scroll-based nav highlight (homepage anchor sections only) ----
+        if (document.querySelector('.hero')) {
+            const sections = document.querySelectorAll('div[id]');
+            const anchorLinks = document.querySelectorAll('.nav-link[href*="#"]');
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    if (window.scrollY >= section.offsetTop - 150) {
+                        current = section.getAttribute('id');
+                    }
+                });
+                anchorLinks.forEach(li => {
+                    const href = li.getAttribute('href') || '';
+                    li.classList.toggle('active', current !== '' && href.includes('#' + current));
+                });
+            });
+        }
+
+        // ---- Homepage "View All Programs" reveal ----
+        const showMoreBtn = document.getElementById('show-more-btn');
+        if (showMoreBtn) {
+            showMoreBtn.addEventListener('click', () => {
+                document.querySelectorAll('.hidden-program').forEach(card => card.classList.remove('hidden-program'));
+                showMoreBtn.style.display = 'none';
+            });
+        }
+    });
+    </script>

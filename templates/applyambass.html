@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTM Ambassador Application | Virtuole</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Inter:wght@400;500;600&display=swap');
+        
+        :root {
+            --bg-main: #030712;
+            --nav-bg: rgba(3, 7, 18, 0.85);
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+            --card-bg: rgba(17, 24, 39, 0.6);
+            --card-border: rgba(255,255,255,0.05);
+            --primary: #9f7aea; /* Purple for ambassador */
+            --input-bg: #111827;
+        }
+
+        .light-mode {
+            --bg-main: #f8fafc;
+            --nav-bg: rgba(255, 255, 255, 0.95);
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --card-bg: #ffffff;
+            --card-border: rgba(0, 0, 0, 0.1);
+            --primary: #8b5cf6;
+            --input-bg: #f1f5f9;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { max-width: 100vw; overflow-x: hidden; margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: var(--bg-main); color: var(--text-main); transition: 0.4s ease; }
+
+        .glow-bg { position: absolute; width: 600px; height: 600px; background: radial-gradient(circle, rgba(159, 122, 234, 0.15) 0%, rgba(0,0,0,0) 70%); top: -200px; left: -100px; z-index: -1; pointer-events: none; }
+
+        nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 50px; background: var(--nav-bg); backdrop-filter: blur(16px); position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--card-border); }
+        .logo { font-family: 'Montserrat', sans-serif; font-size: 1.6em; font-weight: 800; text-decoration: none; color: #38b2ac; }
+        .back-btn { color: var(--text-muted); text-decoration: none; font-weight: 500; transition: 0.3s; }
+        .back-btn:hover { color: var(--primary); }
+
+        .container { max-width: 1100px; margin: 80px auto; padding: 0 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+
+        .info-box, .form-box { background: var(--card-bg); backdrop-filter: blur(10px); padding: 40px; border-radius: 16px; border: 1px solid var(--card-border); border-top: 4px solid var(--primary); }
+        
+        .info-box h2 { font-family: 'Montserrat', sans-serif; color: var(--primary); margin-bottom: 20px; font-size: 2em;}
+        .info-box p { color: var(--text-muted); margin-bottom: 20px; line-height: 1.6; }
+        
+        .perks-list { margin-top: 30px; }
+        .perk-item { background: rgba(0,0,0,0.2); border: 1px solid var(--card-border); padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .perk-item strong { color: var(--text-main); font-size: 1.1em; display: block; margin-bottom: 5px; }
+        .perk-item span { color: var(--text-muted); font-size: 0.9em; line-height: 1.4; }
+
+        .form-box h2 { font-family: 'Montserrat', sans-serif; margin-bottom: 20px; }
+        .form-box input, .form-box textarea { width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 8px; border: 1px solid var(--card-border); background: var(--input-bg); color: var(--text-main); font-family: inherit; outline: none; }
+        .form-box input:focus, .form-box textarea:focus { border-color: var(--primary); }
+        .form-box button { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 8px; font-weight: bold; font-size: 1.1em; cursor: pointer; transition: 0.3s; }
+        .form-box button:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(159, 122, 234, 0.3); }
+
+        @media (max-width: 850px) { .container { grid-template-columns: 1fr; } nav { padding: 15px 20px; } }
+    </style>
+</head>
+<body>
+    <div class="glow-bg"></div>
+    <nav>
+        <a href="/" class="logo">VIRTUOLE</a>
+        <a href="/" class="back-btn">&larr; Back to Home</a>
+    </nav>
+
+    <div class="container">
+        <!-- Details Section -->
+        <div class="info-box">
+            <h2>GTM Ambassador Program</h2>
+            <p>Lead the tech revolution on your campus. As a Go-To-Market Ambassador, you bypass standard hurdles and unlock a completely different tier of Virtuole platform benefits.</p>
+            
+            <div class="perks-list">
+                <div class="perk-item">
+                    <strong>📈 Rank Progression System</strong>
+                    <span>Level up from Kickstart to Campus Advocate, Community Lead, and Star Ambassador by hitting community milestones.</span>
+                </div>
+                <div class="perk-item">
+                    <strong>👕 Premium Performance Swag</strong>
+                    <span>Unlock exclusive Virtuole-branded T-shirts, hoodies, and tech accessories delivered right to your door.</span>
+                </div>
+                <div class="perk-item">
+                    <strong>⭐ Guaranteed Elite LORs</strong>
+                    <span>Top-performing Community Leads secure an automatic Elite Founder's Letter of Recommendation for their portfolio.</span>
+                </div>
+                <div class="perk-item">
+                    <strong>🤝 Network & Priority Support</strong>
+                    <span>Gain access to a private tier of our communication channels, networking directly with Virtuole executives and senior mentors.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Application Form -->
+        <div class="form-box">
+            {% if submitted %}
+            <h2 style="color: var(--primary);">✅ Application Received</h2>
+            <p style="color: var(--text-muted); line-height: 1.6;">Thank you for applying to the Virtuole GTM Ambassador Program. Our team will review your submission, and if you're selected for Round 2 you'll receive an email with your GTM Assessment task.</p>
+            <a href="/" style="display:inline-block; margin-top:20px; color: var(--primary); text-decoration:none; font-weight:600;">← Return to Home</a>
+            {% else %}
+            <h2>Apply Now</h2>
+            <p style="color: var(--text-muted); margin-bottom: 25px;">Submit your details. If selected for Round 2, you will receive an email with your GTM Assessment task.</p>
+
+            {% if error %}
+            <div style="background: rgba(245,101,101,0.1); border-left: 3px solid #f56565; color:#f56565; padding: 12px; margin-bottom: 20px; border-radius: 0 4px 4px 0; font-size: 0.9em;">⚠️ {{ error }}</div>
+            {% endif %}
+
+            <form action="/api/apply-ambassador" method="POST">
+                <input type="text" name="name" placeholder="Full Legal Name" required>
+                <input type="email" name="email" placeholder="University / Personal Email" required>
+                <input type="text" name="college" placeholder="College / University Name" required>
+                <textarea name="motivation" rows="6" placeholder="Why would you be a great fit for the Virtuole Ambassador Program? Detail your campus network and technical background..." required></textarea>
+                <button type="submit">Submit Application →</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
