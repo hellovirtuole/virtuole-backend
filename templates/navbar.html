@@ -1,5 +1,4 @@
 <style>
-    /* NAVBAR COMPONENT STYLES */
     nav { 
         display: flex; justify-content: space-between; align-items: center; 
         padding: 15px 5%; background: var(--nav-bg); 
@@ -10,12 +9,16 @@
     .logo-container { display: flex; align-items: center; text-decoration: none; gap: 12px; height: 40px; }
     .logo-img { height: 100%; width: auto; object-fit: contain; display: block; }
     .logo-text { font-family: 'Montserrat', sans-serif; font-size: 1.6em; font-weight: 800; letter-spacing: 1px; display: flex; align-items: center; }
-    .logo-text .virt { color: var(--text-main); transition: 0.3s;} 
-    .logo-text .uole { color: var(--primary); } 
+    
+    /* Logo Colors Locked */
+    .logo-text .virt { color: var(--text-main) !important; transition: 0.3s;} 
+    .logo-text .uole { color: var(--primary) !important; } 
+
     .nav-center { display: flex; gap: 10px; align-items: center; }
     .nav-link { color: var(--text-muted); text-decoration: none; font-weight: 500; font-size: 0.95em; padding: 8px 16px; border-radius: 20px; transition: 0.3s; cursor: pointer;}
     .nav-link:hover { color: var(--text-main); background-color: rgba(255,255,255,0.05); }
     .nav-link.active { background-color: rgba(56, 178, 172, 0.15); color: var(--primary); font-weight: 600; }
+    
     .dropdown { position: relative; display: inline-block; }
     .dropdown-content {
         display: none; position: absolute; top: 100%; left: 0;
@@ -27,6 +30,7 @@
     .dropdown-content a { color: var(--text-main); padding: 12px 16px; display: block; font-size: 0.9em; border-bottom: 1px solid var(--card-border); border-radius: 0; text-decoration: none;}
     .dropdown-content a:hover { background-color: var(--primary); color: white; }
     .dropdown:hover .dropdown-content { display: block; }
+    
     .nav-right { display: flex; align-items: center; gap: 20px; }
     .theme-switch-wrapper { display: flex; align-items: center; gap: 8px; }
     .theme-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
@@ -39,20 +43,27 @@
     .login-btn { background: #ffffff; color: #000000 !important; padding: 10px 24px; border-radius: 50px; font-weight: 700; text-decoration: none; transition: 0.3s; }
     .light-mode .login-btn { background: var(--primary); color: white !important; }
     .login-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2); }
-    .back-btn { color: var(--text-muted); text-decoration: none; margin-right: 15px; font-weight: 500; }
+    
+    /* White Back Button */
+    .back-btn { 
+        background-color: white !important; 
+        color: black !important; 
+        padding: 8px 16px; 
+        border-radius: 20px; 
+        text-decoration: none; 
+        font-weight: 600; 
+        margin-right: 15px; 
+    }
+    
     .hamburger { display: none; font-size: 1.8em; color: var(--text-main); cursor: pointer; }
     .mobile-login-btn { display: none; }
+    
     @media (max-width: 850px) {
-        nav { padding: 15px 20px; }
         .nav-center {
             position: fixed !important; top: 70px; right: -100%; flex-direction: column; background: var(--nav-bg);
-            backdrop-filter: blur(25px); width: 65% !important; height: 100vh; text-align: left; padding: 40px 24px; gap: 24px; 
-            border-left: 1px solid var(--card-border); align-items: flex-start; justify-content: flex-start; 
-            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; z-index: 1001;
+            width: 65% !important; height: 100vh; padding: 40px 24px; gap: 24px; z-index: 1001; transition: right 0.3s ease !important;
         }
         .nav-center.active { right: 0 !important; }
-        .dropdown-content { position: static; box-shadow: none; border: none; display: none; background: transparent; padding-left: 15px;}
-        .dropdown:hover .dropdown-content { display: block; }
         .hamburger { display: block; }
         .desktop-login-btn { display: none !important; }
         .mobile-login-btn { display: inline-block !important; width: 100%; text-align: center; margin-top: 10px; background: var(--primary); color: #fff !important;}
