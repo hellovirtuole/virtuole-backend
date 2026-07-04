@@ -5,70 +5,108 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gateway | Virtuole</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Open+Sans:wght@400;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Inter:wght@400;500;600&display=swap');
         
-        body { 
-            font-family: 'Open Sans', sans-serif; 
-            background: linear-gradient(135deg, #0b1a30 0%, #1a365d 50%, #0b1a30 100%); 
-            color: white; 
+        /* Global Variables for Consistency */
+        :root {
+            --bg-main: #030712;
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+            --primary: #38b2ac;
+            --secondary: #ecc94b;
+            --input-bg: rgba(255, 255, 255, 0.03);
+            --input-border: rgba(255, 255, 255, 0.1);
+        }
+
+        html, body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg-main); 
+            color: var(--text-main); 
             margin: 0; 
-            padding: 20px; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
-            box-sizing: border-box; 
+            padding: 0; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
         }
 
-        .auth-container { 
+        .glow-bg {
+            position: absolute; width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(56, 178, 172, 0.15) 0%, rgba(0,0,0,0) 70%);
+            top: 10%; left: 50%; transform: translateX(-50%); z-index: -1; pointer-events: none;
+        }
+
+        /* Boxless Layout */
+        .auth-wrapper { 
+            flex: 1;
             width: 100%; 
-            max-width: 450px; 
-            background: rgba(26, 32, 44, 0.55); 
-            backdrop-filter: blur(12px); 
-            -webkit-backdrop-filter: blur(12px); 
-            padding: 40px 30px; 
-            border-radius: 12px; 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6); 
-            border-top: 4px solid #38b2ac; 
-            border-left: 1px solid rgba(255, 255, 255, 0.05);
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            max-width: 420px; 
+            margin: 140px auto 80px; /* Accounts for fixed navbar */
+            padding: 0 20px;
             box-sizing: border-box; 
-            text-align: center; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         
-        .logo-text { font-family: 'Montserrat', sans-serif; font-size: 2.2em; font-weight: 800; color: #ffffff; letter-spacing: 2px; margin-bottom: 30px; }
-        .logo-text span { color: #38b2ac; }
+        /* Professional Header */
+        .auth-header { text-align: center; margin-bottom: 40px; }
+        .auth-header h1 { font-family: 'Montserrat', sans-serif; font-size: 2.2em; margin: 0 0 10px 0; color: var(--text-main); letter-spacing: -0.5px;}
+        .auth-header p { color: var(--text-muted); margin: 0; font-size: 1.05em; line-height: 1.5; }
 
-        .tabs { display: flex; margin-bottom: 30px; border-bottom: 2px solid #2d3748; flex-wrap: wrap; }
-        .tab { flex: 1; padding: 12px 5px; cursor: pointer; color: #a0aec0; font-weight: bold; transition: 0.3s; font-size: 0.9em; min-width: 45%; }
-        .tab.active { color: #38b2ac; border-bottom: 2px solid #38b2ac; }
+        /* Sleek Tabs */
+        .tabs { display: flex; margin-bottom: 35px; border-bottom: 1px solid var(--input-border); }
+        .tab { flex: 1; padding: 15px 5px; text-align: center; cursor: pointer; color: var(--text-muted); font-weight: 600; transition: 0.3s; font-size: 0.95em; position: relative;}
+        .tab:hover { color: var(--text-main); }
+        .tab.active { color: var(--primary); }
+        .tab.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 2px; background: var(--primary); }
 
-        .form-group { margin-bottom: 20px; text-align: left; position: relative; }
-        label { display: block; color: #a0aec0; font-size: 0.9em; margin-bottom: 8px; font-weight: 600; }
-        input, select { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #4a5568; background: #2d3748; color: white; box-sizing: border-box; }
-        input:focus, select:focus { outline: none; border-color: #38b2ac; }
+        /* Minimalist Form Elements */
+        .form-group { margin-bottom: 25px; text-align: left; position: relative; }
+        label { display: block; color: var(--text-muted); font-size: 0.85em; margin-bottom: 8px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;}
+        
+        input { 
+            width: 100%; padding: 16px; border-radius: 8px; border: 1px solid var(--input-border); 
+            background: var(--input-bg); color: var(--text-main); box-sizing: border-box; 
+            font-family: inherit; font-size: 1em; transition: 0.3s;
+        }
+        input:focus { outline: none; border-color: var(--primary); background: rgba(255, 255, 255, 0.06); }
         
         .password-wrapper { position: relative; }
-        .toggle-password { position: absolute; right: 12px; top: 12px; cursor: pointer; font-size: 1.1em; user-select: none; opacity: 0.7; transition: 0.2s; }
+        .toggle-password { position: absolute; right: 15px; top: 16px; cursor: pointer; font-size: 1.1em; user-select: none; opacity: 0.5; transition: 0.2s; }
         .toggle-password:hover { opacity: 1; }
         
-        .submit-btn { background: #38b2ac; color: white; font-weight: bold; font-size: 1.1em; padding: 14px 40px; border: none; border-radius: 50px; cursor: pointer; width: max-content; min-width: 200px; margin: 25px auto 10px auto; display: block; text-transform: uppercase; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(56, 178, 172, 0.3); }
-        .submit-btn:hover { background: #2c7a7b; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(56, 178, 172, 0.4); }
+        /* Professional Button */
+        .submit-btn { 
+            background: var(--text-main); color: var(--bg-main); font-weight: 700; font-size: 1.05em; 
+            padding: 16px; width: 100%; border: none; border-radius: 8px; cursor: pointer; 
+            margin: 15px 0; display: block; transition: all 0.3s ease; 
+        }
+        .submit-btn:hover { background: var(--primary); color: white; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(56, 178, 172, 0.25); }
 
-        .alert-error { background: rgba(245, 101, 101, 0.1); border-left: 4px solid #f56565; color: #f56565; padding: 12px; margin-bottom: 20px; font-size: 0.9em; text-align: left; }
-        .alert-success { background: rgba(56, 178, 172, 0.1); border-left: 4px solid #38b2ac; color: #38b2ac; padding: 12px; margin-bottom: 20px; font-size: 0.9em; text-align: left; }
+        .alert-error { background: rgba(245, 101, 101, 0.1); border-left: 3px solid #f56565; color: #f56565; padding: 14px; margin-bottom: 25px; font-size: 0.9em; border-radius: 0 4px 4px 0;}
+        .alert-success { background: rgba(56, 178, 172, 0.1); border-left: 3px solid var(--primary); color: var(--primary); padding: 14px; margin-bottom: 25px; font-size: 0.9em; border-radius: 0 4px 4px 0;}
         
         .hidden { display: none !important; }
         
-        .forgot-link { display: block; text-align: right; margin-top: -10px; margin-bottom: 15px; color: #38b2ac; font-size: 0.85em; text-decoration: none; font-weight: bold; }
-        .forgot-link:hover { text-decoration: underline; }
+        .forgot-link { display: inline-block; margin-bottom: 20px; color: var(--text-muted); font-size: 0.85em; text-decoration: none; font-weight: 500; transition: 0.3s;}
+        .forgot-link:hover { color: var(--primary); }
+        
+        .back-link { display: block; text-align: center; margin-top: 15px; color: var(--text-muted); font-size: 0.9em; text-decoration: none; transition: 0.3s;}
+        .back-link:hover { color: var(--text-main); }
     </style>
 </head>
 <body>
     {% include 'navbar.html' %}
-    <div class="auth-container">
-        <a href="/" style="text-decoration: none;"><div class="logo-text">VIRTU<span>OLE</span></div></a>
+    
+    <div class="glow-bg"></div>
+
+    <div class="auth-wrapper">
+        
+        <div class="auth-header">
+            <h1 id="header-title">Access Gateway</h1>
+            <p id="header-desc">Enter your credentials to continue.</p>
+        </div>
 
         {% if message %}
             <div class="alert-success">✅ {{ message }}</div>
@@ -80,8 +118,8 @@
         {% endif %}
 
         <div class="tabs">
-            <div class="tab active" id="login-tab" onclick="showForm('login')">Login</div>
-            <div class="tab" id="register-tab" onclick="showForm('register')">Register</div>
+            <div class="tab active" id="login-tab" onclick="showForm('login')">Sign In</div>
+            <div class="tab" id="register-tab" onclick="showForm('register')">Create Account</div>
         </div>
 
         <form id="auth-form" action="/login" method="POST">
@@ -111,14 +149,16 @@
                     <input type="password" name="confirm_password" id="confirm_password" placeholder="••••••••">
                     <span class="toggle-password" onclick="togglePassword('confirm_password', this)">👁️</span>
                 </div>
-                <small id="password-error" style="color: #f56565; display: none; margin-top: 5px;">⚠️ Passwords do not match.</small>
+                <small id="password-error" style="color: #f56565; display: none; margin-top: 8px;">⚠️ Passwords do not match.</small>
             </div>
 
-            <a href="#" class="forgot-link" id="forgot-link" onclick="showForgotPassword()">Forgot Password?</a>
+            <div style="text-align: right;">
+                <a href="#" class="forgot-link" id="forgot-link" onclick="showForgotPassword()">Forgot Password?</a>
+            </div>
 
             <button type="submit" class="submit-btn" id="action-btn">Sign In</button>
             
-            <a href="#" class="hidden" id="back-to-login" onclick="showForm('login')" style="display: block; margin-top: 15px; color: #a0aec0; font-size: 0.9em; text-decoration: none;">← Back to Login</a>
+            <a href="#" class="hidden back-link" id="back-to-login" onclick="showForm('login')">← Back to Login</a>
         </form>
     </div>
 
@@ -143,6 +183,9 @@
             form.action = '/forgot-password';
             document.getElementById('login_type').value = "forgot";
             
+            document.getElementById('header-title').innerText = "Reset Password";
+            document.getElementById('header-desc').innerText = "We'll send you recovery instructions.";
+            
             document.getElementById('name-field').classList.add('hidden');
             document.getElementById('password-group').classList.add('hidden');
             document.getElementById('password').required = false;
@@ -152,7 +195,7 @@
             document.getElementById('forgot-link').classList.add('hidden');
             document.getElementById('back-to-login').classList.remove('hidden');
             
-            document.getElementById('action-btn').innerText = 'Send Reset Email';
+            document.getElementById('action-btn').innerText = 'Send Reset Link';
         }
 
         function showForm(type) {
@@ -176,6 +219,9 @@
 
             if (type === 'register') {
                 form.action = '/register';
+                document.getElementById('header-title').innerText = "Initialize Profile";
+                document.getElementById('header-desc').innerText = "Create your account to start your internship.";
+                
                 nameField.classList.remove('hidden');
                 document.getElementById('full_name').required = true;
                 
@@ -188,6 +234,9 @@
                 loginType.value = "register";
             } else {
                 form.action = '/login';
+                document.getElementById('header-title').innerText = "Access Gateway";
+                document.getElementById('header-desc').innerText = "Enter your credentials to continue.";
+
                 nameField.classList.add('hidden');
                 document.getElementById('full_name').required = false;
                 
@@ -213,6 +262,5 @@
             }
         });
     </script>
-    
 </body>
 </html>
