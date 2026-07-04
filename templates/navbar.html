@@ -167,41 +167,48 @@
 </nav>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        
-        /* 1. Global Hamburger Menu Logic (Fixes menu on all pages) */
-        const hamburger = document.getElementById('hamburger');
-        const navLinks = document.getElementById('nav-center');
-        
-        if (hamburger) {
-            hamburger.addEventListener('click', () => {
-                navLinks.classList.toggle('active');
-                hamburger.textContent = navLinks.classList.contains('active') ? '✕' : '☰';
-            });
-        }
+        // Active Navigation Highlight via Scroll
+        const sections = document.querySelectorAll("div[id]");
+        const navItems = document.querySelectorAll(".nav-link");
 
-        /* 2. Global Theme Toggle Logic */
-        const navToggles = document.querySelectorAll('.nav-theme-toggle');
-        const body = document.body;
-        
-        if(localStorage.getItem('theme') === 'light') {
-            body.classList.add('light-mode');
-            navToggles.forEach(t => t.checked = true);
-        }
-
-        navToggles.forEach(toggle => {
-            toggle.addEventListener('change', (e) => {
-                const isLight = e.target.checked;
-                navToggles.forEach(t => t.checked = isLight);
-                
-                if(isLight) {
-                    body.classList.add('light-mode');
-                    localStorage.setItem('theme', 'light');
-                } else {
-                    body.classList.remove('light-mode');
-                    localStorage.setItem('theme', 'dark');
+        window.addEventListener("scroll", () => {
+            let current = "";
+            sections.forEach((section) => {
+                const sectionTop = section.offsetTop;
+                if (scrollY >= sectionTop - 150) {
+                    current = section.getAttribute("id");
                 }
             });
+
+            navItems.forEach((li) => {
+                li.classList.remove("active");
+                if (li.getAttribute("href") && li.getAttribute("href").includes(current) && current !== "") {
+                    li.classList.add("active");
+                }
+            });
+
+            // Highlight Home if at very top
+            if(scrollY < 150) {
+                navItems.forEach(li => li.classList.remove("active"));
+                const homeLink = document.querySelector('.nav-link[href="/"]');
+                if(homeLink) homeLink.classList.add('active');
+            }
         });
-    });
-</script>
+
+        // Show More Programs Logic
+        const showMoreBtn = document.getElementById('show-more-btn');
+        if (showMoreBtn) {
+            showMoreBtn.addEventListener('click', () => {
+                document.querySelectorAll('.hidden-program').forEach(card => card.classList.remove('hidden-program'));
+                showMoreBtn.style.display = 'none'; 
+            });
+        }
+
+        // Internship Journey Tabs
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content-box').forEach(c => c.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            document.getElementById('content-' + tabId).classList.add('active');
+        }
+    </script>
