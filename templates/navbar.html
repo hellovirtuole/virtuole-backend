@@ -45,28 +45,56 @@
     .login-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2); }
     
     /* White Back Button */
-    .back-btn { 
-        background-color: white !important; 
-        color: black !important; 
-        padding: 8px 16px; 
-        border-radius: 20px; 
-        text-decoration: none; 
-        font-weight: 600; 
-        margin-right: 15px; 
-    }
+    .back-btn { background-color: white !important; color: black !important; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: 600; margin-right: 15px; }
     
     .hamburger { display: none; font-size: 1.8em; color: var(--text-main); cursor: pointer; }
-    .mobile-login-btn { display: none; }
     
+    /* Visibility Classes */
+    .mobile-only { display: none !important; }
+    .desktop-only { display: flex; }
+    .back-btn.desktop-only { display: inline-flex; }
+
     @media (max-width: 850px) {
         .nav-center {
             position: fixed !important; top: 70px; right: -100%; flex-direction: column; background: var(--nav-bg);
-            width: 65% !important; height: 100vh; padding: 40px 24px; gap: 24px; z-index: 1001; transition: right 0.3s ease !important;
+            width: 65% !important; height: 100vh; padding: 40px 24px; gap: 20px; z-index: 1001; transition: right 0.3s ease !important;
+            align-items: flex-start;
         }
         .nav-center.active { right: 0 !important; }
         .hamburger { display: block; }
-        .desktop-login-btn { display: none !important; }
-        .mobile-login-btn { display: inline-block !important; width: 100%; text-align: center; margin-top: 10px; background: var(--primary); color: #fff !important;}
+        
+        /* Hide Desktop Elements */
+        .desktop-only { display: none !important; }
+        
+        /* Show Mobile Elements */
+        .mobile-only { display: flex !important; }
+        
+        /* Mobile Back Button Styling */
+        a.back-btn.mobile-only {
+            display: block !important;
+            width: 100%;
+            text-align: center;
+            margin: 0 0 10px 0;
+            padding: 12px;
+            border-radius: 50px;
+        }
+
+        .mobile-login-btn { 
+            display: inline-block !important; width: 100%; text-align: center; 
+            margin-top: 10px; background: var(--primary); color: #fff !important;
+        }
+
+        /* Mobile Theme Toggle Row */
+        .mobile-theme-row {
+            width: 100%;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 20px;
+            border-top: 1px solid var(--card-border);
+            color: var(--text-main);
+            font-weight: 600;
+        }
     }
 </style>
 
@@ -75,7 +103,12 @@
         <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/logo/logo.png" alt="Logo" class="logo-img" onerror="this.style.display='none'">
         <div class="logo-text"><span class="virt">VIRTU</span><span class="uole">OLE</span></div>
     </a>
+    
     <div class="nav-center" id="nav-center">
+        {% if request.path != '/' %}
+            <a href="javascript:history.back()" class="back-btn mobile-only">← Back</a>
+        {% endif %}
+
         <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Home</a> 
         <div class="dropdown">
             <a href="/#domains" class="nav-link">Internships ▾</a>
@@ -98,15 +131,65 @@
                 <a href="/contact">Contact Support</a>
             </div>
         </div>
-        <a href="/login" class="login-btn mobile-login-btn">Login / Register</a>
+        
+        <a href="/login" class="login-btn mobile-login-btn mobile-only">Login / Register</a>
+
+        <div class="mobile-only mobile-theme-row">
+            <span>Theme Mode</span>
+            <label class="theme-switch-wrapper">
+                <div class="theme-switch">
+                    <input type="checkbox" class="nav-theme-toggle">
+                    <span class="slider"></span>
+                </div>
+            </label>
+        </div>
     </div>
+    
     <div class="nav-right">
         {% if request.path != '/' %}
-            <a href="javascript:history.back()" class="back-btn">← Back</a>
+            <a href="javascript:history.back()" class="back-btn desktop-only">← Back</a>
         {% else %}
-            <a href="/login" class="login-btn desktop-login-btn">Login / Register</a>
+            <a href="/login" class="login-btn desktop-only">Login / Register</a>
         {% endif %}
-        <label class="theme-switch-wrapper"><div class="theme-switch"><input type="checkbox" id="theme-toggle"><span class="slider"></span></div></label>
+        
+        <label class="theme-switch-wrapper desktop-only">
+            <div class="theme-switch">
+                <input type="checkbox" id="theme-toggle" class="nav-theme-toggle">
+                <span class="slider"></span>
+            </div>
+        </label>
+        
         <span class="hamburger" id="hamburger">☰</span>
     </div>
 </nav>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const navToggles = document.querySelectorAll('.nav-theme-toggle');
+        const body = document.body;
+        
+        // Read from local storage on load
+        if(localStorage.getItem('theme') === 'light') {
+            body.classList.add('light-mode');
+            navToggles.forEach(t => t.checked = true);
+        }
+
+        // Listen for changes on any toggle
+        navToggles.forEach(toggle => {
+            toggle.addEventListener('change', (e) => {
+                const isLight = e.target.checked;
+                
+                // Sync all toggles
+                navToggles.forEach(t => t.checked = isLight);
+                
+                if(isLight) {
+                    body.classList.add('light-mode');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    body.classList.remove('light-mode');
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        });
+    });
+</script>
