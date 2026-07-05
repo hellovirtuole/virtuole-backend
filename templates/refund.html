@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refund &amp; Cancellation Policy | Virtuole</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { max-width: 100vw; overflow-x: hidden; margin: 0; padding: 0;
+            font-family: 'Inter', sans-serif; color: var(--text-main); }
+
+        .page-shell { max-width: 900px; margin: 0 auto; padding: 120px 5% 80px; }
+        .page-head { text-align: center; max-width: 680px; margin: 0 auto 44px; }
+        .page-head h1 { font-family: 'Space Grotesk','Montserrat',sans-serif; font-size: clamp(2em, 6vw, 3em); margin: 18px 0 14px; letter-spacing: -0.5px; }
+        .page-head p { color: var(--text-muted); font-size: 1.08em; line-height: 1.7; }
+        .updated { display: inline-block; margin-top: 14px; font-size: 0.82em; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
+
+        .legal-card { padding: 34px 30px; }
+        .legal-card + .legal-card { margin-top: 22px; }
+        .legal-card h2 { font-family: 'Space Grotesk','Montserrat',sans-serif; font-size: clamp(1.25em, 3.5vw, 1.5em); margin: 0 0 16px; letter-spacing: -0.3px; }
+        .legal-card p, .legal-card li { color: var(--text-muted); line-height: 1.7; font-size: 1em; }
+        .legal-card p { margin: 0 0 15px; }
+        .legal-card p:last-child { margin-bottom: 0; }
+        .legal-card ul { margin: 0 0 6px; padding-left: 22px; }
+        .legal-card li { margin-bottom: 12px; }
+        .legal-card strong { color: var(--text-main); font-weight: 600; }
+
+        .footer-note { margin-top: 40px; font-size: 0.85em; color: var(--text-muted); text-align: center; }
+
+        .cta-row { text-align: center; margin-top: 40px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    </style>
+    {% include 'theme.html' %}
+</head>
+<body>
+    <div class="aurora-bg"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
+    {% include 'navbar.html' %}
+
+    <main class="page-shell">
+        <div class="page-head reveal">
+            <span class="au-pill">💳 Fees &amp; transparency</span>
+            <h1>Refund &amp; <span class="au-grad">Cancellation</span></h1>
+            <p>Virtuole strives to provide total transparency regarding our evaluation fees. Because the platform operates on a "Zero Upfront Cost" model, you are only required to pay a processing fee when you actively decide to submit your code for Mentor evaluation.</p>
+            <span class="updated">Last Updated: June 1, 2026</span>
+        </div>
+
+        <div class="au-card legal-card reveal d1">
+            <h2>1. <span class="au-grad">Non-Refundable Processing Fees</span></h2>
+            <p>Once you submit your project architecture and pay the processing fee (₹199 - ₹499 depending on track level), the transaction is considered final and <strong>strictly non-refundable</strong>. The fee directly compensates our engineering mentors for the time required to review, grade, and securely process your code through our matrix.</p>
+        </div>
+
+        <div class="au-card legal-card reveal d1">
+            <h2>2. <span class="au-grad">Failed Evaluations &amp; Resubmissions</span></h2>
+            <p>If your submitted code scores below the 80% certification threshold, you will not receive a refund. However, Virtuole grants all students a complimentary <strong>24-hour resubmission window</strong> to correct algorithmic errors and submit their project a second time at no additional cost.</p>
+        </div>
+
+        <div class="au-card legal-card reveal d1">
+            <h2>3. <span class="au-grad">Plagiarism Violations</span></h2>
+            <p>Any submission found to contain plagiarized code (from public repositories, unauthorized AI generation, or peers) will result in an immediate failing grade. In such cases, the student's processing fee is forfeited entirely, and they are permanently barred from receiving Virtuole credentials. No refunds will be issued under these circumstances.</p>
+        </div>
+
+        <div class="au-card legal-card reveal d1">
+            <h2>4. <span class="au-grad">Duplicate Transactions</span></h2>
+            <p>In the rare event that a technical error results in a double-charge during the submission gateway process, please immediately contact <strong>support@virtuole.in</strong> with your Transaction ID. A full refund for the duplicate charge will be routed back to your original payment method within 5-7 business days.</p>
+        </div>
+
+        <div class="footer-note reveal">
+            Virtuole | MSME Registered (UDYAM-BR-06-0064801) | support@virtuole.in
+        </div>
+
+        <div class="cta-row reveal">
+            <a href="mailto:support@virtuole.in" class="au-btn">✉️ Report a Duplicate Charge</a>
+            <a href="/" class="au-btn-ghost">← Back to Home</a>
+        </div>
+    </main>
+
+    {% include 'footer.html' %}
+</body>
+</html>
