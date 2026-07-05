@@ -1,0 +1,147 @@
+<!-- =====================================================================
+     VIRTUOLE · DASHBOARD TOP-NAV  (role-aware)
+     Each dashboard sets, BEFORE including this file (example):
+     {% raw %}
+       {% set dash_title = 'Admin' %}
+       {% set nav_tabs = [{'id':'overview','label':'Platform Analytics'}, ...] %}
+     {% endraw %}
+     The first tab is shown active by default. Tabs call switchView(id).
+     Carries switchView + hamburger + theme-toggle JS (dashboards do NOT
+     include navbar.html, so this partial is self-sufficient).
+===================================================================== -->
+<style>
+    .dnav { display: flex; justify-content: space-between; align-items: center; gap: 16px;
+        padding: 14px 5%; background: var(--nav-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+        position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; box-sizing: border-box;
+        border-bottom: 1px solid var(--card-border); transition: .4s ease; }
+    .dnav .logo-container { display: flex; align-items: center; text-decoration: none; gap: 11px; height: 38px; flex-shrink: 0; }
+    .dnav .logo-img { height: 100%; width: auto; object-fit: contain; display: block; }
+    .dnav .logo-text { font-family: 'Montserrat', sans-serif; font-size: 1.45em; font-weight: 800; letter-spacing: 1px; display: flex; align-items: center; }
+    .dnav .logo-text .virt { color: var(--text-main) !important; }
+    .dnav .logo-text .uole { color: var(--primary) !important; }
+    .dnav .dash-tag { margin-left: 4px; font-size: .58em; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+        color: var(--primary); align-self: center; padding: 3px 9px; border-radius: 20px; background: var(--au-grad-soft); border: 1px solid var(--card-border); }
+
+    .dnav-center { display: flex; gap: 6px; align-items: center; }
+    .dnav-tab { color: var(--text-muted); font-weight: 500; font-size: .93em; padding: 9px 16px; border-radius: 20px;
+        cursor: pointer; transition: .25s var(--au-ease); border: 1px solid transparent; text-decoration: none; white-space: nowrap; }
+    .dnav-tab:hover { color: var(--text-main); background: rgba(148,163,184,.1); }
+    .dnav-tab.active { color: var(--primary); font-weight: 600; background: var(--au-grad-soft); border-color: var(--card-border); }
+
+    .dnav-right { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+    .dnav .theme-switch-wrapper { display: flex; align-items: center; gap: 8px; }
+    .dnav .theme-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
+    .dnav .theme-switch input { opacity: 0; width: 0; height: 0; }
+    .dnav .slider { position: absolute; cursor: pointer; inset: 0; background: var(--card-bg); transition: .4s; border-radius: 34px; border: 1px solid var(--card-border); }
+    .dnav .slider:before { position: absolute; content: "☀️"; font-size: 12px; display: flex; align-items: center; justify-content: center;
+        height: 20px; width: 20px; left: 2px; bottom: 2px; background: #fff; transition: .4s; border-radius: 50%; }
+    body.light-mode .dnav .slider:before { content: "🌙"; }
+    .dnav input:checked + .slider { background: var(--primary); }
+    .dnav input:checked + .slider:before { transform: translateX(22px); }
+
+    .dnav-logout { background: linear-gradient(120deg,#f87171,#dc2626); color: #fff !important; padding: 9px 20px; border-radius: 50px;
+        font-weight: 700; text-decoration: none; font-size: .9em; transition: .3s var(--au-ease); box-shadow: 0 10px 24px -10px rgba(220,38,38,.6); }
+    .dnav-logout:hover { transform: translateY(-2px); box-shadow: 0 16px 32px -12px rgba(220,38,38,.7); }
+    .dnav-hamburger { display: none; font-size: 1.7em; color: var(--text-main); cursor: pointer; line-height: 1; }
+
+    .dnav .desktop-only { display: flex; }
+    .dnav .mobile-only  { display: none; }
+
+    @media (max-width: 900px) {
+        .dnav-center { position: fixed; top: 0; right: -100%; height: 100vh; width: min(78%, 320px); flex-direction: column;
+            align-items: stretch; gap: 8px; padding: 90px 22px 30px; background: var(--nav-bg); backdrop-filter: blur(20px);
+            border-left: 1px solid var(--card-border); box-shadow: -20px 0 60px -20px rgba(4,8,20,.8); transition: right .3s var(--au-ease); z-index: 1001; box-sizing: border-box; overflow-y: auto; }
+        .dnav-center.active { right: 0; }
+        .dnav-tab { font-size: 1.02em; padding: 13px 16px; }
+        .dnav-hamburger { display: block; }
+        .dnav .desktop-only { display: none !important; }
+        .dnav .mobile-only  { display: flex; }
+        .dnav-mobile-foot { margin-top: auto; display: flex; flex-direction: column; gap: 16px; padding-top: 20px; border-top: 1px solid var(--card-border); }
+        .dnav-mobile-theme { display: flex; align-items: center; justify-content: space-between; color: var(--text-main); font-weight: 600; }
+        .dnav-logout.mobile-only { justify-content: center; text-align: center; }
+    }
+</style>
+
+<nav class="dnav">
+    <a href="/" class="logo-container">
+        <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/logo/logo.png" alt="Logo" class="logo-img" onerror="this.style.display='none'">
+        <div class="logo-text"><span class="virt">VIRTU</span><span class="uole">OLE</span></div>
+        {% if dash_title %}<span class="dash-tag">{{ dash_title }}</span>{% endif %}
+    </a>
+
+    <div class="dnav-center" id="dnav-center">
+        {% for t in nav_tabs %}
+        <a class="dnav-tab{% if loop.first %} active{% endif %}" data-view="{{ t.id }}" onclick="switchView('{{ t.id }}', this)">{{ t.label }}</a>
+        {% endfor %}
+
+        <div class="dnav-mobile-foot mobile-only">
+            <div class="dnav-mobile-theme">
+                <span>Theme Mode</span>
+                <label class="theme-switch-wrapper">
+                    <div class="theme-switch"><input type="checkbox" class="nav-theme-toggle"><span class="slider"></span></div>
+                </label>
+            </div>
+            <a href="/logout" class="dnav-logout mobile-only">Secure Logout</a>
+        </div>
+    </div>
+
+    <div class="dnav-right">
+        <label class="theme-switch-wrapper desktop-only">
+            <div class="theme-switch"><input type="checkbox" class="nav-theme-toggle"><span class="slider"></span></div>
+        </label>
+        <a href="/logout" class="dnav-logout desktop-only">Logout</a>
+        <span class="dnav-hamburger" id="dnav-hamburger">☰</span>
+    </div>
+</nav>
+
+<script>
+    /* ---- Tab switching (replaces the old sidebar switchView) ---- */
+    function switchView(viewId, el) {
+        document.querySelectorAll('.view-section').forEach(function (s) { s.classList.remove('active'); });
+        var target = document.getElementById(viewId + '-view');
+        if (target) target.classList.add('active');
+        document.querySelectorAll('.dnav-tab').forEach(function (t) { t.classList.remove('active'); });
+        if (el) {
+            el.classList.add('active');
+        } else {
+            var match = document.querySelector('.dnav-tab[data-view="' + viewId + '"]');
+            if (match) match.classList.add('active');
+        }
+        // close the mobile menu after a selection + jump to top of the panel
+        var center = document.getElementById('dnav-center');
+        var burger = document.getElementById('dnav-hamburger');
+        if (center) center.classList.remove('active');
+        if (burger) burger.textContent = '☰';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /* Theme is applied early by theme.html's own script if present; guard anyway. */
+    (function () {
+        function applyTheme(isLight) {
+            document.body.classList.toggle('light-mode', isLight);
+            document.querySelectorAll('.nav-theme-toggle').forEach(function (t) { t.checked = isLight; });
+        }
+        applyTheme(localStorage.getItem('theme') === 'light');
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var hamburger = document.getElementById('dnav-hamburger');
+            var center = document.getElementById('dnav-center');
+            if (hamburger && center) {
+                hamburger.addEventListener('click', function () {
+                    var open = center.classList.toggle('active');
+                    hamburger.textContent = open ? '✕' : '☰';
+                });
+            }
+            document.querySelectorAll('.nav-theme-toggle').forEach(function (toggle) {
+                toggle.checked = document.body.classList.contains('light-mode');
+                toggle.addEventListener('change', function () {
+                    var isLight = toggle.checked;
+                    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+                    applyTheme(isLight);
+                    // let charts re-theme on mode switch
+                    document.dispatchEvent(new CustomEvent('aurora:themechange', { detail: { light: isLight } }));
+                });
+            });
+        });
+    })();
+</script>

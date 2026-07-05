@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intern Dashboard | Virtuole</title>
+    {% include 'theme.html' %}
+</head>
+<body class="dash-body">
+    <div class="aurora-bg"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
+
+    {% set dash_title = 'Intern' %}
+    {% set nav_tabs = [
+        {'id':'workspace','label':'My Workspace'},
+        {'id':'credentials','label':'My Credentials'},
+        {'id':'protocol','label':'Grading Protocol'}
+    ] %}
+    {% include 'dashboard_nav.html' %}
+
+    <main class="dash-main">
+
+        <!-- ===================== MY WORKSPACE ===================== -->
+        <div id="workspace-view" class="view-section active">
+            <h1 class="dash-greeting">Hello, {{ user_name | default("Intern") }}</h1>
+            <p class="dash-sub">Manage your active projects and explore new MSME architectures.</p>
+
+            <div class="dash-section-title" style="margin-top:8px;">Active Programs</div>
+            <div class="au-grid">
+                {% for project in active_projects %}
+                <div class="au-card reveal" style="padding:26px;display:flex;flex-direction:column;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+                        <h4 class="au-panel-title" style="margin:0;">{{ project.program_title }}</h4>
+                        <span class="au-badge ok" style="flex-shrink:0;">Enrolled</span>
+                    </div>
+                    <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:14px 0 8px;">{{ project.description }}</p>
+                    <p style="font-size:.9em;margin:0 0 12px;">Complexity Track: <strong style="color:var(--text-main);">{{ project.track_level | title }}</strong></p>
+                    <p style="font-size:.82em;font-family:monospace;color:var(--text-muted);background:rgba(148,163,184,.08);padding:8px 12px;border-radius:8px;margin:0 0 20px;">ID: {{ project.enrollment_id }}</p>
+                    <div style="margin-top:auto;display:flex;flex-wrap:wrap;gap:10px;">
+                        <a href="{{ project.specs_link }}" target="_blank" class="au-btn-ghost sm">Download Specs</a>
+                        <button class="au-btn violet sm" onclick="openSubmitModal('{{ project.enrollment_id }}', {{ project.amount_due }})">Submit Architecture</button>
+                        <a href="/download_offer/{{ project.enrollment_id }}" target="_blank" class="au-btn-ghost sm">📄 Offer Letter</a>
+                    </div>
+                </div>
+                {% else %}
+                <div class="au-panel" style="text-align:center;color:var(--text-muted);grid-column:1 / -1;">You are not currently enrolled in any active programs.</div>
+                {% endfor %}
+            </div>
+
+            <div class="dash-section-title">Explore Offered Programs</div>
+            <div class="au-grid">
+                {% for program in offered_programs %}
+                <div class="au-card reveal" style="padding:26px;display:flex;flex-direction:column;">
+                    <h4 class="au-panel-title">{{ program.title }}</h4>
+                    <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{ program.short_description }}</p>
+                    <button class="au-btn-ghost sm" style="margin-top:auto;width:100%;" onclick="openEnrollModal('{{ program.id }}', '{{ program.title }}', {{ program.price_beginner }}, {{ program.price_intermediate }}, {{ program.price_expert }})">View Details &amp; Enroll</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- ===================== MY CREDENTIALS ===================== -->
+        <div id="credentials-view" class="view-section">
+            <h1 class="dash-greeting">My Credentials</h1>
+            <p class="dash-sub">Access your official certificates and Letters of Recommendation from successfully completed projects.</p>
+
+            <div class="au-grid" style="margin-top:8px;">
+                {% for cert in completed_projects %}
+                <div class="au-card reveal" style="padding:26px;display:flex;flex-direction:column;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+                        <h4 class="au-panel-title" style="margin:0;">{{ cert.program_title }}</h4>
+                        <span class="au-badge {% if cert.score == 100 %}warn{% else %}ok{% endif %}" style="flex-shrink:0;">Score: {{ cert.score }}%</span>
+                    </div>
+                    <p style="font-size:.9em;margin:14px 0 8px;">Track: <strong style="color:var(--text-main);">{{ cert.track_level | title }}</strong></p>
+                    <p style="font-size:.82em;font-family:monospace;color:var(--text-muted);background:rgba(148,163,184,.08);padding:8px 12px;border-radius:8px;margin:0 0 20px;">ID: {{ cert.enrollment_id }}<br>Evaluated: {{ cert.evaluated_date }}</p>
+                    <div style="margin-top:auto;display:flex;flex-wrap:wrap;gap:10px;">
+                        <a href="{{ cert.certificate_url }}" target="_blank" class="au-btn success sm">Download Certificate</a>
+                        {% if cert.score == 100 %}
+                        <a href="{{ cert.lor_url }}" target="_blank" class="au-btn sm" style="--au-b1:#fbbf24;--au-b2:#f59e0b;color:#111827;">Download LoR</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="au-panel" style="text-align:center;color:var(--text-muted);grid-column:1 / -1;">You have not completed any programs yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- ===================== GRADING PROTOCOL ===================== -->
+        <div id="protocol-view" class="view-section">
+            <h1 class="dash-greeting">Evaluation Matrix</h1>
+            <p class="dash-sub">Understand exactly how your project will be graded by our engineering mentors and how to unlock the Elite LoR.</p>
+
+            <div class="au-panel reveal" style="display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:18px;border-left:4px solid var(--au-gold);">
+                <div style="font-family:'Montserrat',sans-serif;font-size:2.5em;font-weight:800;min-width:120px;text-align:center;color:var(--au-gold);">100%</div>
+                <div style="flex:1;min-width:240px;">
+                    <h4 class="au-panel-title" style="font-size:1.15em;">Flawless Execution (Elite Credential)</h4>
+                    <p style="color:var(--text-muted);font-size:.95em;line-height:1.6;margin:0;">Your codebase handles all hidden edge-cases perfectly, demonstrates optimal algorithmic efficiency (Big O), and strictly follows standard structural architecture. <strong style="color:var(--text-main);">Reward:</strong> MSME Certificate + The Founder's Letter of Recommendation.</p>
+                </div>
+            </div>
+
+            <div class="au-panel reveal d1" style="display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:18px;border-left:4px solid #34d399;">
+                <div style="font-family:'Montserrat',sans-serif;font-size:2.5em;font-weight:800;min-width:120px;text-align:center;color:#34d399;">80–99%</div>
+                <div style="flex:1;min-width:240px;">
+                    <h4 class="au-panel-title" style="font-size:1.15em;">Standard Passing Grade</h4>
+                    <p style="color:var(--text-muted);font-size:.95em;line-height:1.6;margin:0;">Your architecture works as intended and fulfills the core mandate, but may lack optimized efficiency or fail minor edge cases. <strong style="color:var(--text-main);">Reward:</strong> Official MSME Certificate of Completion.</p>
+                </div>
+            </div>
+
+            <div class="au-panel reveal d2" style="display:flex;align-items:center;gap:22px;flex-wrap:wrap;border-left:4px solid #f87171;">
+                <div style="font-family:'Montserrat',sans-serif;font-size:2.5em;font-weight:800;min-width:120px;text-align:center;color:#f87171;">&lt; 80%</div>
+                <div style="flex:1;min-width:240px;">
+                    <h4 class="au-panel-title" style="font-size:1.15em;color:#f87171;">Failure / 24-Hour Resubmission Window</h4>
+                    <p style="color:var(--text-muted);font-size:.95em;line-height:1.6;margin:0;">The code is fundamentally broken, plagiarized, or fails core functional requirements. You will receive an email containing exact mentor feedback. You have a strict <strong style="color:var(--text-main);">24-hour window</strong> to fix your codebase and resubmit for free before your data is purged.</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ===================== MODALS ===================== -->
+    <div class="au-modal" id="enrollModal">
+        <div class="au-modal-card au-form">
+            <button type="button" class="au-modal-close" onclick="closeModal('enrollModal')">&times;</button>
+            <h3>Program Registration</h3>
+            <p style="color:var(--text-muted);font-size:.9em;margin:0 0 22px;">Provide your academic details exactly as they should appear on your official Offer Letter.</p>
+            <form action="/api/enroll" method="POST">
+                <input type="hidden" id="enroll-program-name" name="program_id">
+                <div class="au-form-group"><label>Institution / College Name</label><input type="text" name="college_name" placeholder="e.g., State University" required></div>
+                <div class="au-form-group"><label>Academic Course</label><input type="text" name="course_name" placeholder="e.g., BCA / BTech" required></div>
+                <div class="au-form-group"><label>Academic Session / Year</label><input type="text" name="session_year" placeholder="e.g., 2025-2028" required></div>
+                <div class="au-form-group"><label>Select Complexity Track</label><select name="track_level" id="dynamic-track-select" required></select></div>
+                <button type="submit" class="au-btn" style="width:100%;">Complete Enrollment (Free)</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="au-modal" id="submitModal">
+        <div class="au-modal-card au-form">
+            <button type="button" class="au-modal-close" onclick="closeModal('submitModal')">&times;</button>
+            <h3>Submit Architecture</h3>
+            <p style="color:var(--text-muted);font-size:.9em;margin:0 0 22px;">Your submission will be securely routed to the grading matrix. You will be redirected to the secure gateway for the evaluation fee.</p>
+            <form id="submissionForm" onsubmit="handlePaymentSubmit(event)">
+                <div class="au-form-group">
+                    <label>Unique Enrollment ID</label>
+                    <input type="text" id="modal-enrollment-id" readonly style="color:var(--primary);font-weight:700;">
+                </div>
+                <div class="au-form-group">
+                    <label>Source Code Link (GitHub / Drive)</label>
+                    <input type="url" id="modal-code-link" placeholder="https://github.com/..." required>
+                </div>
+                <div class="au-form-group">
+                    <label>Architecture Defense Write-up (Link)</label>
+                    <input type="url" id="modal-defense-link" placeholder="https://docs.google.com/..." required>
+                </div>
+                <div class="au-form-group" style="background:rgba(139,92,246,.06);padding:16px;border-radius:var(--au-radius-sm);border:1px dashed rgba(139,92,246,.3);">
+                    <label style="color:#b794f4;">Ambassador Promo Code (10% Off)</label>
+                    <div style="display:flex;gap:10px;">
+                        <input type="text" id="promo-input" placeholder="Enter GTM Code..." style="text-transform:uppercase;">
+                        <button type="button" class="au-btn violet sm" style="white-space:nowrap;" onclick="applyPromoCode()">Apply</button>
+                    </div>
+                    <div id="promo-msg" style="font-size:.85em;margin-top:8px;display:none;"></div>
+                </div>
+                <button type="submit" class="au-btn violet" id="payButton" style="width:100%;">Confirm &amp; Pay ₹<span id="modal-price"></span></button>
+            </form>
+        </div>
+    </div>
+
+    {% include 'footer.html' %}
+
+    <script>
+    /* Modal helpers (switchView + theme handled by dashboard_nav.html) */
+    function closeModal(modalId) { document.getElementById(modalId).classList.remove('open'); }
+
+    function openEnrollModal(programId, programTitle, priceBeg, priceInt, priceExp) {
+        document.getElementById('enroll-program-name').value = programId;
+        document.querySelector('#enrollModal h3').innerText = 'Enroll: ' + programTitle;
+        document.getElementById('dynamic-track-select').innerHTML = `
+            <option value="" disabled selected>Choose your level...</option>
+            <option value="beginner">Beginner Track (₹${priceBeg} upon submission)</option>
+            <option value="intermediate">Intermediate Track (₹${priceInt} upon submission)</option>
+            <option value="expert">Expert Track (₹${priceExp} upon submission)</option>`;
+        document.getElementById('enrollModal').classList.add('open');
+    }
+
+    let currentBasePrice = 0;
+    let appliedPromo = "";
+
+    function openSubmitModal(enrollmentId, price) {
+        document.getElementById('modal-enrollment-id').value = enrollmentId;
+        currentBasePrice = parseInt(price);
+        document.getElementById('modal-price').innerText = currentBasePrice;
+        document.getElementById('promo-input').value = "";
+        document.getElementById('promo-msg').style.display = 'none';
+        appliedPromo = "";
+        document.getElementById('submitModal').classList.add('open');
+    }
+
+    async function applyPromoCode() {
+        const code = document.getElementById('promo-input').value.trim();
+        const msgDiv = document.getElementById('promo-msg');
+        if (!code) return;
+        try {
+            const response = await fetch('/api/validate-promo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ promo_code: code })
+            });
+            const data = await response.json();
+            if (data.valid) {
+                appliedPromo = code;
+                const newPrice = currentBasePrice - (currentBasePrice * 0.10);
+                document.getElementById('modal-price').innerText = Math.round(newPrice);
+                msgDiv.style.color = '#34d399';
+                msgDiv.innerText = '✅ Code applied! 10% discount activated.';
+                msgDiv.style.display = 'block';
+            } else {
+                appliedPromo = "";
+                document.getElementById('modal-price').innerText = currentBasePrice;
+                msgDiv.style.color = '#f87171';
+                msgDiv.innerText = '❌ ' + data.error;
+                msgDiv.style.display = 'block';
+            }
+        } catch (err) {
+            console.error("Promo verification failed", err);
+        }
+    }
+
+    async function handlePaymentSubmit(event) {
+        event.preventDefault();
+        const payBtn = document.getElementById('payButton');
+        const currentDisplayedPrice = document.getElementById('modal-price').innerText;
+        payBtn.innerText = "Generating Secure Gateway...";
+        payBtn.disabled = true;
+        const payload = {
+            enrollment_id: document.getElementById('modal-enrollment-id').value,
+            code_link: document.getElementById('modal-code-link').value,
+            defense_link: document.getElementById('modal-defense-link').value,
+            promo_code: appliedPromo
+        };
+        try {
+            const response = await fetch('/api/create-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (data.payment_url) {
+                window.location.href = data.payment_url;
+            } else {
+                alert("Payment initiation failed: " + (data.error || "Please check your PhonePe .env keys."));
+                payBtn.innerHTML = `Confirm & Pay ₹<span id="modal-price">${currentDisplayedPrice}</span>`;
+                payBtn.disabled = false;
+            }
+        } catch (err) {
+            console.error(err);
+            alert("System error. Ensure your backend is running and API keys are set.");
+            payBtn.innerHTML = `Confirm & Pay ₹<span id="modal-price">${currentDisplayedPrice}</span>`;
+            payBtn.disabled = false;
+        }
+    }
+
+    /* Close modal on backdrop click */
+    document.querySelectorAll('.au-modal').forEach(function (m) {
+        m.addEventListener('click', function (e) { if (e.target === m) m.classList.remove('open'); });
+    });
+    </script>
+</body>
+</html>
