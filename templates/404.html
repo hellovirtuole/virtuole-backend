@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found | Virtuole</title>
+    {% include 'theme.html' %}
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        .error-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            position: relative;
+            z-index: 10;
+        }
+        .error-code {
+            font-size: clamp(6rem, 15vw, 10rem);
+            font-weight: 800;
+            background: var(--au-grad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+            line-height: 1;
+            font-family: 'Space Grotesk', sans-serif;
+            text-shadow: 0px 10px 30px rgba(45, 212, 191, 0.2);
+        }
+        .error-title {
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            color: var(--text-main);
+            margin: 20px 0;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .error-msg {
+            color: var(--text-muted);
+            font-size: clamp(1rem, 2vw, 1.2rem);
+            max-width: 500px;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        .back-home-btn {
+            background: var(--au-grad);
+            color: white !important;
+            padding: 14px 32px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: 0.3s var(--au-ease);
+            border: none;
+            box-shadow: 0 10px 20px rgba(45, 212, 191, 0.2);
+            cursor: pointer;
+            display: inline-block;
+        }
+        .back-home-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(45, 212, 191, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="aurora-bg">
+        <div class="au-orb" style="top: -10%; left: -10%;"></div>
+        <div class="au-orb" style="bottom: -20%; right: -10%; filter: hue-rotate(90deg);"></div>
+    </div>
+    
+    {% include 'navbar.html' %}
+
+    <div class="error-container">
+        <h1 class="error-code">404</h1>
+        <h2 class="error-title">Looks like you're lost in space.</h2>
+        <p class="error-msg">The page you are looking for doesn't exist, has been moved, or is temporarily unavailable. Let's get you back to familiar territory.</p>
+        <a href="/" class="back-home-btn">Return Home</a>
+    </div>
+
+</body>
+</html>
