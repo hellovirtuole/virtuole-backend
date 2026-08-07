@@ -47,10 +47,6 @@ def add_header(response):
     response.headers['Expires'] = '-1'
     return response
 
-@app.errorhandler(404)
-def page_not_found(e):
-    return render_template('404.html'), 404
-
 def get_real_client_ip():
     forwarded_for = request.headers.get('X-Forwarded-For')
     if forwarded_for:
