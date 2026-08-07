@@ -40,29 +40,21 @@ class _VercelFix:
     def __init__(self, wsgi):
         self.wsgi = wsgi
     def __call__(self, environ, start_response):
-        import sys
+        import urllib.parse
         path = environ.get('PATH_INFO', '/')
         if path == '/api/index.py' or path == '/api/index':
-            # Find the original URL path
-            # Vercel might pass this in various WSGI keys
-            req_uri = environ.get('REQUEST_URI') or environ.get('RAW_URI') or environ.get('HTTP_X_ORIGINAL_URL') or environ.get('HTTP_X_FORWARDED_URI')
+            qs = environ.get('QUERY_STRING', '')
+            params = urllib.parse.parse_qs(qs)
             
-            # Print debug info to Vercel logs to see what's actually available
-            keys_to_log = {k: v for k, v in environ.items() if isinstance(v, str) and (k.startswith('HTTP_') or 'URI' in k or 'PATH' in k)}
-            print(f"[VERCEL-DEBUG] WSGI ENV: {keys_to_log}", file=sys.stderr, flush=True)
-            
-            if 'debug=env' in environ.get('QUERY_STRING', ''):
-                import json
-                start_response('200 OK', [('Content-Type', 'application/json')])
-                safe_env = {k: str(v) for k, v in environ.items() if isinstance(v, (str, int, float, bool))}
-                return [json.dumps(safe_env, indent=2).encode('utf-8')]
+            if '__vercel_path' in params:
+                # Set PATH_INFO to the original path, and remove __vercel_path from QUERY_STRING
+                environ['PATH_INFO'] = '/' + params['__vercel_path'][0]
                 
-            if req_uri:
-                parsed_path = req_uri.split('?')[0]
-                environ['PATH_INFO'] = parsed_path
+                # Reconstruct QUERY_STRING without our internal parameter
+                new_params = {k: v for k, v in params.items() if k != '__vercel_path'}
+                environ['QUERY_STRING'] = urllib.parse.urlencode(new_params, doseq=True)
             else:
                 environ['PATH_INFO'] = '/'
-
                 
         script = environ.get('SCRIPT_NAME', '')
         if script and '/api/index' in script:
