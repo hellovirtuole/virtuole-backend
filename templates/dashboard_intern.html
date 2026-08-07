@@ -11,7 +11,8 @@
 
     {% set dash_title = 'Intern' %}
     {% set nav_tabs = [
-        {'id':'workspace','label':'My Workspace'},
+        {'id':'workspace','label':'Active Programs'},
+        {'id':'explore','label':'Explore Programs'},
         {'id':'credentials','label':'My Credentials'},
         {'id':'protocol','label':'Grading Protocol'}
     ] %}
@@ -19,10 +20,10 @@
 
     <main class="dash-main">
 
-        <!-- ===================== MY WORKSPACE ===================== -->
+        <!-- ===================== ACTIVE PROGRAMS ===================== -->
         <div id="workspace-view" class="view-section active">
             <h1 class="dash-greeting">Hello, {{ user_name | default("Intern") }}</h1>
-            <p class="dash-sub">Manage your active projects and explore new MSME architectures.</p>
+            <p class="dash-sub">Manage your active projects and submit architectures.</p>
 
             <div class="dash-section-title" style="margin-top:8px;">Active Programs</div>
             <div class="au-grid">
@@ -45,8 +46,14 @@
                 <div class="au-panel" style="text-align:center;color:var(--text-muted);grid-column:1 / -1;">You are not currently enrolled in any active programs.</div>
                 {% endfor %}
             </div>
+        </div>
 
-            <div class="dash-section-title">Explore Offered Programs</div>
+        <!-- ===================== EXPLORE PROGRAMS ===================== -->
+        <div id="explore-view" class="view-section">
+            <h1 class="dash-greeting">Explore Programs</h1>
+            <p class="dash-sub">Discover and enroll in new MSME architectures.</p>
+
+            <div class="dash-section-title" style="margin-top:8px;">Offered Programs</div>
             <div class="au-grid">
                 {% for program in offered_programs %}
                 <div class="au-card reveal" style="padding:26px;display:flex;flex-direction:column;">
