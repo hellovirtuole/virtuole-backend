@@ -68,8 +68,15 @@
                         <h4 class="au-panel-title" style="margin:0;">{{ task.title }}</h4>
                         <span class="au-badge" style="flex-shrink:0;background:rgba(139,92,246,.14);color:#b794f4;border-color:rgba(139,92,246,.3);">+{{ task.point_value }} PTS</span>
                     </div>
-                    <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:14px 0 22px;">{{ task.description }}</p>
+                    {% set claims_count = task_claims.get(task.id, 0) %}
+                    {% set max_c = task.max_completions | default(1) %}
+                    <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:14px 0 10px;">{{ task.description }}</p>
+                    <p style="font-size:.85em;color:var(--text-muted);font-family:monospace;margin:0 0 18px;">Completions: <strong style="color: {% if claims_count >= max_c %}#f87171{% else %}#34d399{% endif %};">{{ claims_count }} / {{ max_c }}</strong></p>
+                    {% if claims_count >= max_c %}
+                    <button class="au-btn-ghost sm" style="margin-top:auto;width:100%;cursor:not-allowed;opacity:0.6;" disabled>Maximum Claims Reached</button>
+                    {% else %}
                     <button class="au-btn violet sm" style="margin-top:auto;width:100%;" onclick="openClaimModal('{{ task.id }}', '{{ task.title }}')">Submit Proof &amp; Claim</button>
+                    {% endif %}
                 </div>
                 {% else %}
                 <div class="au-panel" style="text-align:center;color:var(--text-muted);grid-column:1 / -1;">No new tasks assigned currently. Keep sharing your promo code!</div>

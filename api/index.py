@@ -715,7 +715,8 @@ def delete_program():
 @app.route('/api/admin/add-task', methods=['POST'])
 def add_task():
     if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
-    supabase.table('ambassador_tasks').insert({"title": request.form.get('title'), "description": request.form.get('description'), "point_value": int(request.form.get('point_value')), "is_active": True}).execute()
+    max_completions = int(request.form.get('max_completions', 1) or 1)
+    supabase.table('ambassador_tasks').insert({"title": request.form.get('title'), "description": request.form.get('description'), "point_value": int(request.form.get('point_value')), "is_active": True, "max_completions": max_completions}).execute()
     return redirect(url_for('dashboard_admin', tab='tasks'))
 
 @app.route('/admin/delete-task', methods=['POST'])
@@ -776,8 +777,17 @@ def update_role():
 @app.route('/api/claim-points', methods=['POST'])
 def claim_points():
     if str(session.get('role', '')).lower() != 'ambassador': return redirect('/login')
+    task_id = request.form.get('task_id')
+    
+    task_data = supabase.table('ambassador_tasks').select('max_completions').eq('id', task_id).execute().data
+    if task_data:
+        max_c = task_data[0].get('max_completions', 1)
+        existing = len(supabase.table('ambassador_claims').select('id').eq('ambassador_id', session['user_id']).eq('task_id', task_id).in_('status', ['pending', 'approved']).execute().data)
+        if existing >= max_c:
+            return redirect(url_for('dashboard_ambassador'))
+
     supabase.table('ambassador_claims').insert({
-        "ambassador_id": session['user_id'], "task_id": request.form.get('task_id'),
+        "ambassador_id": session['user_id'], "task_id": task_id,
         "proof_link": request.form.get('proof_link'), "notes": request.form.get('notes')
     }).execute()
     return redirect(url_for('dashboard_ambassador'))
@@ -1022,8 +1032,14 @@ def dashboard_ambassador():
     tier_name = "Star Ambassador" if pts >= 3000 else "Community Lead" if pts >= 1500 else "Campus Advocate" if pts >= 500 else "Kickstart"
     refs = len(supabase.table('payments').select('id').eq('applied_promo', u['promo_code']).eq('status', 'paid').execute().data)
     tasks = supabase.table('ambassador_tasks').select('*').eq('is_active', True).execute().data
+    
+    claims = supabase.table('ambassador_claims').select('task_id').eq('ambassador_id', session['user_id']).in_('status', ['pending', 'approved']).execute().data
+    task_claims = {}
+    for c in claims:
+        task_claims[c['task_id']] = task_claims.get(c['task_id'], 0) + 1
+
     analytics = build_ambassador_analytics(u, pts, refs)
-    return render_template('dashboard_ambassador.html', ambassador_name=session.get('name'), valid_until_date=u['ambassador_expiry'].split('T')[0] if u.get('ambassador_expiry') else 'N/A', total_points=pts, current_tier_name=tier_name, total_referrals=refs, promo_code=u['promo_code'], amb_id=u['public_id'], available_tasks=tasks, shipping_address=u['shipping_address'], analytics=analytics)
+    return render_template('dashboard_ambassador.html', ambassador_name=session.get('name'), valid_until_date=u['ambassador_expiry'].split('T')[0] if u.get('ambassador_expiry') else 'N/A', total_points=pts, current_tier_name=tier_name, total_referrals=refs, promo_code=u['promo_code'], amb_id=u['public_id'], available_tasks=tasks, task_claims=task_claims, shipping_address=u['shipping_address'], analytics=analytics)
 
 
 def build_ambassador_analytics(user, points, referrals):
