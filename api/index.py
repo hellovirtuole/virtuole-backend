@@ -456,7 +456,11 @@ def login():
 @app.route('/api/logout')
 def logout():
     session.clear()
-    return redirect(url_for('login'))
+    from flask import make_response
+    response = make_response(redirect('/login'))
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    return response
 
 @app.route('/forgot-password', methods=['POST'])
 @app.route('/api/forgot-password', methods=['POST'])
