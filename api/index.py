@@ -330,7 +330,6 @@ def run_maintenance():
 # =====================================================================
 
 @app.route('/')
-@app.route('/api/index.py')
 def home():
     programs = []
     if supabase:
