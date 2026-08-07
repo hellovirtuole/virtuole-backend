@@ -130,12 +130,18 @@
             <button type="button" class="au-modal-close" onclick="closeModal('enrollModal')">&times;</button>
             <h3>Program Registration</h3>
             <p style="color:var(--text-muted);font-size:.9em;margin:0 0 22px;">Provide your academic details exactly as they should appear on your official Offer Letter.</p>
-            <form action="/api/enroll" method="POST" onsubmit="var btn = this.querySelector('button[type=submit]'); btn.disabled=true; btn.innerText='Enrolling...';">
+            <form action="/enroll" method="POST" onsubmit="var btn = this.querySelector('button[type=submit]'); btn.disabled=true; btn.innerText='Enrolling...';">
                 <input type="hidden" id="enroll-program-name" name="program_id">
                 <div class="au-form-group"><label>Institution / College Name</label><input type="text" name="college_name" placeholder="e.g., State University" required></div>
                 <div class="au-form-group"><label>Academic Course</label><input type="text" name="course_name" placeholder="e.g., BCA / BTech" required></div>
                 <div class="au-form-group"><label>Academic Session / Year</label><input type="text" name="session_year" placeholder="e.g., 2025-2028" required></div>
                 <div class="au-form-group"><label>Select Complexity Track</label><select name="track_level" id="dynamic-track-select" required></select></div>
+                
+                <div class="au-form-group" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px;">
+                    <input type="checkbox" id="enroll_terms" name="terms_agree" required style="width: auto; margin-top: 2px;">
+                    <label for="enroll_terms" style="font-size: 0.85em; text-transform: none; line-height: 1.4; color: var(--text-muted);">I accept all Terms and Conditions, rules, and platform policies.</label>
+                </div>
+                
                 <button type="submit" class="au-btn" style="width:100%;">Complete Enrollment (Free)</button>
             </form>
         </div>

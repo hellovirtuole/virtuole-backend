@@ -188,6 +188,11 @@
                 <input type="text" name="promo_code" id="promo_code" placeholder="e.g. AMBXYZW" style="text-transform: uppercase;">
             </div>
 
+            <div class="form-group hidden" id="terms-group" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px;">
+                <input type="checkbox" id="terms_agree" name="terms_agree" style="width: auto; margin-top: 2px;">
+                <label for="terms_agree" style="font-size: 0.85em; text-transform: none; line-height: 1.4;">I accept all Terms and Conditions, rules, and platform policies.</label>
+            </div>
+
             <div style="text-align: right;">
                 <a href="#" class="forgot-link" id="forgot-link" onclick="showForgotPassword()">Forgot Password?</a>
             </div>
@@ -225,9 +230,10 @@
             document.getElementById('name-field').classList.add('hidden');
             document.getElementById('password-group').classList.add('hidden');
             document.getElementById('password').required = false;
-            document.getElementById('confirm-password-group').classList.add('hidden');
             document.getElementById('confirm_password').required = false;
             document.getElementById('promo-group').classList.add('hidden');
+            document.getElementById('terms-group').classList.add('hidden');
+            document.getElementById('terms_agree').required = false;
 
             document.getElementById('forgot-link').classList.add('hidden');
             document.getElementById('back-to-login').classList.remove('hidden');
@@ -265,6 +271,8 @@
                 confirmGroup.classList.remove('hidden');
                 document.getElementById('confirm_password').required = true;
                 document.getElementById('promo-group').classList.remove('hidden');
+                document.getElementById('terms-group').classList.remove('hidden');
+                document.getElementById('terms_agree').required = true;
 
                 forgotLink.classList.add('hidden');
                 actionBtn.innerText = 'Create Account';
@@ -281,6 +289,8 @@
                 confirmGroup.classList.add('hidden');
                 document.getElementById('confirm_password').required = false;
                 document.getElementById('promo-group').classList.add('hidden');
+                document.getElementById('terms-group').classList.add('hidden');
+                document.getElementById('terms_agree').required = false;
 
                 forgotLink.classList.remove('hidden');
                 actionBtn.innerText = 'Sign In';
