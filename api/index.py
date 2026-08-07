@@ -30,7 +30,9 @@ app = Flask(__name__, template_folder=template_dir)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "virtuole-secure-master-key-2026")
 
 # CRITICAL FIX: Trust Vercel's reverse proxy to keep cookies alive over HTTPS
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+# Note: x_prefix is intentionally omitted — Vercel's edge rewrites can set
+# X-Forwarded-Prefix to /api/index.py which corrupts Flask's URL routing.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=0)
 
 # Basic, bulletproof session handling (Removed strict domain to prevent lockouts)
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
