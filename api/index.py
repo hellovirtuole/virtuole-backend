@@ -40,9 +40,24 @@ class _VercelFix:
     def __init__(self, wsgi):
         self.wsgi = wsgi
     def __call__(self, environ, start_response):
+        import sys
         path = environ.get('PATH_INFO', '/')
         if path == '/api/index.py' or path == '/api/index':
-            environ['PATH_INFO'] = '/'
+            # Find the original URL path
+            # Vercel might pass this in various WSGI keys
+            req_uri = environ.get('REQUEST_URI') or environ.get('RAW_URI') or environ.get('HTTP_X_ORIGINAL_URL') or environ.get('HTTP_X_FORWARDED_URI')
+            
+            # Print debug info to Vercel logs to see what's actually available
+            keys_to_log = {k: v for k, v in environ.items() if isinstance(v, str) and (k.startswith('HTTP_') or 'URI' in k or 'PATH' in k)}
+            print(f"[VERCEL-DEBUG] WSGI ENV: {keys_to_log}", file=sys.stderr, flush=True)
+            
+            if req_uri:
+                parsed_path = req_uri.split('?')[0]
+                environ['PATH_INFO'] = parsed_path
+            else:
+                # If we really can't find it, fallback to '/'
+                environ['PATH_INFO'] = '/'
+                
         script = environ.get('SCRIPT_NAME', '')
         if script and '/api/index' in script:
             environ['SCRIPT_NAME'] = ''
