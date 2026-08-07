@@ -34,28 +34,21 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "virtuole-secure-master-key-2026"
 # X-Forwarded-Prefix to /api/index.py which corrupts Flask's URL routing.
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=0)
 
-# Vercel Path Fix: When Vercel rewrites all traffic to /api/index.py,
-# the WSGI PATH_INFO may arrive as /api/index.py instead of the real URL.
-# This middleware reads the original path from Vercel's __vc headers or
-# falls back to stripping the function prefix.
-import sys
-_original_wsgi = app.wsgi_app
+# Vercel Path Fix: Vercel's edge rewrites send PATH_INFO=/api/index.py to the
+# serverless function instead of the original URL. This middleware corrects it.
 class _VercelFix:
     def __init__(self, wsgi):
         self.wsgi = wsgi
     def __call__(self, environ, start_response):
         path = environ.get('PATH_INFO', '/')
-        script = environ.get('SCRIPT_NAME', '')
-        # Debug: log what Vercel actually sends
-        print(f"[VERCEL-DEBUG] PATH_INFO={path} SCRIPT_NAME={script} HTTP_HOST={environ.get('HTTP_HOST','')} HTTP_X_FORWARDED_PREFIX={environ.get('HTTP_X_FORWARDED_PREFIX','')}", file=sys.stderr, flush=True)
-        # If PATH_INFO is the function path, reset to root
         if path == '/api/index.py' or path == '/api/index':
             environ['PATH_INFO'] = '/'
-        # If SCRIPT_NAME was set to the function path, clear it
-        if script and ('/api/index' in script):
+        script = environ.get('SCRIPT_NAME', '')
+        if script and '/api/index' in script:
             environ['SCRIPT_NAME'] = ''
         return self.wsgi(environ, start_response)
 app.wsgi_app = _VercelFix(app.wsgi_app)
+
 
 # Basic, bulletproof session handling (Removed strict domain to prevent lockouts)
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
