@@ -51,12 +51,18 @@ class _VercelFix:
             keys_to_log = {k: v for k, v in environ.items() if isinstance(v, str) and (k.startswith('HTTP_') or 'URI' in k or 'PATH' in k)}
             print(f"[VERCEL-DEBUG] WSGI ENV: {keys_to_log}", file=sys.stderr, flush=True)
             
+            if 'debug=env' in environ.get('QUERY_STRING', ''):
+                import json
+                start_response('200 OK', [('Content-Type', 'application/json')])
+                safe_env = {k: str(v) for k, v in environ.items() if isinstance(v, (str, int, float, bool))}
+                return [json.dumps(safe_env, indent=2).encode('utf-8')]
+                
             if req_uri:
                 parsed_path = req_uri.split('?')[0]
                 environ['PATH_INFO'] = parsed_path
             else:
-                # If we really can't find it, fallback to '/'
                 environ['PATH_INFO'] = '/'
+
                 
         script = environ.get('SCRIPT_NAME', '')
         if script and '/api/index' in script:
