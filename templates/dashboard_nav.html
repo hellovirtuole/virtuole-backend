@@ -47,13 +47,30 @@
     .dnav .desktop-only { display: flex; }
     .dnav .mobile-only  { display: none; }
 
+    @media (min-width: 901px) {
+        .dnav {
+            flex-direction: column; justify-content: flex-start; align-items: flex-start;
+            width: 240px; height: calc(100vh - 40px); top: 20px; left: 20px;
+            border-radius: 24px; border: 1px solid var(--card-border);
+            padding: 30px 20px; gap: 30px; box-shadow: var(--au-shadow);
+        }
+        .dnav .logo-container { height: auto; margin-bottom: 10px; }
+        .dnav .logo-img { height: 38px; }
+        .dnav-center { flex-direction: column; align-items: flex-start; width: 100%; gap: 10px; }
+        .dnav-tab { width: 100%; box-sizing: border-box; padding: 12px 20px; font-size: 1em; }
+        .dnav-right { margin-top: auto; flex-direction: column; align-items: stretch; width: 100%; gap: 20px; }
+        .dnav-logout { text-align: center; }
+        .theme-switch-wrapper.desktop-only { justify-content: space-between; width: 100%; }
+        .theme-switch-wrapper.desktop-only::before { content: "Theme Mode"; color: var(--text-main); font-weight: 600; font-size: 0.9em; }
+    }
+
     @media (max-width: 900px) {
         .dnav-center { position: fixed; top: 0; right: -100%; height: 100vh; width: min(78%, 320px); flex-direction: column;
             align-items: stretch; gap: 8px; padding: 90px 22px 30px; background: var(--nav-bg); backdrop-filter: blur(20px);
             border-left: 1px solid var(--card-border); box-shadow: -20px 0 60px -20px rgba(4,8,20,.8); transition: right .3s var(--au-ease); z-index: 1001; box-sizing: border-box; overflow-y: auto; }
         .dnav-center.active { right: 0; }
         .dnav-tab { font-size: 1.02em; padding: 13px 16px; }
-        .dnav-hamburger { display: block; }
+        .dnav-hamburger { display: block; position: relative; z-index: 1002; }
         .dnav .desktop-only { display: none !important; }
         .dnav .mobile-only  { display: flex; }
         .dnav-mobile-foot { margin-top: auto; display: flex; flex-direction: column; gap: 16px; padding-top: 20px; border-top: 1px solid var(--card-border); }
@@ -117,11 +134,21 @@
 
     /* Theme is applied early by theme.html's own script if present; guard anyway. */
     (function () {
+        function getCookie(name) {
+            var v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+            return v ? v[2] : null;
+        }
+        function setCookie(name, value, days) {
+            var d = new Date;
+            d.setTime(d.getTime() + 24*60*60*1000*days);
+            document.cookie = name + "=" + value + ";path=/;expires=" + d.toGMTString();
+        }
         function applyTheme(isLight) {
             document.body.classList.toggle('light-mode', isLight);
             document.querySelectorAll('.nav-theme-toggle').forEach(function (t) { t.checked = isLight; });
         }
-        applyTheme(localStorage.getItem('theme') === 'light');
+        var themeCookie = getCookie('theme');
+        applyTheme(themeCookie !== 'dark');
 
         document.addEventListener('DOMContentLoaded', function () {
             var hamburger = document.getElementById('dnav-hamburger');
@@ -136,7 +163,7 @@
                 toggle.checked = document.body.classList.contains('light-mode');
                 toggle.addEventListener('change', function () {
                     var isLight = toggle.checked;
-                    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+                    setCookie('theme', isLight ? 'light' : 'dark', 365);
                     applyTheme(isLight);
                     // let charts re-theme on mode switch
                     document.dispatchEvent(new CustomEvent('aurora:themechange', { detail: { light: isLight } }));

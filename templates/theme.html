@@ -139,6 +139,9 @@ body { background: transparent; }
 ===================================================================== */
 .dash-body { margin: 0; font-family: 'Inter', sans-serif; color: var(--text-main); min-height: 100vh; }
 .dash-main { max-width: 1280px; margin: 0 auto; padding: 110px 5% 70px; }
+@media (min-width: 901px) {
+    .dash-main { margin: 0 0 0 280px; max-width: calc(100% - 280px); padding: 40px 40px 70px; }
+}
 .dash-greeting { font-family: 'Montserrat', sans-serif; font-size: clamp(1.7em, 4vw, 2.4em); font-weight: 800; letter-spacing: -.5px; margin: 0 0 6px; }
 .dash-sub { color: var(--text-muted); font-size: 1.05em; margin: 0 0 34px; line-height: 1.5; }
 .dash-section-title { font-family: 'Montserrat', sans-serif; font-size: 1.35em; font-weight: 700; margin: 46px 0 20px; padding-bottom: 14px; border-bottom: 1px solid var(--card-border); display: flex; align-items: center; gap: 12px; }
@@ -233,10 +236,13 @@ body { background: transparent; }
 .au-modal-close { float: right; cursor: pointer; color: var(--text-muted); font-size: 1.5em; line-height: 1; border: none; background: none; }
 .au-modal-close:hover { color: var(--text-main); }
 
-/* Mobile */
+/* Responsive Breakpoints */
+@media (max-width: 1150px) {
+    .au-charts-grid { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 850px) {
     .dash-main { padding: 96px 5% 56px; }
-    .au-charts-grid { grid-template-columns: 1fr; }
     .au-chart-wrap, .au-chart-card:not(.wide) .au-chart-wrap { height: 240px; }
 }
 </style>

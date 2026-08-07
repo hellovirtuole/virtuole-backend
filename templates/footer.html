@@ -5,6 +5,9 @@
     .footer-brand { max-width: 450px; }
     
     /* Logo Colors Locked */
+    .mega-footer .logo-container { display: flex; align-items: center; text-decoration: none; gap: 12px; height: 40px; }
+    .mega-footer .logo-img { height: 100%; width: auto; object-fit: contain; display: block; }
+    .mega-footer .logo-text { font-family: 'Montserrat', sans-serif; font-size: 1.6em; font-weight: 800; letter-spacing: 1px; display: flex; align-items: center; }
     .logo-text .virt { color: var(--text-main) !important; transition: 0.3s;} 
     .logo-text .uole { color: var(--primary) !important; } 
     
@@ -12,7 +15,7 @@
     .footer-newsletter { background: var(--card-bg); border: 1px solid var(--card-border); padding: 30px; border-radius: 12px; flex: 1; max-width: 500px; }
     .footer-newsletter h3 { font-family: 'Montserrat', sans-serif; margin-bottom: 10px; font-size: 1.4em; }
     .footer-newsletter p { color: var(--text-muted); margin-bottom: 20px; font-size: 0.9em; line-height: 1.4; }
-    .footer-newsletter form { display: flex; gap: 10px; }
+    .footer-newsletter form { display: flex; gap: 10px; align-items: stretch; }
     .footer-newsletter input { flex: 1; padding: 12px 15px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--input-bg); color: var(--text-main); outline: none; }
     .footer-newsletter button { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.3s; white-space: nowrap;}
     
@@ -42,6 +45,16 @@
         .legal-links { margin-top: 10px; }
         .legal-links a { margin: 0 10px; display: inline-block; }
         .footer-newsletter { width: 100%; box-sizing: border-box; }
+    }
+    
+    /* Adjust Footer in Dashboards to avoid sidebar overlap */
+    @media (min-width: 901px) {
+        .dash-body .mega-footer {
+            margin-left: 280px;
+            width: calc(100% - 280px);
+            padding: 50px 4% 20px;
+            box-sizing: border-box;
+        }
     }
 </style>
 

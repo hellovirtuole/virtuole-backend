@@ -183,12 +183,25 @@
         if (box) box.classList.add('active');
     }
 
+    // Cookie helpers
+    function getCookie(name) {
+        var v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+        return v ? v[2] : null;
+    }
+    function setCookie(name, value, days) {
+        var d = new Date;
+        d.setTime(d.getTime() + 24*60*60*1000*days);
+        document.cookie = name + "=" + value + ";path=/;expires=" + d.toGMTString();
+    }
+
     // Apply the saved theme immediately to avoid a flash of the wrong mode.
     function applyTheme(isLight) {
         document.body.classList.toggle('light-mode', isLight);
         document.querySelectorAll('.nav-theme-toggle').forEach(t => { t.checked = isLight; });
     }
-    applyTheme(localStorage.getItem('theme') === 'light');
+    // Default to light mode
+    var themeCookie = getCookie('theme');
+    applyTheme(themeCookie !== 'dark');
 
     // Wire up everything else once the full page has parsed. navbar.html is
     // included near the top of <body>, so the hero/footer/buttons below it do
@@ -215,7 +228,7 @@
             toggle.checked = document.body.classList.contains('light-mode');
             toggle.addEventListener('change', () => {
                 const isLight = toggle.checked;
-                localStorage.setItem('theme', isLight ? 'light' : 'dark');
+                setCookie('theme', isLight ? 'light' : 'dark', 365);
                 applyTheme(isLight);
             });
         });
