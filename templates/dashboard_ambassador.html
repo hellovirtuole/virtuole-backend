@@ -169,7 +169,7 @@
             <p class="dash-sub">Once you hit Tier 3 (Hoodies) or Tier 4 (Elite Kits), our logistics team will use this address for dispatch. Ensure it is highly accurate.</p>
 
             <div class="au-panel au-form" style="max-width:600px;">
-                <form action="/api/update-address" method="POST">
+                <form action="/update-address" method="POST">
                     <div class="au-form-group">
                         <label>Full Delivery Address (Include Pin Code &amp; Phone Number)</label>
                         <textarea name="shipping_address" rows="5" placeholder="e.g., Room 402, Boys Hostel... Phone: +91 9876543210" required>{{ shipping_address | default('') }}</textarea>
@@ -187,7 +187,7 @@
             <button type="button" class="au-modal-close" onclick="closeModal('claimModal')">&times;</button>
             <h3>Submit Task Proof</h3>
             <p style="color:var(--text-muted);font-size:.9em;margin:0 0 22px;">Provide evidence of your completed task. Admins will review this submission to allocate Merit Points.</p>
-            <form action="/api/claim-points" method="POST">
+            <form action="/claim-points" method="POST">
                 <input type="hidden" id="modal-task-id" name="task_id">
                 <div class="au-form-group">
                     <label>Task Name</label>

@@ -98,12 +98,12 @@
                     </div>
                     <a href="{{ claim.proof_link }}" target="_blank" class="au-btn-ghost sm" style="width:100%;margin-bottom:14px;">Verify Task Proof Link</a>
                     <div style="margin-top:auto;display:flex;gap:10px;">
-                        <form action="/api/evaluate-task" method="POST" style="flex:1;">
+                        <form action="/evaluate-task" method="POST" style="flex:1;">
                             <input type="hidden" name="claim_id" value="{{ claim.id }}">
                             <input type="hidden" name="action" value="reject">
                             <button type="submit" class="au-btn danger sm" style="width:100%;">Reject</button>
                         </form>
-                        <form action="/api/evaluate-task" method="POST" style="flex:1;">
+                        <form action="/evaluate-task" method="POST" style="flex:1;">
                             <input type="hidden" name="claim_id" value="{{ claim.id }}">
                             <input type="hidden" name="action" value="approve">
                             <input type="hidden" name="point_value" value="{{ claim.point_value }}">
@@ -177,7 +177,7 @@
             <button type="button" class="au-modal-close" onclick="closeModal('gradeModal')">&times;</button>
             <h3>Submit Evaluation</h3>
             <p style="color:var(--text-muted);font-size:.9em;margin:0 0 22px;">The system will automatically generate credentials based on your score.</p>
-            <form action="/api/grade-submission" method="POST">
+            <form action="/grade-submission" method="POST">
                 <input type="hidden" id="modal-submission-id" name="submission_id">
                 <input type="hidden" id="modal-enrollment-id" name="enrollment_id">
                 <div class="au-form-group">

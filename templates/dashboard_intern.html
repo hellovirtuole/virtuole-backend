@@ -213,7 +213,7 @@
         const msgDiv = document.getElementById('promo-msg');
         if (!code) return;
         try {
-            const response = await fetch('/api/validate-promo', {
+            const response = await fetch('/validate-promo', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ promo_code: code })
@@ -251,7 +251,7 @@
             promo_code: appliedPromo
         };
         try {
-            const response = await fetch('/api/create-payment', {
+            const response = await fetch('/create-payment', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
