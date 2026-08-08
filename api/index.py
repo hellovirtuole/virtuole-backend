@@ -1350,9 +1350,9 @@ def dashboard_ambassador():
             except ValueError:
                 pass
                 
-    pts = u['total_points'] or 0
+    pts = u.get('total_points') or 0
     tier_name = "Star Ambassador" if pts >= 3000 else "Community Lead" if pts >= 1500 else "Campus Advocate" if pts >= 500 else "Kickstart"
-    refs = len(supabase.table('payments').select('id').eq('applied_promo', u['promo_code']).eq('status', 'paid').execute().data)
+    refs = len(supabase.table('payments').select('id').eq('applied_promo', u['promo_code']).eq('status', 'paid').execute().data) if u.get('promo_code') else 0
     tasks = supabase.table('ambassador_tasks').select('*').eq('is_active', True).execute().data
     
     claims = supabase.table('ambassador_claims').select('task_id').eq('ambassador_id', session['user_id']).in_('status', ['pending', 'approved']).execute().data
@@ -1361,7 +1361,7 @@ def dashboard_ambassador():
         task_claims[c['task_id']] = task_claims.get(c['task_id'], 0) + 1
 
     analytics = build_ambassador_analytics(u, pts, refs)
-    return render_template('dashboard_ambassador.html', ambassador_name=session.get('name'), valid_until_date=u['ambassador_expiry'].split('T')[0] if u.get('ambassador_expiry') else 'N/A', total_points=pts, current_tier_name=tier_name, total_referrals=refs, promo_code=u['promo_code'], amb_id=u['public_id'], available_tasks=tasks, task_claims=task_claims, shipping_address=u['shipping_address'], analytics=analytics, can_switch_intern=(user_role == 'intern + ambassador'))
+    return render_template('dashboard_ambassador.html', ambassador_name=session.get('name'), valid_until_date=u['ambassador_expiry'].split('T')[0] if u.get('ambassador_expiry') else 'N/A', total_points=pts, current_tier_name=tier_name, total_referrals=refs, promo_code=u.get('promo_code', 'Pending'), amb_id=u.get('public_id', 'Pending'), available_tasks=tasks, task_claims=task_claims, shipping_address=u.get('shipping_address'), analytics=analytics, can_switch_intern=(user_role == 'intern + ambassador'))
 
 
 def build_ambassador_analytics(user, points, referrals):
