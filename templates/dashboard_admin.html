@@ -265,8 +265,7 @@
                                     <input type="hidden" name="user_id" value="{{ user.id }}">
                                     <select name="new_role" class="au-input" style="padding:10px;width:auto;font-size:.9em;">
                                         <option value="intern" {% if user.role == 'intern' %}selected{% endif %}>Intern</option>
-                                        <option value="ambassador" {% if user.role == 'ambassador' %}selected{% endif %}>Ambassador</option>
-                                        <option value="intern + ambassador" {% if user.role == 'intern + ambassador' %}selected{% endif %}>Intern + Ambassador</option>
+                                        <option value="intern + ambassador" {% if user.role in ['ambassador', 'intern + ambassador'] %}selected{% endif %}>Intern + Ambassador</option>
                                         <option value="mentor" {% if user.role == 'mentor' %}selected{% endif %}>Mentor</option>
                                     </select>
                                     <button type="submit" class="au-btn sm">Update</button>
