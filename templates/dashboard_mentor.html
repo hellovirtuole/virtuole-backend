@@ -11,7 +11,8 @@
 
     {% set dash_title = 'Evaluator' %}
     {% set nav_tabs = [
-        {'id':'queue','label':'Intern Code Queue'},
+        {'id':'telemetry','label':'Visual Data'},
+        {'id':'queue','label':'Intern Task Checking'},
         {'id':'gtm','label':'GTM Task Approvals'},
         {'id':'history','label':'Marks Assigned Ledger'}
     ] %}
@@ -19,10 +20,10 @@
 
     <main class="dash-main">
 
-        <!-- ===================== INTERN CODE QUEUE ===================== -->
-        <div id="queue-view" class="view-section active">
+        <!-- ===================== VISUAL DATA ===================== -->
+        <div id="telemetry-view" class="view-section active">
             <h1 class="dash-greeting">Welcome, {{ user_name }}</h1>
-            <p class="dash-sub">Review submitted architectures and assign official MSME credentials.</p>
+            <p class="dash-sub">Review evaluation telemetry and throughput data.</p>
 
             <div class="au-stat-grid">
                 <div class="au-stat s-red reveal">
@@ -57,10 +58,36 @@
                     <div class="au-chart-wrap"><canvas id="queueChart"></canvas></div>
                 </div>
             </div>
+        </div>
 
-            <div class="dash-section-title">Pending Architecture Submissions</div>
+        <!-- ===================== INTERN TASK CHECKING ===================== -->
+        <div id="queue-view" class="view-section">
+            <h1 class="dash-greeting">Intern Task Checking</h1>
+            <p class="dash-sub">Review submitted architectures and assign official MSME credentials.</p>
+
+            <div class="dash-section-title">Overdue Submissions (Deadline Passed)</div>
             <div class="au-grid">
-                {% for sub in pending_submissions %}
+                {% for sub in overdue_subs %}
+                <div class="au-card reveal" style="padding:26px;display:flex;flex-direction:column;border-color:rgba(229,62,62,0.4);">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+                        <h4 class="au-panel-title" style="margin:0;font-size:1.05em;">Enrollment ID: {{ sub.enrollment_id }}</h4>
+                        <span class="au-badge" style="flex-shrink:0;background:rgba(229,62,62,0.1);color:#fc8181;border-color:rgba(229,62,62,0.3);">Overdue Priority</span>
+                    </div>
+                    <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:14px 0 16px;">Review the source code and the technical defense document to determine algorithmic efficiency and edge-case handling.</p>
+                    <div style="margin-bottom:22px;display:flex;flex-direction:column;gap:6px;">
+                        <a href="{{ sub.code_link }}" target="_blank" style="color:var(--primary);text-decoration:none;font-size:.9em;">🔗 View Code Repository</a>
+                        <a href="{{ sub.defense_link }}" target="_blank" style="color:var(--primary);text-decoration:none;font-size:.9em;">🔗 View Defense Write-up</a>
+                    </div>
+                    <button class="au-btn sm" style="margin-top:auto;width:100%;" onclick="openGradeModal('{{ sub.id }}', '{{ sub.enrollment_id }}')">Evaluate &amp; Score</button>
+                </div>
+                {% else %}
+                <div class="au-panel" style="text-align:center;color:var(--text-muted);grid-column:1 / -1;">No overdue submissions awaiting evaluation.</div>
+                {% endfor %}
+            </div>
+
+            <div class="dash-section-title" style="margin-top:40px;">Early Submissions</div>
+            <div class="au-grid">
+                {% for sub in early_subs %}
                 <div class="au-card reveal" style="padding:26px;display:flex;flex-direction:column;">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
                         <h4 class="au-panel-title" style="margin:0;font-size:1.05em;">Enrollment ID: {{ sub.enrollment_id }}</h4>
@@ -74,7 +101,7 @@
                     <button class="au-btn sm" style="margin-top:auto;width:100%;" onclick="openGradeModal('{{ sub.id }}', '{{ sub.enrollment_id }}')">Evaluate &amp; Score</button>
                 </div>
                 {% else %}
-                <div class="au-panel" style="text-align:center;color:var(--text-muted);grid-column:1 / -1;">The code evaluation matrix is currently empty.</div>
+                <div class="au-panel" style="text-align:center;color:var(--text-muted);grid-column:1 / -1;">No early submissions awaiting evaluation.</div>
                 {% endfor %}
             </div>
         </div>

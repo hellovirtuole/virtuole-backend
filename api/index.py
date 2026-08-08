@@ -853,12 +853,35 @@ def dashboard_intern():
 @app.route('/dashboard-mentor')
 def dashboard_mentor():
     if str(session.get('role', '')).lower() != 'mentor': return redirect('/login')
-    pend_subs = supabase.table('submissions').select('*').is_('score', 'null').execute().data
+    pend_subs_raw = supabase.table('submissions').select('*, enrollments(created_at, track_level)').is_('score', 'null').execute().data
     graded_subs = supabase.table('submissions').select('*').not_.is_('score', 'null').execute().data
     claims = supabase.table('ambassador_claims').select('id, proof_link, notes, ambassador_id, users(full_name, email), ambassador_tasks(title, point_value)').eq('status', 'pending').execute().data
     pending_claims = [{"id": c['id'], "ambassador_id": c['ambassador_id'], "ambassador_name": c['users']['full_name'], "ambassador_email": c['users']['email'], "task_title": c['ambassador_tasks']['title'], "point_value": c['ambassador_tasks']['point_value'], "proof_link": c['proof_link'], "notes": c['notes']} for c in claims]
-    analytics = build_mentor_analytics(pend_subs, graded_subs, len(pending_claims))
-    return render_template('dashboard_mentor.html', user_name=session.get('name'), pending_submissions=pend_subs, graded_submissions=graded_subs, pending_claims=pending_claims, analytics=analytics)
+    analytics = build_mentor_analytics(pend_subs_raw, graded_subs, len(pending_claims))
+    
+    overdue_subs = []
+    early_subs = []
+    now = datetime.utcnow()
+    for sub in (pend_subs_raw or []):
+        e = sub.get('enrollments') or {}
+        try:
+            start_dt = datetime.fromisoformat(e.get('created_at', '').replace('Z', '+00:00')) if e.get('created_at') else now
+        except:
+            start_dt = now
+            
+        start_dt = start_dt.replace(tzinfo=None)
+        duration_days = 90 if e.get('track_level', '').lower() == 'expert' else 30
+        end_dt = start_dt + timedelta(days=duration_days)
+        
+        if now > end_dt:
+            overdue_subs.append(sub)
+        else:
+            early_subs.append(sub)
+
+    return render_template('dashboard_mentor.html', user_name=session.get('name'), 
+                           pending_submissions=pend_subs_raw, 
+                           overdue_subs=overdue_subs, early_subs=early_subs,
+                           graded_submissions=graded_subs, pending_claims=pending_claims, analytics=analytics)
 
 
 def build_mentor_analytics(pending_subs, graded_subs, pending_claims_count):
