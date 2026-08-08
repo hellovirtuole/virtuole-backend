@@ -240,7 +240,7 @@
                 <table class="au-table" id="userDirectoryTable">
                     <thead><tr><th>Identity</th><th>Status Badge</th><th>Manage Access Control</th></tr></thead>
                     <tbody>
-                        {% for user in user_directory %}
+                        {% for user in user_directory if user.role != 'coupon' %}
                         <tr>
                             <td>
                                 <div style="font-weight:600;color:var(--text-main);margin-bottom:4px;" class="user-name">{{ user.full_name }}</div>
@@ -306,6 +306,7 @@
                             <option value="30">30 Days</option>
                             <option value="custom">Custom Days...</option>
                         </select>
+                    </div>
                     <div id="custom_days_container" style="flex:1; min-width: 120px; display: none;">
                         <label style="display:block; margin-bottom:8px; font-size:0.9em; color:var(--text-muted);">Custom Days</label>
                         <input type="number" name="custom_days" class="au-input" min="1" placeholder="e.g. 15">
