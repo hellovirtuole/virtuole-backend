@@ -290,6 +290,33 @@
                         <label style="display:block; margin-bottom:8px; font-size:0.9em; color:var(--text-muted);">Discount (%)</label>
                         <input type="number" name="discount_percent" class="au-input" min="1" max="100" placeholder="e.g. 50" required>
                     </div>
+                    <div style="flex:1; min-width: 150px;">
+                        <label style="display:block; margin-bottom:8px; font-size:0.9em; color:var(--text-muted);">Validity Period</label>
+                        <select name="validity" class="au-input" id="coupon_validity_select" onchange="toggleCustomDays()">
+                            <option value="manual">Manual Offline</option>
+                            <option value="1">1 Day</option>
+                            <option value="7">7 Days</option>
+                            <option value="30">30 Days</option>
+                            <option value="custom">Custom Days...</option>
+                        </select>
+                    </div>
+                    <div id="custom_days_container" style="flex:1; min-width: 120px; display: none;">
+                        <label style="display:block; margin-bottom:8px; font-size:0.9em; color:var(--text-muted);">Custom Days</label>
+                        <input type="number" name="custom_days" class="au-input" min="1" placeholder="e.g. 15">
+                    </div>
+                    <script>
+                        function toggleCustomDays() {
+                            var select = document.getElementById('coupon_validity_select');
+                            var customContainer = document.getElementById('custom_days_container');
+                            if (select.value === 'custom') {
+                                customContainer.style.display = 'block';
+                                customContainer.querySelector('input').required = true;
+                            } else {
+                                customContainer.style.display = 'none';
+                                customContainer.querySelector('input').required = false;
+                            }
+                        }
+                    </script>
                     <button type="submit" class="au-btn" style="height:48px;">Create Coupon</button>
                 </form>
             </div>
@@ -302,6 +329,7 @@
                             <th>Campaign Name</th>
                             <th>Promo Code</th>
                             <th>Discount</th>
+                            <th>Valid Until</th>
                             <th>Total Uses</th>
                             <th>Total Revenue</th>
                             <th>Action</th>
@@ -313,6 +341,13 @@
                             <td style="font-weight: 600;">{{ c.full_name }}</td>
                             <td><span class="au-pill">{{ c.promo_code }}</span></td>
                             <td style="color:var(--primary); font-weight:bold;">{{ c.total_points }}% OFF</td>
+                            <td style="font-size:0.9em; color:var(--text-muted);">
+                                {% if c.ambassador_expiry %}
+                                    {{ c.ambassador_expiry.split('T')[0] }}
+                                {% else %}
+                                    Manual Offline
+                                {% endif %}
+                            </td>
                             <td>{{ c.usage_count }}</td>
                             <td style="color:#10b981; font-weight:bold;">₹{{ "%.2f"|format(c.revenue_generated) }}</td>
                             <td>
@@ -323,7 +358,7 @@
                             </td>
                         </tr>
                         {% else %}
-                        <tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No custom coupons created yet.</td></tr>
+                        <tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No custom coupons created yet.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

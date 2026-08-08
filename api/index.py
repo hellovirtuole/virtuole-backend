@@ -512,11 +512,21 @@ def validate_promo():
     data = request.get_json()
     promo_code = data.get('promo_code', '').upper()
     ambassador = supabase.table('users').select('id').eq('promo_code', promo_code).eq('role', 'ambassador').execute().data
-    coupon = supabase.table('users').select('id, total_points').eq('promo_code', promo_code).eq('role', 'coupon').execute().data
+    coupon = supabase.table('users').select('id, total_points, ambassador_expiry').eq('promo_code', promo_code).eq('role', 'coupon').execute().data
+    
     if ambassador:
         return jsonify({"valid": True, "discount_percent": 10})
     elif coupon:
-        return jsonify({"valid": True, "discount_percent": coupon[0].get('total_points', 0)})
+        c_data = coupon[0]
+        if c_data.get('ambassador_expiry'):
+            try:
+                expiry = datetime.fromisoformat(c_data['ambassador_expiry'])
+                if datetime.utcnow() > expiry:
+                    return jsonify({"valid": False, "error": "This coupon has expired."}), 400
+            except ValueError:
+                pass
+        return jsonify({"valid": True, "discount_percent": c_data.get('total_points', 0)})
+        
     return jsonify({"valid": False, "error": "Invalid or expired code."}), 400
 
 @app.route('/create-payment', methods=['POST'])
@@ -544,14 +554,26 @@ def create_phonepe_payment():
     applied_promo = None
     if promo_code:
         is_ambassador = supabase.table('users').select('id').eq('promo_code', promo_code).eq('role', 'ambassador').execute().data
-        is_coupon = supabase.table('users').select('id, total_points').eq('promo_code', promo_code).eq('role', 'coupon').execute().data
+        is_coupon = supabase.table('users').select('id, total_points, ambassador_expiry').eq('promo_code', promo_code).eq('role', 'coupon').execute().data
+        
         if is_ambassador:
             final_price = int(base_price * 0.9)
             applied_promo = promo_code
         elif is_coupon:
-            discount_percent = is_coupon[0].get('total_points', 0)
-            final_price = int(base_price * ((100 - discount_percent) / 100))
-            applied_promo = promo_code
+            c_data = is_coupon[0]
+            is_expired = False
+            if c_data.get('ambassador_expiry'):
+                try:
+                    expiry = datetime.fromisoformat(c_data['ambassador_expiry'])
+                    if datetime.utcnow() > expiry:
+                        is_expired = True
+                except ValueError:
+                    pass
+            
+            if not is_expired:
+                discount_percent = c_data.get('total_points', 0)
+                final_price = int(base_price * ((100 - discount_percent) / 100))
+                applied_promo = promo_code
 
     transaction_id = f"VT-TXN-{random.randint(100000, 999999)}"
     amount_in_paise = int(final_price * 100) 
@@ -1068,6 +1090,18 @@ def api_admin_create_coupon():
     coupon_name = request.form.get('coupon_name')
     promo_code = request.form.get('promo_code', '').upper()
     discount_percent = int(request.form.get('discount_percent', 0))
+    validity = request.form.get('validity', 'manual')
+    
+    expiry_date = None
+    if validity != 'manual':
+        days = 0
+        if validity == 'custom':
+            days = int(request.form.get('custom_days', 0))
+        else:
+            days = int(validity)
+            
+        if days > 0:
+            expiry_date = (datetime.utcnow() + timedelta(days=days)).isoformat()
     
     # Check if promo_code already exists
     existing = supabase.table('users').select('id').eq('promo_code', promo_code).execute().data
@@ -1082,7 +1116,8 @@ def api_admin_create_coupon():
         "role": "coupon",
         "promo_code": promo_code,
         "total_points": discount_percent,
-        "public_id": f"COUPON-{promo_code}"
+        "public_id": f"COUPON-{promo_code}",
+        "ambassador_expiry": expiry_date
     }).execute()
     
     return redirect(url_for('dashboard_admin', tab='coupons'))
