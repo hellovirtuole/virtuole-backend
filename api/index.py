@@ -1196,7 +1196,6 @@ def api_admin_create_coupon():
     supabase.table('users').insert({
         "full_name": coupon_name,
         "email": random_email,
-        "password": "system_generated_no_login",
         "role": "coupon",
         "promo_code": promo_code,
         "total_points": discount_percent,
