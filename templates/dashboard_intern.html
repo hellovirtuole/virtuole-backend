@@ -225,12 +225,13 @@
     async function applyPromoCode() {
         const code = document.getElementById('promo-input').value.trim();
         const msgDiv = document.getElementById('promo-msg');
+        const enrollmentId = document.getElementById('modal-enrollment-id').value;
         if (!code) return;
         try {
             const response = await fetch('/validate-promo', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ promo_code: code })
+                body: JSON.stringify({ promo_code: code, enrollment_id: enrollmentId })
             });
             const data = await response.json();
             if (data.valid) {

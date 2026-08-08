@@ -304,10 +304,29 @@
                             <option value="30">30 Days</option>
                             <option value="custom">Custom Days...</option>
                         </select>
-                    </div>
                     <div id="custom_days_container" style="flex:1; min-width: 120px; display: none;">
                         <label style="display:block; margin-bottom:8px; font-size:0.9em; color:var(--text-muted);">Custom Days</label>
                         <input type="number" name="custom_days" class="au-input" min="1" placeholder="e.g. 15">
+                    </div>
+                    <div style="flex:1; min-width: 180px;">
+                        <label style="display:block; margin-bottom:8px; font-size:0.9em; color:var(--text-muted);">Total Usage Limit</label>
+                        <input type="number" name="usage_limit" class="au-input" min="1" placeholder="Unlimited">
+                    </div>
+                    <div style="flex:1; min-width: 180px;">
+                        <label style="display:block; margin-bottom:8px; font-size:0.9em; color:var(--text-muted);">Per-User Limit</label>
+                        <input type="number" name="user_limit" class="au-input" min="1" placeholder="Unlimited">
+                    </div>
+                    <div style="flex:1; min-width: 180px;">
+                        <label style="display:block; margin-bottom:8px; font-size:0.9em; color:var(--text-muted);">Allowed Level</label>
+                        <select name="allowed_level" class="au-input">
+                            <option value="">Any Level</option>
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="expert">Expert</option>
+                        </select>
+                    </div>
+                    <div style="flex:1; min-width: 150px;">
+                        <button type="submit" class="au-btn violet" style="width:100%;">Create Coupon</button>
                     </div>
                     <script>
                         function toggleCustomDays() {

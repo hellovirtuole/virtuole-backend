@@ -512,7 +512,7 @@ def validate_promo():
     data = request.get_json()
     promo_code = data.get('promo_code', '').upper()
     ambassador = supabase.table('users').select('id').eq('promo_code', promo_code).eq('role', 'ambassador').execute().data
-    coupon = supabase.table('users').select('id, total_points, ambassador_expiry').eq('promo_code', promo_code).eq('role', 'coupon').execute().data
+    coupon = supabase.table('users').select('id, total_points, ambassador_expiry, coupon_usage_limit, coupon_user_limit, coupon_allowed_level').eq('promo_code', promo_code).eq('role', 'coupon').execute().data
     
     if ambassador:
         return jsonify({"valid": True, "discount_percent": 10})
@@ -525,6 +525,28 @@ def validate_promo():
                     return jsonify({"valid": False, "error": "This coupon has expired."}), 400
             except ValueError:
                 pass
+                
+        # Validate track level
+        enrollment_id = data.get('enrollment_id')
+        if enrollment_id and c_data.get('coupon_allowed_level'):
+            enroll = supabase.table('enrollments').select('track_level').eq('enrollment_id', enrollment_id).execute().data
+            if enroll and enroll[0]['track_level'].lower() != c_data['coupon_allowed_level'].lower():
+                return jsonify({"valid": False, "error": f"This coupon is only valid for {c_data['coupon_allowed_level']} tracks."}), 400
+                
+        # Validate total usage limit
+        if c_data.get('coupon_usage_limit') is not None:
+            c_payments = supabase.table('payments').select('id').eq('applied_promo', promo_code).eq('status', 'paid').execute().data
+            if len(c_payments) >= c_data['coupon_usage_limit']:
+                return jsonify({"valid": False, "error": "This coupon has reached its maximum global usage limit."}), 400
+                
+        # Validate per-user limit
+        if c_data.get('coupon_user_limit') is not None:
+            user_id = session.get('user_id')
+            if user_id:
+                u_payments = supabase.table('payments').select('id').eq('applied_promo', promo_code).eq('status', 'paid').eq('user_id', user_id).execute().data
+                if len(u_payments) >= c_data['coupon_user_limit']:
+                    return jsonify({"valid": False, "error": "You have reached your personal usage limit for this coupon."}), 400
+                    
         return jsonify({"valid": True, "discount_percent": c_data.get('total_points', 0)})
         
     return jsonify({"valid": False, "error": "Invalid or expired code."}), 400
@@ -1129,6 +1151,23 @@ def api_admin_create_coupon():
         if days > 0:
             expiry_date = (datetime.utcnow() + timedelta(days=days)).isoformat()
     
+    # Parse new limits
+    try:
+        usage_limit = int(request.form.get('usage_limit', '') or 0)
+        if usage_limit == 0: usage_limit = None
+    except ValueError:
+        usage_limit = None
+        
+    try:
+        user_limit = int(request.form.get('user_limit', '') or 0)
+        if user_limit == 0: user_limit = None
+    except ValueError:
+        user_limit = None
+        
+    allowed_level = request.form.get('allowed_level', '').strip()
+    if not allowed_level:
+        allowed_level = None
+        
     # Check if promo_code already exists
     existing = supabase.table('users').select('id').eq('promo_code', promo_code).execute().data
     if existing:
@@ -1143,7 +1182,10 @@ def api_admin_create_coupon():
         "promo_code": promo_code,
         "total_points": discount_percent,
         "public_id": f"COUPON-{promo_code}",
-        "ambassador_expiry": expiry_date
+        "ambassador_expiry": expiry_date,
+        "coupon_usage_limit": usage_limit,
+        "coupon_user_limit": user_limit,
+        "coupon_allowed_level": allowed_level
     }).execute()
     
     return redirect(url_for('dashboard_admin', tab='coupons'))
