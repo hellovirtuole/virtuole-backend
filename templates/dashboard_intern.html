@@ -35,6 +35,9 @@
                     </div>
                     <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:14px 0 8px;">{{ project.description }}</p>
                     <p style="font-size:.9em;margin:0 0 12px;">Complexity Track: <strong style="color:var(--text-main);">{{ project.track_level | title }}</strong></p>
+                    <p style="font-size:.9em;margin:0 0 12px; color: {% if project.remaining_days < 5 %}#e53e3e{% else %}var(--primary){% endif %};">
+                        ⏳ <strong>{{ project.remaining_days }} Days Remaining</strong> ({{ project.duration_days }}-Day Window)
+                    </p>
                     <p style="font-size:.82em;font-family:monospace;color:var(--text-muted);background:rgba(148,163,184,.08);padding:8px 12px;border-radius:8px;margin:0 0 20px;">ID: {{ project.enrollment_id }}</p>
                     <div style="margin-top:auto;display:flex;flex-wrap:wrap;gap:10px;">
                         <a href="{{ project.specs_link }}" target="_blank" class="au-btn-ghost sm">Download Specs</a>

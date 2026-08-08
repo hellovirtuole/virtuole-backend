@@ -102,7 +102,7 @@ else:
 # 2. HTML TEMPLATES (Offer Letters & Certificates)
 # =====================================================================
 
-def get_offer_letter_template(name, date, program_title, track_level, enroll_id, project_details):
+def get_offer_letter_template(name, date, program_title, track_level, enroll_id, project_details, duration_days=30, end_date=""):
     return f"""
     <html><body style="font-family: Helvetica, Arial, sans-serif; padding: 20px; color: #111827;">
         <div style="text-align: center; border-bottom: 2px solid #38b2ac; padding-bottom: 20px; margin-bottom: 40px;">
@@ -126,7 +126,8 @@ def get_offer_letter_template(name, date, program_title, track_level, enroll_id,
         <p>Dear {name},</p>
         <p>We are thrilled to officially offer you a Virtual Internship position at Virtuole. You are enrolled in the <strong>{program_title}</strong> program at the <strong>{track_level}</strong> level.</p>
         <p><strong>Project Overview & Mandate:</strong> {project_details}</p>
-        <p>Your mandate is to complete the assigned project requirements within a 30-day window.</p>
+        <p>Your mandate is to complete the assigned project requirements within a {duration_days}-day window.</p>
+        <p><strong>Timeline:</strong> {date} &mdash; {end_date}</p>
         <p>Virtuole operates strictly on a merit-based evaluation framework. Your final credentials, including your eligibility for the Founder's Letter of Recommendation, will be determined entirely by the structural quality, algorithmic efficiency, and originality of your final code submission.</p>
         <br><br><br>
         
@@ -621,7 +622,11 @@ def api_enroll():
     }).execute()
     
     prog = supabase.table('programs').select('*').eq('id', program_id).execute().data[0]
-    html_offer = get_offer_letter_template(session['name'], datetime.utcnow().strftime("%B %d, %Y"), prog['title'], track_level.title(), enrollment_id, prog['short_description'])
+    
+    duration_days = 90 if track_level.lower() == 'expert' else 30
+    end_date = (datetime.utcnow() + timedelta(days=duration_days)).strftime("%B %d, %Y")
+    
+    html_offer = get_offer_letter_template(session['name'], datetime.utcnow().strftime("%B %d, %Y"), prog['title'], track_level.title(), enrollment_id, prog['short_description'], duration_days, end_date)
     
     send_system_email(session['email'], "Official Internship Offer Letter - Virtuole", html_offer, is_html=True)
     return redirect(url_for('dashboard_intern'))
@@ -809,7 +814,30 @@ def dashboard_intern():
     if str(session.get('role', '')).lower() != 'intern': return redirect('/login')
     u_id = session['user_id']
     active_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).eq('status', 'active').execute().data
-    active_projects = [{'program_title': e['programs']['title'], 'description': e['programs']['short_description'], 'track_level': e['track_level'], 'enrollment_id': e['enrollment_id'], 'specs_link': e['programs'].get(f"specs_{e['track_level']}", '#'), 'amount_due': e['programs'].get(f"price_{e['track_level']}", 0)} for e in active_enrolls]
+    active_projects = []
+    for e in active_enrolls:
+        try:
+            start_dt = datetime.fromisoformat(e['created_at'].replace('Z', '+00:00')) if e.get('created_at') else datetime.utcnow()
+        except:
+            start_dt = datetime.utcnow()
+        
+        # Ensure naive datetime for math
+        start_dt = start_dt.replace(tzinfo=None)
+        
+        duration_days = 90 if e.get('track_level', '').lower() == 'expert' else 30
+        end_dt = start_dt + timedelta(days=duration_days)
+        remaining_days = max(0, (end_dt - datetime.utcnow()).days)
+        
+        active_projects.append({
+            'program_title': e['programs']['title'], 
+            'description': e['programs']['short_description'], 
+            'track_level': e['track_level'], 
+            'enrollment_id': e['enrollment_id'], 
+            'specs_link': e['programs'].get(f"specs_{e['track_level']}", '#'), 
+            'amount_due': e['programs'].get(f"price_{e['track_level']}", 0),
+            'remaining_days': remaining_days,
+            'duration_days': duration_days
+        })
     offered = supabase.table('programs').select('*').eq('is_active', True).execute().data
     
     completed_projects = []
@@ -1116,8 +1144,18 @@ def download_offer(enrollment_id):
     if not enroll_data: return "Invalid Assignment Context", 403
         
     e = enroll_data[0]
-    raw_date = e['created_at'].split('T')[0] if e.get('created_at') else datetime.utcnow().strftime("%Y-%m-%d")
-    html_content = get_offer_letter_template(e['users']['full_name'], raw_date, e['programs']['title'], e['track_level'].title(), enrollment_id, e['programs']['short_description'])
+    try:
+        start_dt = datetime.fromisoformat(e['created_at'].replace('Z', '+00:00')) if e.get('created_at') else datetime.utcnow()
+    except:
+        start_dt = datetime.utcnow()
+        
+    duration_days = 90 if e.get('track_level', '').lower() == 'expert' else 30
+    end_dt = start_dt + timedelta(days=duration_days)
+    
+    raw_date = start_dt.strftime("%B %d, %Y")
+    end_date = end_dt.strftime("%B %d, %Y")
+    
+    html_content = get_offer_letter_template(e['users']['full_name'], raw_date, e['programs']['title'], e['track_level'].title(), enrollment_id, e['programs']['short_description'], duration_days, end_date)
     
     # Auto-Print dialog script
     return html_content + "<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); }</script>"
@@ -1172,8 +1210,18 @@ def view_public_offer():
         enroll_data = supabase.table('enrollments').select('*, programs(*), users(full_name)').eq('enrollment_id', enrollment_id).execute().data
         if not enroll_data: return render_template('offer.html', error=True)
         e = enroll_data[0]
-        raw_date = e['created_at'].split('T')[0] if e.get('created_at') else datetime.utcnow().strftime("%Y-%m-%d")
-        html_content = get_offer_letter_template(e['users']['full_name'], raw_date, e['programs']['title'], e['track_level'].title(), enrollment_id, e['programs']['short_description'])
+        try:
+            start_dt = datetime.fromisoformat(e['created_at'].replace('Z', '+00:00')) if e.get('created_at') else datetime.utcnow()
+        except:
+            start_dt = datetime.utcnow()
+            
+        duration_days = 90 if e.get('track_level', '').lower() == 'expert' else 30
+        end_dt = start_dt + timedelta(days=duration_days)
+        
+        raw_date = start_dt.strftime("%B %d, %Y")
+        end_date = end_dt.strftime("%B %d, %Y")
+        
+        html_content = get_offer_letter_template(e['users']['full_name'], raw_date, e['programs']['title'], e['track_level'].title(), enrollment_id, e['programs']['short_description'], duration_days, end_date)
         return html_content + "<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); }</script>"
     except:
         return render_template('offer.html', error=True)
