@@ -216,7 +216,14 @@
                 hamburger.textContent = open ? '✕' : '☰';
             });
             navCenter.querySelectorAll('a').forEach(link => {
-                link.addEventListener('click', () => {
+                link.addEventListener('click', (e) => {
+                    // Prevent closing the mobile menu if clicking a dropdown trigger
+                    if (link.nextElementSibling && link.nextElementSibling.classList.contains('dropdown-content')) {
+                        if (link.getAttribute('href') === '#') {
+                            e.preventDefault(); // Stop jumping to top
+                        }
+                        return;
+                    }
                     navCenter.classList.remove('active');
                     hamburger.textContent = '☰';
                 });
