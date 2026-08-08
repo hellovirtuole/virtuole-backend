@@ -304,6 +304,7 @@
                             <th>Discount</th>
                             <th>Total Uses</th>
                             <th>Total Revenue</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -314,9 +315,15 @@
                             <td style="color:var(--primary); font-weight:bold;">{{ c.total_points }}% OFF</td>
                             <td>{{ c.usage_count }}</td>
                             <td style="color:#10b981; font-weight:bold;">₹{{ "%.2f"|format(c.revenue_generated) }}</td>
+                            <td>
+                                <form action="/api/admin/delete-coupon" method="POST" style="margin:0;" onsubmit="return confirm('Are you sure you want to take this coupon offline?');">
+                                    <input type="hidden" name="promo_code" value="{{ c.promo_code }}">
+                                    <button type="submit" class="au-btn-ghost sm" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.2); padding: 4px 10px;">Offline</button>
+                                </form>
+                            </td>
                         </tr>
                         {% else %}
-                        <tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No custom coupons created yet.</td></tr>
+                        <tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No custom coupons created yet.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

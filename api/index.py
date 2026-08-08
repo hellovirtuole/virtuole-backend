@@ -1087,6 +1087,17 @@ def api_admin_create_coupon():
     
     return redirect(url_for('dashboard_admin', tab='coupons'))
 
+@app.route('/admin/delete-coupon', methods=['POST'])
+@app.route('/api/admin/delete-coupon', methods=['POST'])
+def api_admin_delete_coupon():
+    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
+    
+    promo_code = request.form.get('promo_code')
+    if promo_code:
+        supabase.table('users').delete().eq('promo_code', promo_code).eq('role', 'coupon').execute()
+        
+    return redirect(url_for('dashboard_admin', tab='coupons'))
+
 
 def build_admin_analytics(programs, users):
     """Aggregate live Supabase data into Chart.js-ready series for the admin
