@@ -616,7 +616,8 @@ def api_enroll():
     supabase.table('enrollments').insert({
         "enrollment_id": enrollment_id, "user_id": session['user_id'], "program_id": program_id,
         "track_level": track_level, "college_name": request.form.get('college_name'),
-        "course_name": request.form.get('course_name'), "session_year": request.form.get('session_year')
+        "course_name": request.form.get('course_name'), "session_year": request.form.get('session_year'),
+        "status": "active"
     }).execute()
     
     prog = supabase.table('programs').select('*').eq('id', program_id).execute().data[0]
