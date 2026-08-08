@@ -15,7 +15,8 @@
         {'id':'programs','label':'Manage Programs'},
         {'id':'tasks','label':'GTM Task Matrix'},
         {'id':'swag','label':'Swag Fulfillment'},
-        {'id':'directory','label':'User Directory'}
+        {'id':'directory','label':'User Directory'},
+        {'id':'coupons','label':'Coupon Management'}
     ] %}
     {% include 'dashboard_nav.html' %}
 
@@ -264,6 +265,58 @@
                                 </form>
                             </td>
                         </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- ===================== COUPONS ===================== -->
+        <div id="coupons-view" class="view-section">
+            <h1 class="dash-greeting">Coupon Management</h1>
+            <p class="dash-sub">Create custom promotional codes and track their usage and generated revenue.</p>
+
+            <div class="au-card" style="margin-bottom: 40px;">
+                <h4 class="au-panel-title">Create New Coupon</h4>
+                <form action="/api/admin/create-coupon" method="POST" style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end;">
+                    <div style="flex:1; min-width: 200px;">
+                        <label style="display:block; margin-bottom:8px; font-size:0.9em; color:var(--text-muted);">Coupon Campaign Name</label>
+                        <input type="text" name="coupon_name" class="au-input" placeholder="e.g. Diwali Sale 2026" required>
+                    </div>
+                    <div style="flex:1; min-width: 150px;">
+                        <label style="display:block; margin-bottom:8px; font-size:0.9em; color:var(--text-muted);">Coupon Code</label>
+                        <input type="text" name="promo_code" class="au-input" placeholder="e.g. DIWALI50" style="text-transform:uppercase;" required>
+                    </div>
+                    <div style="flex:1; min-width: 120px;">
+                        <label style="display:block; margin-bottom:8px; font-size:0.9em; color:var(--text-muted);">Discount (%)</label>
+                        <input type="number" name="discount_percent" class="au-input" min="1" max="100" placeholder="e.g. 50" required>
+                    </div>
+                    <button type="submit" class="au-btn" style="height:48px;">Create Coupon</button>
+                </form>
+            </div>
+
+            <div class="dash-section-title">Active Coupons</div>
+            <div class="au-panel" style="padding:0; overflow-x:auto;">
+                <table class="au-table">
+                    <thead>
+                        <tr>
+                            <th>Campaign Name</th>
+                            <th>Promo Code</th>
+                            <th>Discount</th>
+                            <th>Total Uses</th>
+                            <th>Total Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in coupons %}
+                        <tr>
+                            <td style="font-weight: 600;">{{ c.full_name }}</td>
+                            <td><span class="au-pill">{{ c.promo_code }}</span></td>
+                            <td style="color:var(--primary); font-weight:bold;">{{ c.total_points }}% OFF</td>
+                            <td>{{ c.usage_count }}</td>
+                            <td style="color:#10b981; font-weight:bold;">₹{{ "%.2f"|format(c.revenue_generated) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No custom coupons created yet.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

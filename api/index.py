@@ -512,8 +512,11 @@ def validate_promo():
     data = request.get_json()
     promo_code = data.get('promo_code', '').upper()
     ambassador = supabase.table('users').select('id').eq('promo_code', promo_code).eq('role', 'ambassador').execute().data
+    coupon = supabase.table('users').select('id, total_points').eq('promo_code', promo_code).eq('role', 'coupon').execute().data
     if ambassador:
         return jsonify({"valid": True, "discount_percent": 10})
+    elif coupon:
+        return jsonify({"valid": True, "discount_percent": coupon[0].get('total_points', 0)})
     return jsonify({"valid": False, "error": "Invalid or expired code."}), 400
 
 @app.route('/create-payment', methods=['POST'])
@@ -540,9 +543,14 @@ def create_phonepe_payment():
     final_price = base_price
     applied_promo = None
     if promo_code:
-        is_valid = supabase.table('users').select('id').eq('promo_code', promo_code).eq('role', 'ambassador').execute().data
-        if is_valid:
+        is_ambassador = supabase.table('users').select('id').eq('promo_code', promo_code).eq('role', 'ambassador').execute().data
+        is_coupon = supabase.table('users').select('id, total_points').eq('promo_code', promo_code).eq('role', 'coupon').execute().data
+        if is_ambassador:
             final_price = int(base_price * 0.9)
+            applied_promo = promo_code
+        elif is_coupon:
+            discount_percent = is_coupon[0].get('total_points', 0)
+            final_price = int(base_price * ((100 - discount_percent) / 100))
             applied_promo = promo_code
 
     transaction_id = f"VT-TXN-{random.randint(100000, 999999)}"
@@ -1034,13 +1042,50 @@ def dashboard_admin():
     tasks = supabase.table('ambassador_tasks').select('*').execute().data
     users = supabase.table('users').select('*').execute().data
 
+    # Calculate coupon statistics
+    coupons = [u for u in users if u['role'] == 'coupon']
+    all_payments = supabase.table('payments').select('amount, applied_promo').eq('status', 'paid').execute().data
+    
+    for c in coupons:
+        c_payments = [p for p in all_payments if p.get('applied_promo') == c['promo_code']]
+        c['usage_count'] = len(c_payments)
+        c['revenue_generated'] = sum(p['amount'] for p in c_payments) / 100
+
     # -----------------------------------------------------------------
     # GRAPHICAL ANALYTICS DATA (Chart.js-ready, JSON-serializable)
     # Built defensively so a missing column never breaks the dashboard.
     # -----------------------------------------------------------------
     analytics = build_admin_analytics(progs, users)
 
-    return render_template('dashboard_admin.html', user_name=session.get('name'), total_earnings=round(earnings, 2), total_enrolled=enrolled, total_certified=certified, pending_grading=pend_grading, offered_programs=progs, all_tasks=tasks, user_directory=users, tier3_ambassadors=[u for u in users if u['role'] == 'ambassador' and 1500 <= (u['total_points'] or 0) < 3000], tier4_ambassadors=[u for u in users if u['role'] == 'ambassador' and (u['total_points'] or 0) >= 3000], active_tab=active_tab, current_filter=timeframe, analytics=analytics)
+    return render_template('dashboard_admin.html', user_name=session.get('name'), total_earnings=round(earnings, 2), total_enrolled=enrolled, total_certified=certified, pending_grading=pend_grading, offered_programs=progs, all_tasks=tasks, user_directory=users, coupons=coupons, tier3_ambassadors=[u for u in users if u['role'] == 'ambassador' and 1500 <= (u['total_points'] or 0) < 3000], tier4_ambassadors=[u for u in users if u['role'] == 'ambassador' and (u['total_points'] or 0) >= 3000], active_tab=active_tab, current_filter=timeframe, analytics=analytics)
+
+
+@app.route('/admin/create-coupon', methods=['POST'])
+@app.route('/api/admin/create-coupon', methods=['POST'])
+def api_admin_create_coupon():
+    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
+    
+    coupon_name = request.form.get('coupon_name')
+    promo_code = request.form.get('promo_code', '').upper()
+    discount_percent = int(request.form.get('discount_percent', 0))
+    
+    # Check if promo_code already exists
+    existing = supabase.table('users').select('id').eq('promo_code', promo_code).execute().data
+    if existing:
+        return "Promo code already exists", 400
+        
+    random_email = f"coupon_{promo_code.lower()}_{random.randint(1000, 9999)}@virtuole.system"
+    supabase.table('users').insert({
+        "full_name": coupon_name,
+        "email": random_email,
+        "password": "system_generated_no_login",
+        "role": "coupon",
+        "promo_code": promo_code,
+        "total_points": discount_percent,
+        "public_id": f"COUPON-{promo_code}"
+    }).execute()
+    
+    return redirect(url_for('dashboard_admin', tab='coupons'))
 
 
 def build_admin_analytics(programs, users):
