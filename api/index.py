@@ -579,6 +579,15 @@ def create_phonepe_payment():
     amount_in_paise = int(final_price * 100) 
     safe_merchant_user_id = session.get('public_id', 'VIRT-USER')
     
+    if amount_in_paise == 0:
+        # 100% discount applied! Skip PhonePe integration.
+        supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": data.get('code_link'), "defense_link": data.get('defense_link')}).execute()
+        supabase.table('payments').insert({"user_id": session['user_id'], "transaction_id": transaction_id, "amount": 0, "status": "paid", "applied_promo": applied_promo}).execute()
+        
+        if is_ajax:
+            return jsonify({"payment_url": "/dashboard-intern"})
+        return redirect("/dashboard-intern")
+    
     payload = {
         "merchantId": os.getenv("PHONEPE_MERCHANT_ID"),
         "merchantTransactionId": transaction_id,
