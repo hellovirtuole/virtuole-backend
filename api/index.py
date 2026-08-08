@@ -522,7 +522,7 @@ def validate_promo():
         if c_data.get('ambassador_expiry'):
             try:
                 expiry = datetime.fromisoformat(c_data['ambassador_expiry'])
-                if datetime.utcnow() > expiry:
+                if datetime.utcnow() > expiry.replace(tzinfo=None):
                     return jsonify({"valid": False, "error": "This coupon has expired."}), 400
             except ValueError:
                 pass
@@ -588,7 +588,7 @@ def create_phonepe_payment():
             if c_data.get('ambassador_expiry'):
                 try:
                     expiry = datetime.fromisoformat(c_data['ambassador_expiry'])
-                    if datetime.utcnow() > expiry:
+                    if datetime.utcnow() > expiry.replace(tzinfo=None):
                         is_expired = True
                 except ValueError:
                     pass
@@ -945,7 +945,7 @@ def dashboard_intern():
         if u and u[0].get('ambassador_expiry'):
             try:
                 expiry = datetime.fromisoformat(u[0]['ambassador_expiry'])
-                if datetime.utcnow() <= expiry:
+                if datetime.utcnow() <= expiry.replace(tzinfo=None):
                     ambassador_active = True
             except ValueError:
                 pass
@@ -1347,7 +1347,7 @@ def dashboard_ambassador():
         if u.get('ambassador_expiry'):
             try:
                 expiry = datetime.fromisoformat(u['ambassador_expiry'])
-                if datetime.utcnow() > expiry:
+                if datetime.utcnow() > expiry.replace(tzinfo=None):
                     return redirect('/dashboard-intern') # Expired dual roles get kicked back to intern
             except ValueError:
                 pass
