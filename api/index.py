@@ -1095,17 +1095,27 @@ def api_admin_create_coupon():
     
     coupon_name = request.form.get('coupon_name')
     promo_code = request.form.get('promo_code', '').upper()
-    discount_percent = int(request.form.get('discount_percent', 0))
+    try:
+        discount_percent = int(request.form.get('discount_percent', 0) or 0)
+    except ValueError:
+        discount_percent = 0
+        
     validity = request.form.get('validity', 'manual')
     
     expiry_date = None
     if validity != 'manual':
         days = 0
         if validity == 'custom':
-            days = int(request.form.get('custom_days', 0))
+            try:
+                days = int(request.form.get('custom_days', 0) or 0)
+            except ValueError:
+                days = 0
         else:
-            days = int(validity)
-            
+            try:
+                days = int(validity)
+            except ValueError:
+                days = 0
+                
         if days > 0:
             expiry_date = (datetime.utcnow() + timedelta(days=days)).isoformat()
     

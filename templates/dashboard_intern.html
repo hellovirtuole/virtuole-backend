@@ -175,7 +175,7 @@
                     <input type="url" id="modal-defense-link" placeholder="https://docs.google.com/..." required>
                 </div>
                 <div class="au-form-group" style="background:rgba(139,92,246,.06);padding:16px;border-radius:var(--au-radius-sm);border:1px dashed rgba(139,92,246,.3);">
-                    <label style="color:#b794f4;">Ambassador Promo Code (10% Off)</label>
+                    <label style="color:#b794f4;">Ambassador or Custom Promo Code</label>
                     <div style="display:flex;gap:10px;">
                         <input type="text" id="promo-input" placeholder="Enter GTM Code..." style="text-transform:uppercase;">
                         <button type="button" class="au-btn violet sm" style="white-space:nowrap;" onclick="applyPromoCode()">Apply</button>
@@ -230,10 +230,11 @@
             const data = await response.json();
             if (data.valid) {
                 appliedPromo = code;
-                const newPrice = currentBasePrice - (currentBasePrice * 0.10);
+                const discount = data.discount_percent || 10;
+                const newPrice = currentBasePrice * ((100 - discount) / 100);
                 document.getElementById('modal-price').innerText = Math.round(newPrice);
                 msgDiv.style.color = '#34d399';
-                msgDiv.innerText = '✅ Code applied! 10% discount activated.';
+                msgDiv.innerText = `✔️ Code applied! ${discount}% discount activated.`;
                 msgDiv.style.display = 'block';
             } else {
                 appliedPromo = "";
