@@ -1071,15 +1071,21 @@ def dashboard_admin():
     for c in coupons:
         c_payments = [p for p in all_payments if p.get('applied_promo') == c['promo_code']]
         c['usage_count'] = len(c_payments)
-        c['revenue_generated'] = sum(p['amount'] for p in c_payments) / 100
-
+        c['revenue_generated'] = sum([p['amount']/100 for p in c_payments])
+        
+    # Calculate ambassador statistics
+    all_ambassadors = [u for u in users if u['role'] == 'ambassador']
+    for a in all_ambassadors:
+        a_payments = [p for p in all_payments if p.get('applied_promo') == a['promo_code']]
+        a['referral_count'] = len(a_payments)
+        
     # -----------------------------------------------------------------
     # GRAPHICAL ANALYTICS DATA (Chart.js-ready, JSON-serializable)
     # Built defensively so a missing column never breaks the dashboard.
     # -----------------------------------------------------------------
     analytics = build_admin_analytics(progs, users)
 
-    return render_template('dashboard_admin.html', user_name=session.get('name'), total_earnings=round(earnings, 2), total_enrolled=enrolled, total_certified=certified, pending_grading=pend_grading, offered_programs=progs, all_tasks=tasks, user_directory=users, coupons=coupons, tier3_ambassadors=[u for u in users if u['role'] == 'ambassador' and 1500 <= (u['total_points'] or 0) < 3000], tier4_ambassadors=[u for u in users if u['role'] == 'ambassador' and (u['total_points'] or 0) >= 3000], active_tab=active_tab, current_filter=timeframe, analytics=analytics)
+    return render_template('dashboard_admin.html', user_name=session.get('name'), total_earnings=round(earnings, 2), total_enrolled=enrolled, total_certified=certified, pending_grading=pend_grading, offered_programs=progs, all_tasks=tasks, user_directory=users, coupons=coupons, all_ambassadors=all_ambassadors, tier3_ambassadors=[u for u in users if u['role'] == 'ambassador' and 1500 <= (u['total_points'] or 0) < 3000], tier4_ambassadors=[u for u in users if u['role'] == 'ambassador' and (u['total_points'] or 0) >= 3000], active_tab=active_tab, current_filter=timeframe, analytics=analytics)
 
 
 @app.route('/admin/create-coupon', methods=['POST'])

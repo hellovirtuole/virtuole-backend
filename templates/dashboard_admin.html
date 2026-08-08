@@ -16,7 +16,8 @@
         {'id':'tasks','label':'GTM Task Matrix'},
         {'id':'swag','label':'Swag Fulfillment'},
         {'id':'directory','label':'User Directory'},
-        {'id':'coupons','label':'Coupon Management'}
+        {'id':'coupons','label':'Coupon Management'},
+        {'id':'ambassadors','label':'Ambassadors'}
     ] %}
     {% include 'dashboard_nav.html' %}
 
@@ -362,6 +363,53 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- ===================== AMBASSADOR DETAILS ===================== -->
+        <div id="ambassadors-view" class="view-section">
+            <h1 class="dash-greeting">Ambassador Directory</h1>
+            <p class="dash-sub">Monitor all Virtuole Campus Ambassadors, their referral progress, and accumulated points.</p>
+
+            <div class="au-card" style="margin-bottom:40px;">
+                <h4 class="au-panel-title">Ambassadors</h4>
+                <div style="overflow-x:auto;">
+                    <table class="au-table">
+                        <thead>
+                            <tr>
+                                <th>Name &amp; Email</th>
+                                <th>College</th>
+                                <th>Promo Code</th>
+                                <th>Total Points</th>
+                                <th>Referrals</th>
+                                <th>Expiry Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in all_ambassadors %}
+                            <tr>
+                                <td>
+                                    <div style="font-weight:600;">{{ a.full_name }}</div>
+                                    <div style="font-size:0.85em; color:var(--text-muted);">{{ a.email }}</div>
+                                </td>
+                                <td>{{ a.college_name or 'N/A' }}</td>
+                                <td><span class="au-pill">{{ a.promo_code }}</span></td>
+                                <td style="color:var(--primary); font-weight:bold;">{{ a.total_points or 0 }}</td>
+                                <td>{{ a.referral_count }}</td>
+                                <td style="font-size:0.9em; color:var(--text-muted);">
+                                    {% if a.ambassador_expiry %}
+                                        {{ a.ambassador_expiry.split('T')[0] }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No ambassadors enrolled yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
