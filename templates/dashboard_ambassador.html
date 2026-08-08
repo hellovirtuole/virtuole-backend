@@ -11,7 +11,8 @@
 
     {% set dash_title = 'Ambassador' %}
     {% set nav_tabs = [
-        {'id':'overview','label':'Dashboard & Tasks'},
+        {'id':'analytics','label':'Visual Data'},
+        {'id':'tasks','label':'Tasks'},
         {'id':'tiers','label':'Rewards & Tiers'},
         {'id':'profile','label':'Shipping Profile'}
     ] %}
@@ -19,8 +20,8 @@
 
     <main class="dash-main">
 
-        <!-- ===================== DASHBOARD & TASKS ===================== -->
-        <div id="overview-view" class="view-section active">
+        <!-- ===================== VISUAL DATA ===================== -->
+        <div id="analytics-view" class="view-section active">
             <h1 class="dash-greeting">Hello, {{ ambassador_name }}</h1>
             <p class="dash-sub"><span class="au-pill">Tenure Valid Until: {{ valid_until_date }}</span></p>
 
@@ -57,9 +58,12 @@
                     <div class="au-chart-wrap"><canvas id="trendChart"></canvas></div>
                 </div>
             </div>
+        </div>
 
-            <div class="dash-section-title">Available GTM Tasks</div>
-            <p class="dash-sub" style="margin-top:-8px;">Complete these tasks to accumulate Merit Points and rank up your tier.</p>
+        <!-- ===================== TASKS ===================== -->
+        <div id="tasks-view" class="view-section">
+            <h1 class="dash-greeting">Available GTM Tasks</h1>
+            <p class="dash-sub">Complete these tasks to accumulate Merit Points and rank up your tier.</p>
 
             <div class="au-grid">
                 {% for task in available_tasks %}
