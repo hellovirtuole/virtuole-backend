@@ -666,7 +666,7 @@ def phonepe_webhook():
 @app.route('/enroll', methods=['POST'])
 @app.route('/api/enroll', methods=['POST'])
 def api_enroll():
-    if str(session.get('role', '')).lower() != 'intern': return redirect('/login')
+    if str(session.get('role', '')).lower() not in ['intern', 'intern + ambassador']: return redirect('/login')
     program_id = request.form.get('program_id')
     track_level = request.form.get('track_level')
     enrollment_id = f"VT-E-{random.randint(100000, 999999)}"
@@ -900,7 +900,7 @@ def update_role():
 @app.route('/claim-points', methods=['POST'])
 @app.route('/api/claim-points', methods=['POST'])
 def claim_points():
-    if str(session.get('role', '')).lower() != 'ambassador': return redirect('/login')
+    if str(session.get('role', '')).lower() not in ['ambassador', 'intern + ambassador']: return redirect('/login')
     task_id = request.form.get('task_id')
     
     task_data = supabase.table('ambassador_tasks').select('max_completions').eq('id', task_id).execute().data
@@ -919,7 +919,7 @@ def claim_points():
 @app.route('/update-address', methods=['POST'])
 @app.route('/api/update-address', methods=['POST'])
 def update_address():
-    if str(session.get('role', '')).lower() != 'ambassador': return redirect('/login')
+    if str(session.get('role', '')).lower() not in ['ambassador', 'intern + ambassador']: return redirect('/login')
     supabase.table('users').update({"shipping_address": request.form.get('shipping_address')}).eq('id', session['user_id']).execute()
     return redirect(url_for('dashboard_ambassador'))
 
@@ -929,7 +929,20 @@ def update_address():
 
 @app.route('/dashboard-intern')
 def dashboard_intern():
-    if str(session.get('role', '')).lower() != 'intern': return redirect('/login')
+    user_role = str(session.get('role', '')).lower()
+    if user_role not in ['intern', 'intern + ambassador']: return redirect('/login')
+    
+    ambassador_active = False
+    if user_role == 'intern + ambassador':
+        u = supabase.table('users').select('ambassador_expiry').eq('id', session['user_id']).execute().data
+        if u and u[0].get('ambassador_expiry'):
+            try:
+                expiry = datetime.fromisoformat(u[0]['ambassador_expiry'])
+                if datetime.utcnow() <= expiry:
+                    ambassador_active = True
+            except ValueError:
+                pass
+                
     u_id = session['user_id']
     active_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).in_('status', ['active', 'resubmit']).execute().data
     active_projects = []
@@ -991,7 +1004,7 @@ def dashboard_intern():
             s = sub[0]
             completed_projects.append({'score': s.get('score'), 'program_title': e['programs']['title'], 'track_level': e['track_level'], 'enrollment_id': e['enrollment_id'], 'evaluated_date': s.get('evaluated_at', '').split('T')[0] if s.get('evaluated_at') else 'Pending', 'certificate_url': s.get('certificate_url'), 'lor_url': s.get('lor_url')})
 
-    return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered, completed_projects=completed_projects)
+    return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered, completed_projects=completed_projects, ambassador_active=ambassador_active)
 
 @app.route('/dashboard-mentor')
 def dashboard_mentor():
@@ -1318,8 +1331,20 @@ def build_admin_analytics(programs, users):
 
 @app.route('/dashboard-ambassador')
 def dashboard_ambassador():
-    if str(session.get('role', '')).lower() != 'ambassador': return redirect('/login')
+    user_role = str(session.get('role', '')).lower()
+    if user_role not in ['ambassador', 'intern + ambassador']: return redirect('/login')
+    
     u = supabase.table('users').select('*').eq('id', session['user_id']).execute().data[0]
+    
+    if user_role == 'intern + ambassador':
+        if u.get('ambassador_expiry'):
+            try:
+                expiry = datetime.fromisoformat(u['ambassador_expiry'])
+                if datetime.utcnow() > expiry:
+                    return redirect('/dashboard-intern') # Expired dual roles get kicked back to intern
+            except ValueError:
+                pass
+                
     pts = u['total_points'] or 0
     tier_name = "Star Ambassador" if pts >= 3000 else "Community Lead" if pts >= 1500 else "Campus Advocate" if pts >= 500 else "Kickstart"
     refs = len(supabase.table('payments').select('id').eq('applied_promo', u['promo_code']).eq('status', 'paid').execute().data)
@@ -1331,7 +1356,7 @@ def dashboard_ambassador():
         task_claims[c['task_id']] = task_claims.get(c['task_id'], 0) + 1
 
     analytics = build_ambassador_analytics(u, pts, refs)
-    return render_template('dashboard_ambassador.html', ambassador_name=session.get('name'), valid_until_date=u['ambassador_expiry'].split('T')[0] if u.get('ambassador_expiry') else 'N/A', total_points=pts, current_tier_name=tier_name, total_referrals=refs, promo_code=u['promo_code'], amb_id=u['public_id'], available_tasks=tasks, task_claims=task_claims, shipping_address=u['shipping_address'], analytics=analytics)
+    return render_template('dashboard_ambassador.html', ambassador_name=session.get('name'), valid_until_date=u['ambassador_expiry'].split('T')[0] if u.get('ambassador_expiry') else 'N/A', total_points=pts, current_tier_name=tier_name, total_referrals=refs, promo_code=u['promo_code'], amb_id=u['public_id'], available_tasks=tasks, task_claims=task_claims, shipping_address=u['shipping_address'], analytics=analytics, can_switch_intern=(user_role == 'intern + ambassador'))
 
 
 def build_ambassador_analytics(user, points, referrals):
@@ -1385,7 +1410,7 @@ def build_ambassador_analytics(user, points, referrals):
 
 @app.route('/download_cert/<tier>')
 def download_cert(tier):
-    if str(session.get('role', '')).lower() != 'ambassador': return redirect('/login')
+    if str(session.get('role', '')).lower() not in ['ambassador', 'intern + ambassador']: return redirect('/login')
     u = supabase.table('users').select('*').eq('id', session['user_id']).execute().data[0]
     pts = u['total_points'] or 0
     tier_name = "Kickstart" if tier == 'kickstart' else "Campus Advocate" if tier == 'advocate' and pts >= 500 else "Community Lead" if tier == 'lead' and pts >= 1500 else "Star Ambassador" if tier == 'star' and pts >= 3000 else None
@@ -1394,7 +1419,7 @@ def download_cert(tier):
 
 @app.route('/download_lor/<type>')
 def download_lor(type):
-    if str(session.get('role', '')).lower() != 'ambassador': return redirect('/login')
+    if str(session.get('role', '')).lower() not in ['ambassador', 'intern + ambassador']: return redirect('/login')
     u = supabase.table('users').select('*').eq('id', session['user_id']).execute().data[0]
     if type == 'devrel' and (u['total_points'] or 0) >= 1500:
         return get_lor_template(u['full_name'], datetime.utcnow().strftime("%B %d, %Y"), "GTM Ambassador Program", "Community Lead", u['public_id'], "Community Leadership and Advocacy.")
@@ -1402,7 +1427,7 @@ def download_lor(type):
 
 @app.route('/download_offer/<enrollment_id>')
 def download_offer(enrollment_id):
-    if str(session.get('role', '')).lower() != 'intern': return redirect('/login')
+    if str(session.get('role', '')).lower() not in ['intern', 'intern + ambassador']: return redirect('/login')
     enroll_data = supabase.table('enrollments').select('*, programs(*), users(full_name)').eq('enrollment_id', enrollment_id).eq('user_id', session['user_id']).execute().data
     if not enroll_data: return "Invalid Assignment Context", 403
         

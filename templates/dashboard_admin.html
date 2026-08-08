@@ -251,6 +251,8 @@
                                     <span class="au-badge">Intern</span>
                                 {% elif user.role == 'ambassador' %}
                                     <span class="au-badge" style="background:rgba(139,92,246,.14);color:#b794f4;border-color:rgba(139,92,246,.3);">Ambassador</span>
+                                {% elif user.role == 'intern + ambassador' %}
+                                    <span class="au-badge" style="background: linear-gradient(135deg, rgba(37,99,235,0.15) 0%, rgba(139,92,246,0.15) 100%); color: #818cf8; border-color: rgba(139,92,246,0.3);">Intern + Ambassador</span>
                                 {% elif user.role == 'mentor' %}
                                     <span class="au-badge warn">Mentor</span>
                                 {% else %}
@@ -264,6 +266,7 @@
                                     <select name="new_role" class="au-input" style="padding:10px;width:auto;font-size:.9em;">
                                         <option value="intern" {% if user.role == 'intern' %}selected{% endif %}>Intern</option>
                                         <option value="ambassador" {% if user.role == 'ambassador' %}selected{% endif %}>Ambassador</option>
+                                        <option value="intern + ambassador" {% if user.role == 'intern + ambassador' %}selected{% endif %}>Intern + Ambassador</option>
                                         <option value="mentor" {% if user.role == 'mentor' %}selected{% endif %}>Mentor</option>
                                     </select>
                                     <button type="submit" class="au-btn sm">Update</button>

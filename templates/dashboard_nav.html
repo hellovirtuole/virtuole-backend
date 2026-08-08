@@ -98,6 +98,13 @@
                     <div class="theme-switch"><input type="checkbox" class="nav-theme-toggle"><span class="slider"></span></div>
                 </label>
             </div>
+            {% if session.get('role') == 'intern + ambassador' %}
+                {% if 'intern' in request.path and ambassador_active %}
+                <a href="/dashboard-ambassador" class="dnav-logout mobile-only" style="background: var(--nav-bg); color: var(--primary) !important; border: 1px solid var(--primary); box-shadow: none;">Switch to Ambassador</a>
+                {% elif 'ambassador' in request.path and can_switch_intern %}
+                <a href="/dashboard-intern" class="dnav-logout mobile-only" style="background: var(--nav-bg); color: var(--primary) !important; border: 1px solid var(--primary); box-shadow: none;">Switch to Intern</a>
+                {% endif %}
+            {% endif %}
             <a href="/logout" class="dnav-logout mobile-only">Secure Logout</a>
         </div>
     </div>
@@ -106,6 +113,13 @@
         <label class="theme-switch-wrapper desktop-only">
             <div class="theme-switch"><input type="checkbox" class="nav-theme-toggle"><span class="slider"></span></div>
         </label>
+        {% if session.get('role') == 'intern + ambassador' %}
+            {% if 'intern' in request.path and ambassador_active %}
+            <a href="/dashboard-ambassador" class="dnav-logout desktop-only" style="background: var(--nav-bg); color: var(--primary) !important; border: 1px solid var(--primary); box-shadow: none;">Switch to Ambassador</a>
+            {% elif 'ambassador' in request.path and can_switch_intern %}
+            <a href="/dashboard-intern" class="dnav-logout desktop-only" style="background: var(--nav-bg); color: var(--primary) !important; border: 1px solid var(--primary); box-shadow: none;">Switch to Intern</a>
+            {% endif %}
+        {% endif %}
         <a href="/logout" class="dnav-logout desktop-only">Logout</a>
         <span class="dnav-hamburger" id="dnav-hamburger">☰</span>
     </div>
