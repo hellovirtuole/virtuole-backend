@@ -1,4 +1,5 @@
 import os
+import uuid
 import random
 import string
 import json
@@ -1194,7 +1195,8 @@ def api_admin_create_coupon():
         
     random_email = f"coupon_{promo_code.lower()}_{random.randint(1000, 9999)}@virtuole.system"
     supabase.table('users').insert({
-        "full_name": coupon_name,
+        "id": str(uuid.uuid4()),
+          "full_name": coupon_name,
         "email": random_email,
         "role": "coupon",
         "promo_code": promo_code,
