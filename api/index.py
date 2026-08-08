@@ -880,17 +880,23 @@ def update_role():
     user = supabase.table('users').select('email', 'full_name').eq('id', user_id).execute().data[0]
     update_data = {'role': new_role}
     
-    if new_role == 'ambassador':
-        update_data['public_id'] = f"AMB-2026-{random.randint(100, 999)}"
-        update_data['promo_code'] = f"AMB{''.join(random.choices(string.ascii_uppercase, k=4))}"
-        update_data['ambassador_expiry'] = (datetime.utcnow() + timedelta(days=365)).isoformat()
-        send_ambassador_email(user['email'], "Welcome Status", f"Promoted to Ambassador. Code: {update_data['promo_code']}.")
+    if new_role in ['ambassador', 'intern + ambassador']:
+        existing = supabase.table('users').select('promo_code').eq('id', user_id).execute().data[0]
+        if not existing.get('promo_code'):
+            update_data['public_id'] = f"AMB-2026-{random.randint(100, 999)}"
+            update_data['promo_code'] = f"AMB{''.join(random.choices(string.ascii_uppercase, k=4))}"
+            update_data['ambassador_expiry'] = (datetime.utcnow() + timedelta(days=365)).isoformat()
+            send_ambassador_email(user['email'], "Welcome Status", f"Promoted to Ambassador. Code: {update_data['promo_code']}.")
     elif new_role == 'mentor':
         send_system_email(user['email'], "Promotion Status", "Promoted to Mentor status.")
     elif new_role == 'admin':
         send_system_email(user['email'], "Clearance Status", "Granted Admin access clearance.")
         
-    supabase.table('users').update(update_data).eq('id', user_id).execute()
+    try:
+        supabase.table('users').update(update_data).eq('id', user_id).execute()
+    except Exception as e:
+        print(f"ERROR IN UPDATE ROLE: {e}")
+        return f"Database Error: {e}", 500
     return redirect(url_for('dashboard_admin', tab='users'))
 
 # =====================================================================
