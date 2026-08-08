@@ -609,7 +609,7 @@ def api_enroll():
     track_level = request.form.get('track_level')
     enrollment_id = f"VT-E-{random.randint(100000, 999999)}"
     
-    existing = supabase.table('enrollments').select('id').eq('user_id', session['user_id']).eq('program_id', program_id).in_('status', ['active', 'submitted', 'graded']).execute().data
+    existing = supabase.table('enrollments').select('id').eq('user_id', session['user_id']).eq('program_id', program_id).eq('track_level', track_level).in_('status', ['active', 'submitted']).execute().data
     if existing:
         return redirect(url_for('dashboard_intern'))
         
