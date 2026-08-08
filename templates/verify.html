@@ -123,6 +123,12 @@
                     <h3>Verification Failed</h3>
                     <p>We could not find a valid VIRTUOLE credential matching that ID. Please check the ID and try again.</p>
                 </div>
+            {% elif failed %}
+                <div class="au-card error-card reveal d1">
+                    <h3>Credential Denied</h3>
+                    <p>This project was evaluated but did not meet the criteria for a credential.</p>
+                    <p style="margin-top: 10px; font-weight: 600; color: #ef4444;">Reason: {{ reason }}</p>
+                </div>
             {% endif %}
 
             <div class="au-card lookup-card reveal d2" style="text-align:center;">

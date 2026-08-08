@@ -637,7 +637,7 @@ def api_submit_project():
     enrollment_id = request.form.get('enrollment_id')
     
     # Check if enrollment is valid and not expired before accepting submission
-    enroll_data = supabase.table('enrollments').select('*').eq('enrollment_id', enrollment_id).eq('status', 'active').execute().data
+    enroll_data = supabase.table('enrollments').select('*').eq('enrollment_id', enrollment_id).in_('status', ['active', 'resubmit']).execute().data
     if not enroll_data:
         return "Enrollment not found or already submitted.", 403
         
@@ -649,11 +649,25 @@ def api_submit_project():
         start_dt = now
     
     start_dt = start_dt.replace(tzinfo=None)
-    duration_days = 90 if e.get('track_level', '').lower() == 'expert' else 30
+    
+    if e['status'] == 'resubmit':
+        duration_days = 1
+    else:
+        duration_days = 90 if e.get('track_level', '').lower() == 'expert' else 30
+        
     end_dt = start_dt + timedelta(days=duration_days)
     
     if now > end_dt:
-        supabase.table('enrollments').delete().eq('id', e['id']).execute()
+        if e['status'] == 'active':
+            supabase.table('enrollments').delete().eq('id', e['id']).execute()
+        elif e['status'] == 'resubmit':
+            supabase.table('enrollments').update({"status": "failed"}).eq('id', e['id']).execute()
+            supabase.table('submissions').insert({
+                "enrollment_id": e['enrollment_id'], 
+                "score": 0, 
+                "certificate_url": "failed:Missed 24-hour resubmission deadline.",
+                "evaluated_at": now.isoformat()
+            }).execute()
         return "Your submission window has expired. The enrollment has been closed.", 403
     
     supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": request.form.get('code_link'), "defense_link": request.form.get('defense_link')}).execute()
@@ -689,10 +703,31 @@ def grade_submission():
         supabase.table('enrollments').update({"status": "graded"}).eq('enrollment_id', enrollment_id).execute()
         send_system_email(student['email'], "Certification Passed - Virtuole", body_msg)
     else:
-        supabase.table('submissions').delete().eq('id', sub_id).execute() 
-        supabase.table('enrollments').update({"status": "failed", "created_at": datetime.utcnow().isoformat()}).eq('enrollment_id', enrollment_id).execute()
-        failure_email_body = f"Dear {student['full_name']},\n\nYour submission scored {score}%. Feedback: \"{feedback}\"\nYou have 24 hours to resubmit."
-        send_system_email(student['email'], "ACTION REQUIRED: Submission Failed", failure_email_body)
+        # Check if they are already in 'resubmit' status (this was their second try)
+        if enroll_data.get('status') == 'resubmit':
+            # They failed their second attempt. Record failure reason.
+            supabase.table('enrollments').update({"status": "failed"}).eq('enrollment_id', enrollment_id).execute()
+            supabase.table('submissions').update({
+                "score": score,
+                "certificate_url": f"failed:{feedback}",
+                "evaluated_at": datetime.utcnow().isoformat()
+            }).eq('id', sub_id).execute()
+            
+            failure_email_body = f"Dear {student['full_name']},\n\nYour resubmission scored {score}%. Feedback: \"{feedback}\"\nUnfortunately, this means you did not secure the passing grade of 80% and the credential cannot be issued."
+            send_system_email(student['email'], "Certification Failed", failure_email_body)
+        else:
+            # First failure. Give them 24 hours to resubmit.
+            supabase.table('enrollments').update({
+                "status": "resubmit", 
+                "created_at": datetime.utcnow().isoformat() # Start 24h countdown
+            }).eq('enrollment_id', enrollment_id).execute()
+            
+            # Delete old submission to allow inserting a new one
+            supabase.table('submissions').delete().eq('id', sub_id).execute() 
+            
+            failure_email_body = f"Dear {student['full_name']},\n\nYour submission scored {score}%. Feedback: \"{feedback}\"\nYou have exactly 24 hours to resubmit your project in your dashboard."
+            send_system_email(student['email'], "ACTION REQUIRED: Submission Failed", failure_email_body)
+            
     return redirect(url_for('dashboard_mentor'))
 
 @app.route('/evaluate-task', methods=['POST'])
@@ -834,7 +869,7 @@ def update_address():
 def dashboard_intern():
     if str(session.get('role', '')).lower() != 'intern': return redirect('/login')
     u_id = session['user_id']
-    active_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).eq('status', 'active').execute().data
+    active_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).in_('status', ['active', 'resubmit']).execute().data
     active_projects = []
     
     now = datetime.utcnow()
@@ -847,15 +882,30 @@ def dashboard_intern():
         # Ensure naive datetime for math
         start_dt = start_dt.replace(tzinfo=None)
         
-        duration_days = 90 if e.get('track_level', '').lower() == 'expert' else 30
+        if e['status'] == 'resubmit':
+            duration_days = 1
+        else:
+            duration_days = 90 if e.get('track_level', '').lower() == 'expert' else 30
+            
         end_dt = start_dt + timedelta(days=duration_days)
         
         if now > end_dt:
-            # Auto-delete expired enrollment
-            supabase.table('enrollments').delete().eq('id', e['id']).execute()
+            if e['status'] == 'active':
+                # Auto-delete expired enrollment
+                supabase.table('enrollments').delete().eq('id', e['id']).execute()
+            elif e['status'] == 'resubmit':
+                # Mark as failed permanently
+                supabase.table('enrollments').update({"status": "failed"}).eq('id', e['id']).execute()
+                supabase.table('submissions').insert({
+                    "enrollment_id": e['enrollment_id'], 
+                    "score": 0, 
+                    "certificate_url": "failed:Missed 24-hour resubmission deadline.",
+                    "evaluated_at": now.isoformat()
+                }).execute()
             continue
             
         remaining_days = max(0, (end_dt - now).days)
+        remaining_hours = max(0, int((end_dt - now).total_seconds() / 3600))
         
         active_projects.append({
             'program_title': e['programs']['title'], 
@@ -864,7 +914,9 @@ def dashboard_intern():
             'enrollment_id': e['enrollment_id'], 
             'specs_link': e['programs'].get(f"specs_{e['track_level']}", '#'), 
             'amount_due': e['programs'].get(f"price_{e['track_level']}", 0),
+            'status': e['status'],
             'remaining_days': remaining_days,
+            'remaining_hours': remaining_hours,
             'duration_days': duration_days
         })
     offered = supabase.table('programs').select('*').eq('is_active', True).execute().data
@@ -1283,13 +1335,27 @@ def verify_credential():
     credential_id = request.args.get('credential_id')
     if not credential_id: return render_template('verify.html')
     try:
-        enroll_query = supabase.table('enrollments').select('*, programs(title), users(full_name)').eq('enrollment_id', credential_id).eq('status', 'graded').execute()
+        enroll_query = supabase.table('enrollments').select('*, programs(title), users(full_name)').eq('enrollment_id', credential_id).execute()
         if not enroll_query.data: return render_template('verify.html', error=True)
+        
+        e = enroll_query.data[0]
+        
+        if e['status'] == 'failed':
+            sub_query = supabase.table('submissions').select('*').eq('enrollment_id', credential_id).order('evaluated_at', desc=True).limit(1).execute()
+            if sub_query.data and sub_query.data[0].get('certificate_url', '').startswith('failed:'):
+                reason = sub_query.data[0]['certificate_url'].replace('failed:', '')
+            else:
+                reason = "Failed to secure 80% passing grade."
+            return render_template('verify.html', failed=True, reason=reason)
+            
+        if e['status'] != 'graded':
+            return render_template('verify.html', error=True)
+            
         sub_query = supabase.table('submissions').select('*').eq('enrollment_id', credential_id).execute()
         return render_template('verify.html', verified_data={
-            "student_name": enroll_query.data[0]['users']['full_name'],
-            "program_title": enroll_query.data[0]['programs']['title'],
-            "track_level": enroll_query.data[0]['track_level'],
+            "student_name": e['users']['full_name'],
+            "program_title": e['programs']['title'],
+            "track_level": e['track_level'],
             "score": sub_query.data[0]['score'],
             "enrollment_id": credential_id,
             "evaluated_date": sub_query.data[0]['evaluated_at'].split('T')[0] if sub_query.data[0].get('evaluated_at') else "N/A"
