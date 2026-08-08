@@ -791,7 +791,8 @@ def add_program():
         "title": request.form.get('title'), "short_description": request.form.get('short_description'), "specs_beginner": request.form.get('specs_beginner'),
         "specs_intermediate": request.form.get('specs_intermediate'), "specs_expert": request.form.get('specs_expert'),
         "price_beginner": int(request.form.get('price_beginner')), "price_intermediate": int(request.form.get('price_intermediate')),
-        "price_expert": int(request.form.get('price_expert')), "is_active": True
+        "price_expert": int(request.form.get('price_expert')), "is_active": True,
+        "image_url": request.form.get('image_url', '')
     }).execute()
     return redirect(url_for('dashboard_admin', tab='programs'))
 

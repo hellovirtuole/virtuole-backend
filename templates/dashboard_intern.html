@@ -65,10 +65,15 @@
             <div class="dash-section-title" style="margin-top:8px;">Offered Programs</div>
             <div class="au-grid">
                 {% for program in offered_programs %}
-                <div class="au-card reveal" style="padding:26px;display:flex;flex-direction:column;">
-                    <h4 class="au-panel-title">{{ program.title }}</h4>
-                    <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{ program.short_description }}</p>
-                    <button class="au-btn-ghost sm" style="margin-top:auto;width:100%;" onclick="openEnrollModal('{{ program.id }}', '{{ program.title }}', {{ program.price_beginner }}, {{ program.price_intermediate }}, {{ program.price_expert }})">View Details &amp; Enroll</button>
+                <div class="au-card reveal" style="padding:0;overflow:hidden;display:flex;flex-direction:column;">
+                    {% if program.image_url %}
+                    <img src="{{ program.image_url }}" alt="{{ program.title }}" style="width: 100%; height: 160px; object-fit: cover; display: block; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    {% endif %}
+                    <div style="padding:26px; display:flex; flex-direction:column; flex-grow:1;">
+                        <h4 class="au-panel-title">{{ program.title }}</h4>
+                        <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{ program.short_description }}</p>
+                        <button class="au-btn-ghost sm" style="margin-top:auto;width:100%;" onclick="openEnrollModal('{{ program.id }}', '{{ program.title }}', {{ program.price_beginner }}, {{ program.price_intermediate }}, {{ program.price_expert }})">View Details &amp; Enroll</button>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
