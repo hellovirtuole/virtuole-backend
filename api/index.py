@@ -635,6 +635,27 @@ def api_enroll():
 @app.route('/api/submit-project', methods=['POST'])
 def api_submit_project():
     enrollment_id = request.form.get('enrollment_id')
+    
+    # Check if enrollment is valid and not expired before accepting submission
+    enroll_data = supabase.table('enrollments').select('*').eq('enrollment_id', enrollment_id).eq('status', 'active').execute().data
+    if not enroll_data:
+        return "Enrollment not found or already submitted.", 403
+        
+    e = enroll_data[0]
+    now = datetime.utcnow()
+    try:
+        start_dt = datetime.fromisoformat(e['created_at'].replace('Z', '+00:00')) if e.get('created_at') else now
+    except:
+        start_dt = now
+    
+    start_dt = start_dt.replace(tzinfo=None)
+    duration_days = 90 if e.get('track_level', '').lower() == 'expert' else 30
+    end_dt = start_dt + timedelta(days=duration_days)
+    
+    if now > end_dt:
+        supabase.table('enrollments').delete().eq('id', e['id']).execute()
+        return "Your submission window has expired. The enrollment has been closed.", 403
+    
     supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": request.form.get('code_link'), "defense_link": request.form.get('defense_link')}).execute()
     supabase.table('enrollments').update({"status": "submitted"}).eq('enrollment_id', enrollment_id).execute()
     send_system_email(session['email'], "Submission Received", f"Your architecture for {enrollment_id} has entered evaluation.")
@@ -815,18 +836,26 @@ def dashboard_intern():
     u_id = session['user_id']
     active_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).eq('status', 'active').execute().data
     active_projects = []
+    
+    now = datetime.utcnow()
     for e in active_enrolls:
         try:
-            start_dt = datetime.fromisoformat(e['created_at'].replace('Z', '+00:00')) if e.get('created_at') else datetime.utcnow()
+            start_dt = datetime.fromisoformat(e['created_at'].replace('Z', '+00:00')) if e.get('created_at') else now
         except:
-            start_dt = datetime.utcnow()
+            start_dt = now
         
         # Ensure naive datetime for math
         start_dt = start_dt.replace(tzinfo=None)
         
         duration_days = 90 if e.get('track_level', '').lower() == 'expert' else 30
         end_dt = start_dt + timedelta(days=duration_days)
-        remaining_days = max(0, (end_dt - datetime.utcnow()).days)
+        
+        if now > end_dt:
+            # Auto-delete expired enrollment
+            supabase.table('enrollments').delete().eq('id', e['id']).execute()
+            continue
+            
+        remaining_days = max(0, (end_dt - now).days)
         
         active_projects.append({
             'program_title': e['programs']['title'], 
