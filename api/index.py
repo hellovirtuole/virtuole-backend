@@ -1432,6 +1432,20 @@ def download_lor(type):
         return get_lor_template(u['full_name'], datetime.utcnow().strftime("%B %d, %Y"), "GTM Ambassador Program", "Community Lead", u['public_id'], "Community Leadership and Advocacy.")
     return "Insufficient Points", 403
 
+@app.route('/download_cert_intern/<enrollment_id>')
+def download_cert_intern(enrollment_id):
+    enroll_data = supabase.table('enrollments').select('*, programs(*), users(full_name)').eq('enrollment_id', enrollment_id).execute().data
+    if not enroll_data: return "Invalid Credential", 404
+    e = enroll_data[0]
+    
+    sub = supabase.table('submissions').select('*').eq('enrollment_id', enrollment_id).execute().data
+    if not sub or not sub[0].get('score') or sub[0]['score'] < 80:
+        return "Not Eligible for Certificate", 403
+        
+    s = sub[0]
+    date_str = s.get('evaluated_at', e['created_at']).split('T')[0]
+    return get_certificate_template(e['users']['full_name'], date_str, e['programs']['title'], e['track_level'].title(), enrollment_id, s['score'])
+
 @app.route('/download_offer/<enrollment_id>')
 def download_offer(enrollment_id):
     if str(session.get('role', '')).lower() not in ['intern', 'intern + ambassador']: return redirect('/login')
