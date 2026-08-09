@@ -1011,7 +1011,10 @@ def dashboard_intern():
             s = sub[0]
             completed_projects.append({'score': s.get('score'), 'program_title': e['programs']['title'], 'track_level': e['track_level'], 'enrollment_id': e['enrollment_id'], 'evaluated_date': s.get('evaluated_at', '').split('T')[0] if s.get('evaluated_at') else 'Pending', 'certificate_url': s.get('certificate_url'), 'lor_url': s.get('lor_url')})
 
-    return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered, completed_projects=completed_projects, ambassador_active=ambassador_active)
+    # Determine the default active tab: Explore if no active programs, otherwise Workspace.
+    default_tab = 'workspace' if active_projects else 'explore'
+
+    return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered, completed_projects=completed_projects, ambassador_active=ambassador_active, active_tab=default_tab)
 
 @app.route('/dashboard-mentor')
 def dashboard_mentor():

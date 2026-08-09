@@ -21,7 +21,7 @@
     <main class="dash-main">
 
         <!-- ===================== ACTIVE PROGRAMS ===================== -->
-        <div id="workspace-view" class="view-section active">
+        <div id="workspace-view" class="view-section{% if active_tab == 'workspace' or not active_tab %} active{% endif %}">
             <h1 class="dash-greeting">Hello, {{ user_name | default("Intern") }}</h1>
             <p class="dash-sub">Manage your active projects and submit architectures.</p>
 
@@ -58,8 +58,8 @@
         </div>
 
         <!-- ===================== EXPLORE PROGRAMS ===================== -->
-        <div id="explore-view" class="view-section">
-            <h1 class="dash-greeting">Explore Programs</h1>
+        <div id="explore-view" class="view-section{% if active_tab == 'explore' %} active{% endif %}">
+            <h1 class="dash-greeting">Explore Architecture Internships</h1>
             <p class="dash-sub">Discover and enroll in new MSME architectures.</p>
 
             <div class="dash-section-title" style="margin-top:8px;">Offered Programs</div>
@@ -80,7 +80,7 @@
         </div>
 
         <!-- ===================== MY CREDENTIALS ===================== -->
-        <div id="credentials-view" class="view-section">
+        <div id="credentials-view" class="view-section{% if active_tab == 'credentials' %} active{% endif %}">
             <h1 class="dash-greeting">My Credentials</h1>
             <p class="dash-sub">Access your official certificates and Letters of Recommendation from successfully completed projects.</p>
 
@@ -107,8 +107,8 @@
         </div>
 
         <!-- ===================== GRADING PROTOCOL ===================== -->
-        <div id="protocol-view" class="view-section">
-            <h1 class="dash-greeting">Evaluation Matrix</h1>
+        <div id="protocol-view" class="view-section{% if active_tab == 'protocol' %} active{% endif %}">
+            <h1 class="dash-greeting">Grading Protocol</h1>
             <p class="dash-sub">Understand exactly how your project will be graded by our engineering mentors and how to unlock the Elite LoR.</p>
 
             <div class="au-panel reveal" style="display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:18px;border-left:4px solid var(--au-gold);">

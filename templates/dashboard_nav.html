@@ -88,7 +88,7 @@
 
     <div class="dnav-center" id="dnav-center">
         {% for t in nav_tabs %}
-        <a class="dnav-tab{% if loop.first %} active{% endif %}" data-view="{{ t.id }}" onclick="switchView('{{ t.id }}', this)">{{ t.label }}</a>
+        <a class="dnav-tab{% if active_tab == t.id or (loop.first and not active_tab) %} active{% endif %}" data-view="{{ t.id }}" onclick="switchView('{{ t.id }}', this)">{{ t.label }}</a>
         {% endfor %}
 
         <div class="dnav-mobile-foot mobile-only">
