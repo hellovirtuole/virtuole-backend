@@ -781,9 +781,7 @@ def api_enroll():
         
     supabase.table('enrollments').insert({
         "enrollment_id": enrollment_id, "user_id": session['user_id'], "program_id": program_id,
-        "track_level": track_level, "college_name": request.form.get('college_name'),
-        "course_name": request.form.get('course_name'), "session_year": request.form.get('session_year'),
-        "status": "active"
+        "track_level": track_level, "status": "active"
     }).execute()
     
     prog = supabase.table('programs').select('*').eq('id', program_id).execute().data[0]
@@ -1055,16 +1053,19 @@ def update_profile_intern():
     if str(session.get('role', '')).lower() not in ['intern', 'intern + ambassador']: return redirect('/login')
     
     full_name = request.form.get('full_name')
-    addr_data = {
-        "addr1": request.form.get('addr_line1', ''),
-        "addr2": request.form.get('addr_line2', ''),
-        "city": request.form.get('addr_city', ''),
-        "state": request.form.get('addr_state', ''),
-        "pin": request.form.get('addr_pin', ''),
-        "phone": request.form.get('addr_phone', '')
-    }
     
-    update_payload = {"shipping_address": json.dumps(addr_data)}
+    # Load existing shipping details to preserve address info if they have it
+    u_data = supabase.table('users').select('shipping_address').eq('id', session['user_id']).execute().data
+    existing_shipping = parse_shipping_address(u_data[0].get('shipping_address', '')) if u_data else {}
+    
+    # Update academic/personal details
+    existing_shipping['gender'] = request.form.get('gender', '')
+    existing_shipping['phone'] = request.form.get('phone', '')
+    existing_shipping['college_name'] = request.form.get('college_name', '')
+    existing_shipping['course_name'] = request.form.get('course_name', '')
+    existing_shipping['session_year'] = request.form.get('session_year', '')
+    
+    update_payload = {"shipping_address": json.dumps(existing_shipping)}
     if full_name:
         update_payload["full_name"] = full_name
         
@@ -1104,6 +1105,17 @@ def dashboard_intern():
     u_data = supabase.table('users').select('*').eq('id', u_id).execute().data
     user_profile = u_data[0] if u_data else {}
     shipping_details = parse_shipping_address(user_profile.get('shipping_address', ''))
+    
+    # Auto-fill academic details from first enrollment if missing in profile
+    if not shipping_details.get('college_name'):
+        try:
+            first_enroll = supabase.table('enrollments').select('college_name, course_name, session_year').eq('user_id', u_id).order('created_at', desc=False).limit(1).execute().data
+            if first_enroll:
+                shipping_details['college_name'] = first_enroll[0].get('college_name', '')
+                shipping_details['course_name'] = first_enroll[0].get('course_name', '')
+                shipping_details['session_year'] = first_enroll[0].get('session_year', '')
+        except Exception:
+            pass
     
     now = datetime.utcnow()
     for e in active_enrolls:
