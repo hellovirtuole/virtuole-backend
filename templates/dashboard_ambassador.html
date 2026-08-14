@@ -136,17 +136,39 @@
         </div>
 
         <!-- ===================== SHIPPING PROFILE ===================== -->
-        <div id="profile-view" class="view-section">
+        <div id="profile-view" class="view-section{% if active_tab == 'profile' %} active{% endif %}">
             <h1 class="dash-greeting">Shipping Logistics</h1>
-            <p class="dash-sub">Once you hit Tier 3 (Hoodies) or Tier 4 (Elite Kits), our logistics team will use this address for dispatch. Ensure it is highly accurate.</p>
+            <p class="dash-sub">Once you hit Tier 3 or Tier 4, our logistics team will use this address for dispatch. Ensure it is highly accurate.</p>
 
-            <div class="au-panel au-form" style="max-width:600px;">
-                <form action="/update-address" method="POST">
-                    <div class="au-form-group">
-                        <label>Full Delivery Address (Include Pin Code &amp; Phone Number)</label>
-                        <textarea name="shipping_address" rows="5" placeholder="e.g., Room 402, Boys Hostel... Phone: +91 9876543210" required>{{ shipping_address | default('') }}</textarea>
+            <div class="au-panel au-form" style="max-width:800px; margin-top:20px;">
+                <form action="/api/update-address" method="POST">
+                    <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                        <div class="au-form-group" style="flex:1; min-width: 100%;">
+                            <label>Address Line 1</label>
+                            <input type="text" name="addr_line1" class="au-input" value="{{ shipping_details.get('addr1', '') }}" required placeholder="Flat, House no., Building, Company, Apartment">
+                        </div>
+                        <div class="au-form-group" style="flex:1; min-width: 100%;">
+                            <label>Address Line 2 (Optional)</label>
+                            <input type="text" name="addr_line2" class="au-input" value="{{ shipping_details.get('addr2', '') }}" placeholder="Area, Street, Sector, Village">
+                        </div>
+                        <div class="au-form-group" style="flex:1; min-width: 200px;">
+                            <label>Town / City</label>
+                            <input type="text" name="addr_city" class="au-input" value="{{ shipping_details.get('city', '') }}" required>
+                        </div>
+                        <div class="au-form-group" style="flex:1; min-width: 200px;">
+                            <label>State</label>
+                            <input type="text" name="addr_state" class="au-input" value="{{ shipping_details.get('state', '') }}" required>
+                        </div>
+                        <div class="au-form-group" style="flex:1; min-width: 200px;">
+                            <label>PIN / Zip Code</label>
+                            <input type="text" name="addr_pin" class="au-input" value="{{ shipping_details.get('pin', '') }}" required>
+                        </div>
+                        <div class="au-form-group" style="flex:1; min-width: 200px;">
+                            <label>Contact Phone Number</label>
+                            <input type="tel" name="addr_phone" class="au-input" value="{{ shipping_details.get('phone', '') }}" required placeholder="+91 ">
+                        </div>
                     </div>
-                    <button type="submit" class="au-btn violet" style="width:100%;">Update Secure Logistics Record</button>
+                    <button type="submit" class="au-btn violet" style="margin-top: 20px; width:100%;">Update Secure Logistics Record</button>
                 </form>
             </div>
         </div>

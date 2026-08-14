@@ -14,7 +14,8 @@
         {'id':'workspace','label':'Active Programs'},
         {'id':'explore','label':'Explore Programs'},
         {'id':'credentials','label':'My Credentials'},
-        {'id':'protocol','label':'Grading Protocol'}
+        {'id':'protocol','label':'Grading Protocol'},
+        {'id':'profile','label':'My Profile'}
     ] %}
     {% include 'dashboard_nav.html' %}
 
@@ -133,6 +134,61 @@
                     <h4 class="au-panel-title" style="font-size:1.15em;color:#f87171;">Failure / 24-Hour Resubmission Window</h4>
                     <p style="color:var(--text-muted);font-size:.95em;line-height:1.6;margin:0;">The code is fundamentally broken, plagiarized, or fails core functional requirements. You will receive an email containing exact mentor feedback. You have a strict <strong style="color:var(--text-main);">24-hour window</strong> to fix your codebase and resubmit for free before your data is purged.</p>
                 </div>
+            </div>
+        </div>
+        
+        <!-- ===================== MY PROFILE ===================== -->
+        <div id="profile-view" class="view-section{% if active_tab == 'profile' %} active{% endif %}">
+            <h1 class="dash-greeting">My Profile</h1>
+            <p class="dash-sub">Manage your personal details and shipping address for physical rewards.</p>
+
+            <div class="au-panel au-form" style="max-width:800px; margin-top:20px;">
+                <form action="/api/update-profile-intern" method="POST">
+                    <h3 style="margin-bottom: 20px; color: var(--text-main); font-family: 'Montserrat', sans-serif;">Personal Details</h3>
+                    
+                    <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom: 15px;">
+                        <div class="au-form-group" style="flex:1; min-width: 250px;">
+                            <label>Full Name (As shown on certificates)</label>
+                            <input type="text" name="full_name" class="au-input" value="{{ user_profile.get('full_name', '') }}" required>
+                        </div>
+                        <div class="au-form-group" style="flex:1; min-width: 250px;">
+                            <label>Email Address</label>
+                            <input type="email" class="au-input" value="{{ user_profile.get('email', '') }}" readonly style="opacity: 0.7; cursor: not-allowed;" title="Email cannot be changed directly.">
+                        </div>
+                    </div>
+
+                    <h3 style="margin-top: 30px; margin-bottom: 20px; color: var(--text-main); font-family: 'Montserrat', sans-serif;">Shipping Logistics</h3>
+                    <p style="color:var(--text-muted); font-size:0.9em; margin-bottom: 20px;">Ensure this is highly accurate for dispatching your physical swag or rewards.</p>
+
+                    <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                        <div class="au-form-group" style="flex:1; min-width: 100%;">
+                            <label>Address Line 1</label>
+                            <input type="text" name="addr_line1" class="au-input" value="{{ shipping_details.get('addr1', '') }}" required placeholder="Flat, House no., Building, Company, Apartment">
+                        </div>
+                        <div class="au-form-group" style="flex:1; min-width: 100%;">
+                            <label>Address Line 2 (Optional)</label>
+                            <input type="text" name="addr_line2" class="au-input" value="{{ shipping_details.get('addr2', '') }}" placeholder="Area, Street, Sector, Village">
+                        </div>
+                        <div class="au-form-group" style="flex:1; min-width: 200px;">
+                            <label>Town / City</label>
+                            <input type="text" name="addr_city" class="au-input" value="{{ shipping_details.get('city', '') }}" required>
+                        </div>
+                        <div class="au-form-group" style="flex:1; min-width: 200px;">
+                            <label>State</label>
+                            <input type="text" name="addr_state" class="au-input" value="{{ shipping_details.get('state', '') }}" required>
+                        </div>
+                        <div class="au-form-group" style="flex:1; min-width: 200px;">
+                            <label>PIN / Zip Code</label>
+                            <input type="text" name="addr_pin" class="au-input" value="{{ shipping_details.get('pin', '') }}" required>
+                        </div>
+                        <div class="au-form-group" style="flex:1; min-width: 200px;">
+                            <label>Contact Phone Number</label>
+                            <input type="tel" name="addr_phone" class="au-input" value="{{ shipping_details.get('phone', '') }}" required placeholder="+91 ">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="au-btn violet" style="margin-top: 20px;">Save Profile Updates</button>
+                </form>
             </div>
         </div>
 

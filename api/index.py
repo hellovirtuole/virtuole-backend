@@ -1026,12 +1026,55 @@ def claim_points():
     }).execute()
     return redirect(url_for('dashboard_ambassador'))
 
-@app.route('/update-address', methods=['POST'])
+import json
+
+def parse_shipping_address(addr_str):
+    if not addr_str: return {}
+    try:
+        return json.loads(addr_str)
+    except Exception:
+        return {"addr1": addr_str, "addr2": "", "city": "", "state": "", "pin": "", "phone": ""}
+
 @app.route('/api/update-address', methods=['POST'])
 def update_address():
     if str(session.get('role', '')).lower() not in ['ambassador', 'intern + ambassador']: return redirect('/login')
-    supabase.table('users').update({"shipping_address": request.form.get('shipping_address')}).eq('id', session['user_id']).execute()
-    return redirect(url_for('dashboard_ambassador'))
+    
+    addr_data = {
+        "addr1": request.form.get('addr_line1', ''),
+        "addr2": request.form.get('addr_line2', ''),
+        "city": request.form.get('addr_city', ''),
+        "state": request.form.get('addr_state', ''),
+        "pin": request.form.get('addr_pin', ''),
+        "phone": request.form.get('addr_phone', '')
+    }
+    supabase.table('users').update({"shipping_address": json.dumps(addr_data)}).eq('id', session['user_id']).execute()
+    return redirect(url_for('dashboard_ambassador', active_tab='profile'))
+
+@app.route('/api/update-profile-intern', methods=['POST'])
+def update_profile_intern():
+    if str(session.get('role', '')).lower() not in ['intern', 'intern + ambassador']: return redirect('/login')
+    
+    full_name = request.form.get('full_name')
+    addr_data = {
+        "addr1": request.form.get('addr_line1', ''),
+        "addr2": request.form.get('addr_line2', ''),
+        "city": request.form.get('addr_city', ''),
+        "state": request.form.get('addr_state', ''),
+        "pin": request.form.get('addr_pin', ''),
+        "phone": request.form.get('addr_phone', '')
+    }
+    
+    update_payload = {"shipping_address": json.dumps(addr_data)}
+    if full_name:
+        update_payload["full_name"] = full_name
+        
+    supabase.table('users').update(update_payload).eq('id', session['user_id']).execute()
+    
+    # Update session name just in case
+    if full_name:
+        session['name'] = full_name
+        
+    return redirect(url_for('dashboard_intern', active_tab='profile'))
 
 # =====================================================================
 # 11. DASHBOARD RENDERS
@@ -1056,6 +1099,11 @@ def dashboard_intern():
     u_id = session['user_id']
     active_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).in_('status', ['active', 'resubmit']).execute().data
     active_projects = []
+    
+    # Fetch full user profile for the profile tab
+    u_data = supabase.table('users').select('*').eq('id', u_id).execute().data
+    user_profile = u_data[0] if u_data else {}
+    shipping_details = parse_shipping_address(user_profile.get('shipping_address', ''))
     
     now = datetime.utcnow()
     for e in active_enrolls:
@@ -1115,9 +1163,10 @@ def dashboard_intern():
             completed_projects.append({'score': s.get('score'), 'program_title': e['programs']['title'], 'track_level': e['track_level'], 'enrollment_id': e['enrollment_id'], 'evaluated_date': s.get('evaluated_at', '').split('T')[0] if s.get('evaluated_at') else 'Pending', 'certificate_url': s.get('certificate_url'), 'lor_url': s.get('lor_url')})
 
     # Determine the default active tab: Explore if no active programs, otherwise Workspace.
-    default_tab = 'workspace' if active_projects else 'explore'
+    requested_tab = request.args.get('active_tab')
+    default_tab = requested_tab if requested_tab else ('workspace' if active_projects else 'explore')
 
-    return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered, completed_projects=completed_projects, ambassador_active=ambassador_active, active_tab=default_tab)
+    return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered, completed_projects=completed_projects, ambassador_active=ambassador_active, active_tab=default_tab, user_profile=user_profile, shipping_details=shipping_details)
 
 @app.route('/dashboard-mentor')
 def dashboard_mentor():
@@ -1527,6 +1576,8 @@ def dashboard_ambassador():
         {"id": 0, "tier_level": 4, "name": "Star Ambassador", "points_required": 3000, "give_certificate": True, "give_lor": True, "benefits_text": "Elite Swag Kit (Mechanical Keyboard & Desk Mat)\nDirect Paid Internship Offer at Virtuole HQ"}
     ]
     
+    shipping_details = parse_shipping_address(u.get('shipping_address', ''))
+    
     tier_name = ambassador_tiers[0]['name']
     for t in ambassador_tiers:
         if pts >= t['points_required']:
@@ -1541,7 +1592,10 @@ def dashboard_ambassador():
         task_claims[c['task_id']] = task_claims.get(c['task_id'], 0) + 1
 
     analytics = build_ambassador_analytics(u, pts, refs, ambassador_tiers)
-    return render_template('dashboard_ambassador.html', ambassador_name=session.get('name'), valid_until_date=u['ambassador_expiry'].split('T')[0] if u.get('ambassador_expiry') else 'N/A', total_points=pts, current_tier_name=tier_name, total_referrals=refs, promo_code=u.get('promo_code', 'Pending'), amb_id=u.get('public_id', 'Pending'), available_tasks=tasks, task_claims=task_claims, shipping_address=u.get('shipping_address'), analytics=analytics, can_switch_intern=(user_role == 'intern + ambassador'), ambassador_tiers=ambassador_tiers)
+    
+    requested_tab = request.args.get('active_tab')
+    
+    return render_template('dashboard_ambassador.html', ambassador_name=session.get('name'), valid_until_date=u['ambassador_expiry'].split('T')[0] if u.get('ambassador_expiry') else 'N/A', total_points=pts, current_tier_name=tier_name, total_referrals=refs, promo_code=u.get('promo_code', 'Pending'), amb_id=u.get('public_id', 'Pending'), available_tasks=tasks, task_claims=task_claims, shipping_details=shipping_details, analytics=analytics, can_switch_intern=(user_role == 'intern + ambassador'), ambassador_tiers=ambassador_tiers, active_tab=requested_tab)
 
 
 def build_ambassador_analytics(user, points, referrals, ambassador_tiers):
