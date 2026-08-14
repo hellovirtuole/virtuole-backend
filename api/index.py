@@ -805,16 +805,35 @@ def api_enroll():
 
 @app.route('/api/cancel-enrollment', methods=['POST'])
 def api_cancel_enrollment():
-    if str(session.get('role', '')).lower() not in ['intern', 'intern + ambassador']: return redirect('/login')
+    if str(session.get('role', '')).lower() not in ['intern', 'intern + ambassador']: 
+        return "Unauthorized role", 403
+        
     enrollment_id = request.form.get('enrollment_id')
+    if not enrollment_id:
+        return "No enrollment_id provided", 400
     
-    enroll_data = supabase.table('enrollments').select('id, user_id').eq('enrollment_id', enrollment_id).execute().data
-    if enroll_data and enroll_data[0]['user_id'] == session['user_id']:
+    try:
+        enroll_data = supabase.table('enrollments').select('id, user_id').eq('enrollment_id', enrollment_id).execute().data
+        if not enroll_data:
+            return f"Enrollment {enrollment_id} not found in database.", 404
+            
+        if str(enroll_data[0]['user_id']) != str(session.get('user_id')):
+            return f"User ID mismatch: {enroll_data[0]['user_id']} vs {session.get('user_id')}", 403
+            
+        # Delete submissions first
         try:
             supabase.table('submissions').delete().eq('enrollment_id', enrollment_id).execute()
-        except:
-            pass
-        supabase.table('enrollments').delete().eq('enrollment_id', enrollment_id).execute()
+        except Exception as e:
+            print("Failed to delete submissions:", e)
+            
+        # Delete enrollment
+        del_resp = supabase.table('enrollments').delete().eq('enrollment_id', enrollment_id).execute()
+        if hasattr(del_resp, 'data') and len(del_resp.data) == 0:
+            # If RLS blocked it, data might be empty
+            print("Delete returned empty data, possible RLS issue.")
+            
+    except Exception as e:
+        return f"Database error during cancellation: {str(e)}", 500
         
     return redirect(url_for('dashboard_intern'))
 
