@@ -147,15 +147,17 @@
                     <h3 style="margin-bottom: 20px; color: var(--text-main); font-family: 'Montserrat', sans-serif;">Personal Details</h3>
                     
                     <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom: 15px;">
-                        <div class="au-form-group" style="flex:1; min-width: 250px;">
+                        <div class="au-form-group" style="flex:1; min-width: calc(50% - 15px);">
                             <label>Full Name (As shown on certificates)</label>
                             <input type="text" name="full_name" class="au-input" value="{{ user_profile.get('full_name', '') }}" required>
                         </div>
-                        <div class="au-form-group" style="flex:1; min-width: 250px;">
+                        <div class="au-form-group" style="flex:1; min-width: calc(50% - 15px);">
                             <label>Email Address</label>
                             <input type="email" class="au-input" value="{{ user_profile.get('email', '') }}" readonly style="opacity: 0.7; cursor: not-allowed;" title="Email cannot be changed directly.">
                         </div>
-                        <div class="au-form-group" style="flex:1; min-width: 200px;">
+                    </div>
+                    <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom: 15px;">
+                        <div class="au-form-group" style="flex:1; min-width: calc(50% - 15px);">
                             <label>Gender</label>
                             <select name="gender" class="au-input" required>
                                 <option value="" disabled {% if not shipping_details.get('gender') %}selected{% endif %}>Select Gender...</option>
@@ -164,7 +166,7 @@
                                 <option value="Other" {% if shipping_details.get('gender') == 'Other' %}selected{% endif %}>Other</option>
                             </select>
                         </div>
-                        <div class="au-form-group" style="flex:1; min-width: 200px;">
+                        <div class="au-form-group" style="flex:1; min-width: calc(50% - 15px);">
                             <label>Contact Phone Number</label>
                             <input type="tel" name="phone" class="au-input" value="{{ shipping_details.get('phone', '') }}" required placeholder="+91 ">
                         </div>
