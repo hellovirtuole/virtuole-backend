@@ -50,6 +50,10 @@
                         <a href="{{ project.specs_link }}" target="_blank" class="au-btn-ghost sm">Download Specs</a>
                         <button class="au-btn violet sm" onclick="openSubmitModal('{{ project.enrollment_id }}', {{ project.amount_due }})">Submit Architecture</button>
                         <a href="/download_offer/{{ project.enrollment_id }}" target="_blank" class="au-btn-ghost sm">📄 Offer Letter</a>
+                        <form action="/api/cancel-enrollment" method="POST" style="margin:0;" onsubmit="return confirm('Are you sure you want to completely cancel this enrollment? All data for this course will be deleted and this action cannot be undone.');">
+                            <input type="hidden" name="enrollment_id" value="{{ project.enrollment_id }}">
+                            <button type="submit" class="au-btn-ghost sm" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.2);">Cancel</button>
+                        </form>
                     </div>
                 </div>
                 {% else %}

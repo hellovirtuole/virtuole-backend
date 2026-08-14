@@ -794,6 +794,21 @@ def api_enroll():
     send_system_email(session['email'], "Official Internship Offer Letter - Virtuole", html_offer, is_html=True)
     return redirect(url_for('dashboard_intern'))
 
+@app.route('/api/cancel-enrollment', methods=['POST'])
+def api_cancel_enrollment():
+    if str(session.get('role', '')).lower() not in ['intern', 'intern + ambassador']: return redirect('/login')
+    enrollment_id = request.form.get('enrollment_id')
+    
+    enroll_data = supabase.table('enrollments').select('id, user_id').eq('enrollment_id', enrollment_id).execute().data
+    if enroll_data and enroll_data[0]['user_id'] == session['user_id']:
+        try:
+            supabase.table('submissions').delete().eq('enrollment_id', enrollment_id).execute()
+        except:
+            pass
+        supabase.table('enrollments').delete().eq('enrollment_id', enrollment_id).execute()
+        
+    return redirect(url_for('dashboard_intern'))
+
 @app.route('/submit-project', methods=['POST'])
 @app.route('/api/submit-project', methods=['POST'])
 def api_submit_project():
