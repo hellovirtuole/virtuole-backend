@@ -71,6 +71,11 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 CORS(app)
 
+@app.route('/favicon.ico')
+@app.route('/favicon.png')
+def favicon():
+    return '', 204
+
 # Vercel Cache Killer to prevent the "reload logout" bug
 @app.after_request
 def add_header(response):
