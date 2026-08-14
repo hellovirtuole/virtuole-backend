@@ -91,80 +91,48 @@
         <!-- ===================== REWARDS & TIERS ===================== -->
         <div id="tiers-view" class="view-section">
             <h1 class="dash-greeting">Tier Roadmap</h1>
-            <p class="dash-sub">Track your progression through the 4 core tiers. Unlock milestone certificates and physical swag as you level up.</p>
+            <p class="dash-sub">Track your progression through the core tiers. Unlock milestone certificates and benefits as you level up.</p>
 
-            <div class="au-panel reveal {{ '' if total_points >= 0 else 'tier-locked' }}" style="margin-bottom:22px;">
+            {% for tier in ambassador_tiers %}
+            <div class="au-panel reveal {{ '' if total_points >= tier.points_required else 'tier-locked' }}" style="margin-bottom:22px; {% if loop.last %}border:1px solid rgba(251,191,36,.28);background:rgba(251,191,36,.05);{% endif %}">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
-                    <h4 style="font-family:'Montserrat',sans-serif;font-size:1.5em;margin:0;">Tier 1: Kickstart</h4>
-                    <span class="au-badge warn">Base Level</span>
+                    <h4 style="font-family:'Montserrat',sans-serif;font-size:1.5em;margin:0;{% if loop.last %}color:var(--au-gold);{% endif %}">Tier {{ tier.tier_level }}: {{ tier.name }}</h4>
+                    <span class="au-badge warn">{% if tier.points_required == 0 %}Base Level{% else %}Requires {{ '{:,}'.format(tier.points_required) }} Points{% endif %}</span>
                 </div>
-                <div style="background:rgba(148,163,184,.08);padding:18px 20px;border-radius:var(--au-radius-sm);margin-bottom:22px;">
+                <div style="background:{% if loop.last %}rgba(3,7,18,.25){% else %}rgba(148,163,184,.08){% endif %};padding:18px 20px;border-radius:var(--au-radius-sm);margin-bottom:22px;">
                     <ul style="margin:0;padding-left:20px;color:var(--text-muted);font-size:.95em;line-height:1.7;">
-                        <li><strong style="color:var(--text-main);">Digital:</strong> Official Kickstart Level Certificate.</li>
-                        <li><strong style="color:var(--text-main);">Physical:</strong> Virtuole branded Lanyard and Die-Cut Stickers.</li>
+                        {% if tier.give_certificate %}
+                        <li><strong style="color:var(--text-main);">Digital:</strong> Official {{ tier.name }} Certificate.</li>
+                        {% endif %}
+                        {% if tier.give_lor %}
+                        <li><strong style="color:var(--text-main);">Career:</strong> Official Letter of Recommendation (LoR).</li>
+                        {% endif %}
+                        {% if tier.benefits_text %}
+                            {% for line in tier.benefits_text.split('\n') %}
+                                {% if line.strip() %}
+                                <li><strong style="color:var(--text-main);">Reward:</strong> {{ line.strip() }}</li>
+                                {% endif %}
+                            {% endfor %}
+                        {% elif not tier.give_certificate and not tier.give_lor %}
+                        <li><strong style="color:var(--text-main);">Benefits:</strong> Reach this tier to unlock exclusive rewards.</li>
+                        {% endif %}
                     </ul>
                 </div>
-                <a href="{{ url_for('download_cert', tier='kickstart') }}" class="au-btn sm" style="--au-b1:#fbbf24;--au-b2:#f59e0b;color:#111827;max-width:250px;">Download Certificate</a>
-            </div>
-
-            <div class="au-panel reveal d1 {{ '' if total_points >= 500 else 'tier-locked' }}" style="margin-bottom:22px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
-                    <h4 style="font-family:'Montserrat',sans-serif;font-size:1.5em;margin:0;">Tier 2: Campus Advocate</h4>
-                    <span class="au-badge warn">Requires 500 Points</span>
-                </div>
-                <div style="background:rgba(148,163,184,.08);padding:18px 20px;border-radius:var(--au-radius-sm);margin-bottom:22px;">
-                    <ul style="margin:0;padding-left:20px;color:var(--text-muted);font-size:.95em;line-height:1.7;">
-                        <li><strong style="color:var(--text-main);">Digital:</strong> Official Campus Advocate Certificate.</li>
-                        <li><strong style="color:var(--text-main);">Physical:</strong> Exclusive Virtuole Tech Graphic T-Shirt.</li>
-                    </ul>
-                </div>
-                {% if total_points >= 500 %}
-                <a href="{{ url_for('download_cert', tier='advocate') }}" class="au-btn sm" style="--au-b1:#fbbf24;--au-b2:#f59e0b;color:#111827;max-width:250px;">Download Certificate</a>
-                {% else %}
-                <button class="au-btn-ghost sm" style="max-width:250px;cursor:not-allowed;opacity:.7;" disabled>Locked ({{ 500 - total_points }} pts needed)</button>
-                {% endif %}
-            </div>
-
-            <div class="au-panel reveal d2 {{ '' if total_points >= 1500 else 'tier-locked' }}" style="margin-bottom:22px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
-                    <h4 style="font-family:'Montserrat',sans-serif;font-size:1.5em;margin:0;">Tier 3: Community Lead</h4>
-                    <span class="au-badge warn">Requires 1,500 Points</span>
-                </div>
-                <div style="background:rgba(148,163,184,.08);padding:18px 20px;border-radius:var(--au-radius-sm);margin-bottom:22px;">
-                    <ul style="margin:0;padding-left:20px;color:var(--text-muted);font-size:.95em;line-height:1.7;">
-                        <li><strong style="color:var(--text-main);">Digital:</strong> Official Community Lead Certificate.</li>
-                        <li><strong style="color:var(--text-main);">Elite:</strong> Official DevRel Letter of Recommendation (LoR).</li>
-                        <li><strong style="color:var(--text-main);">Physical:</strong> Premium Virtuole Developer Hoodie.</li>
-                    </ul>
-                </div>
-                {% if total_points >= 1500 %}
+                
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                    <a href="{{ url_for('download_cert', tier='lead') }}" class="au-btn sm" style="--au-b1:#fbbf24;--au-b2:#f59e0b;color:#111827;max-width:250px;">Download Certificate</a>
-                    <a href="{{ url_for('download_lor', type='devrel') }}" class="au-btn violet sm" style="max-width:250px;">Download DevRel LoR</a>
+                    {% if total_points >= tier.points_required %}
+                        {% if tier.give_certificate %}
+                        <a href="{{ url_for('download_cert', tier_id=tier.id) }}" class="au-btn sm" style="--au-b1:#fbbf24;--au-b2:#f59e0b;color:#111827;max-width:250px;">Download Certificate</a>
+                        {% endif %}
+                        {% if tier.give_lor %}
+                        <a href="{{ url_for('download_lor', type='devrel') }}" class="au-btn violet sm" style="max-width:250px;">Download LoR</a>
+                        {% endif %}
+                    {% else %}
+                        <button class="au-btn-ghost sm" style="max-width:250px;cursor:not-allowed;opacity:.7;{% if loop.last %}border-color:var(--au-gold);color:var(--au-gold);{% endif %}" disabled>Locked ({{ tier.points_required - total_points }} pts needed)</button>
+                    {% endif %}
                 </div>
-                {% else %}
-                <button class="au-btn-ghost sm" style="max-width:250px;cursor:not-allowed;opacity:.7;" disabled>Locked ({{ 1500 - total_points }} pts needed)</button>
-                {% endif %}
             </div>
-
-            <div class="au-panel reveal d3 {{ '' if total_points >= 3000 else 'tier-locked' }}" style="border:1px solid rgba(251,191,36,.28);background:rgba(251,191,36,.05);">
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
-                    <h4 style="font-family:'Montserrat',sans-serif;font-size:1.5em;margin:0;color:var(--au-gold);">Tier 4: Star Ambassador</h4>
-                    <span class="au-badge warn">Requires 3,000 Points</span>
-                </div>
-                <div style="background:rgba(3,7,18,.25);padding:18px 20px;border-radius:var(--au-radius-sm);margin-bottom:22px;">
-                    <ul style="margin:0;padding-left:20px;color:var(--text-muted);font-size:.95em;line-height:1.7;">
-                        <li><strong style="color:var(--text-main);">Digital:</strong> Elite Star Ambassador Corporate Certificate.</li>
-                        <li><strong style="color:var(--text-main);">Physical:</strong> Elite Swag Kit (Mechanical Keyboard &amp; Desk Mat).</li>
-                        <li><strong style="color:var(--text-main);">Career:</strong> Direct Paid Internship Offer at Virtuole HQ.</li>
-                    </ul>
-                </div>
-                {% if total_points >= 3000 %}
-                <a href="{{ url_for('download_cert', tier='star') }}" class="au-btn sm" style="--au-b1:#fbbf24;--au-b2:#f59e0b;color:#111827;max-width:250px;">Download Elite Certificate</a>
-                {% else %}
-                <button class="au-btn-ghost sm" style="max-width:250px;border-color:var(--au-gold);color:var(--au-gold);cursor:not-allowed;opacity:.7;" disabled>Locked ({{ 3000 - total_points }} pts needed)</button>
-                {% endif %}
-            </div>
+            {% endfor %}
         </div>
 
         <!-- ===================== SHIPPING PROFILE ===================== -->

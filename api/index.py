@@ -282,24 +282,71 @@ def get_ambassador_certificate_template(name, date, tier_name, points, amb_id):
 # =====================================================================
 
 def send_system_email(to_email, subject, body_content, is_html=False):
-    msg = MIMEMultipart()
-    msg['From'] = f"Virtuole Services <{os.getenv('AWS_SMTP_USER')}>"
-    msg['To'] = to_email
-    msg['Subject'] = subject
-    msg.add_header('reply-to', 'support@virtuole.in')
+    if not supabase: return
+    now = datetime.utcnow()
+    today_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
     
-    if is_html:
-        msg.attach(MIMEText(body_content, 'html'))
-    else:
-        msg.attach(MIMEText(body_content, 'plain'))
-        
+    # Check current sent count
     try:
-        with smtplib.SMTP(os.getenv("AWS_SMTP_SERVER"), int(os.getenv("AWS_SMTP_PORT", 587))) as server:
-            server.starttls()
-            server.login(os.getenv("AWS_SMTP_USER"), os.getenv("AWS_SMTP_PASS"))
-            server.send_message(msg)
+        sent_today = supabase.table('email_queue').select('id').eq('status', 'sent').gte('sent_at', today_midnight).execute()
+        daily_count = len(sent_today.data) if sent_today.data else 0
     except Exception as e:
-        print(f"AWS SES Delivery Exception: {e}")
+        print(f"Failed to fetch daily count: {e}")
+        daily_count = 0
+        
+    if daily_count < 300:
+        msg = MIMEMultipart()
+        msg['From'] = f"Virtuole Services <{os.getenv('BREVO_SMTP_USER', 'service@virtuole.in')}>"
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        msg.add_header('reply-to', 'support@virtuole.in')
+        
+        if is_html:
+            msg.attach(MIMEText(body_content, 'html'))
+        else:
+            msg.attach(MIMEText(body_content, 'plain'))
+            
+        try:
+            with smtplib.SMTP("smtp-relay.brevo.com", 587) as server:
+                server.starttls()
+                server.login(os.getenv("BREVO_SMTP_USER"), os.getenv("BREVO_SMTP_PASS"))
+                server.send_message(msg)
+            
+            try:
+                supabase.table('email_queue').insert({
+                    "recipient": to_email,
+                    "subject": subject,
+                    "body_content": body_content,
+                    "is_html": is_html,
+                    "status": "sent",
+                    "sent_at": now.isoformat()
+                }).execute()
+            except Exception as inner_e:
+                print(f"Failed to insert sent email to queue: {inner_e}")
+        except Exception as e:
+            print(f"Brevo Delivery Exception: {e}")
+            try:
+                supabase.table('email_queue').insert({
+                    "recipient": to_email,
+                    "subject": subject,
+                    "body_content": body_content,
+                    "is_html": is_html,
+                    "status": "pending"
+                }).execute()
+            except Exception as inner_e:
+                print(f"Failed to queue pending email: {inner_e}")
+    else:
+        # Queue for next day
+        try:
+            supabase.table('email_queue').insert({
+                "recipient": to_email,
+                "subject": subject,
+                "body_content": body_content,
+                "is_html": is_html,
+                "status": "pending"
+            }).execute()
+        except Exception as e:
+            print(f"Failed to queue pending email: {e}")
 
 def send_ambassador_email(to_email, subject, body_content):
     msg = MIMEMultipart()
@@ -348,8 +395,64 @@ def run_maintenance():
         expired_ambassadors = supabase.table('users').select('id', 'email', 'full_name').eq('role', 'ambassador').lt('ambassador_expiry', now.isoformat()).execute()
         for row in expired_ambassadors.data:
             supabase.table('users').update({"role": "intern", "promo_code": None, "ambassador_expiry": None}).eq('id', row['id']).execute()
-            send_system_email(row['email'], "Virtuole Ambassador Program: Term Completed", f"Hello {row['full_name']},\n\nYour 1-year term as a Virtuole Ambassador has officially concluded. Your account has now been seamlessly transitioned back to a standard Intern profile.")
+            send_ambassador_email(row['email'], "Virtuole Ambassador Program: Term Completed", f"Hello {row['full_name']},\n\nYour 1-year term as a Virtuole Ambassador has officially concluded. Your account has now been seamlessly transitioned back to a standard Intern profile.")
             
+        # Process Email Queue (Brevo Limits)
+        pending_emails = supabase.table('email_queue').select('*').eq('status', 'pending').order('created_at').execute()
+        
+        today_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+        try:
+            sent_today = supabase.table('email_queue').select('id').eq('status', 'sent').gte('sent_at', today_midnight).execute()
+            daily_count = len(sent_today.data) if sent_today.data else 0
+        except Exception:
+            daily_count = 0
+            
+        allowance = 300 - daily_count
+        
+        if allowance > 0 and pending_emails.data:
+            for i, email_record in enumerate(pending_emails.data):
+                if i >= allowance:
+                    break
+                    
+                msg = MIMEMultipart()
+                msg['From'] = f"Virtuole Support <{os.getenv('BREVO_SMTP_USER', 'support@virtuole.in')}>"
+                msg['To'] = email_record['recipient']
+                msg['Subject'] = email_record['subject']
+                msg.add_header('reply-to', 'support@virtuole.in')
+                
+                if email_record['is_html']:
+                    msg.attach(MIMEText(email_record['body_content'], 'html'))
+                else:
+                    msg.attach(MIMEText(email_record['body_content'], 'plain'))
+                    
+                try:
+                    with smtplib.SMTP("smtp-relay.brevo.com", 587) as server:
+                        server.starttls()
+                        server.login(os.getenv("BREVO_SMTP_USER"), os.getenv("BREVO_SMTP_PASS"))
+                        server.send_message(msg)
+                    
+                    # Delete the pending record from queue
+                    try:
+                        supabase.table('email_queue').delete().eq('id', email_record['id']).execute()
+                    except Exception as inner_e:
+                        print(f"Failed to delete pending email: {inner_e}")
+                    
+                    # Insert a new 'sent' record for tracking daily limits
+                    try:
+                        supabase.table('email_queue').insert({
+                            "recipient": email_record['recipient'],
+                            "subject": email_record['subject'],
+                            "body_content": email_record['body_content'],
+                            "is_html": email_record['is_html'],
+                            "status": "sent",
+                            "sent_at": datetime.utcnow().isoformat()
+                        }).execute()
+                    except Exception as inner_e:
+                        print(f"Failed to insert sent email to queue: {inner_e}")
+                    
+                except Exception as e:
+                    print(f"Brevo Queue Delivery Exception: {e}")
+
         return jsonify({"status": "Maintenance execution completed successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -1140,7 +1243,65 @@ def dashboard_admin():
     # -----------------------------------------------------------------
     analytics = build_admin_analytics(progs, users)
 
-    return render_template('dashboard_admin.html', user_name=session.get('name'), total_earnings=round(earnings, 2), total_enrolled=enrolled, total_certified=certified, pending_grading=pend_grading, offered_programs=progs, all_tasks=tasks, user_directory=users, coupons=coupons, all_ambassadors=all_ambassadors, tier3_ambassadors=[u for u in users if str(u.get('role', '')).lower() in ['ambassador', 'intern + ambassador'] and 1500 <= (u['total_points'] or 0) < 3000], tier4_ambassadors=[u for u in users if str(u.get('role', '')).lower() in ['ambassador', 'intern + ambassador'] and (u['total_points'] or 0) >= 3000], active_tab=active_tab, current_filter=timeframe, analytics=analytics)
+    # Fetch Dynamic Tiers
+    amb_tiers_resp = supabase.table('ambassador_tiers').select('*').order('points_required', desc=True).execute()
+    ambassador_tiers = amb_tiers_resp.data if amb_tiers_resp and amb_tiers_resp.data else [
+        {"id": 0, "tier_level": 4, "name": "Star Ambassador", "points_required": 3000, "give_certificate": True, "give_lor": True, "benefits_text": "Elite Swag Kit (Mechanical Keyboard & Desk Mat)\nDirect Paid Internship Offer at Virtuole HQ"},
+        {"id": 0, "tier_level": 3, "name": "Community Lead", "points_required": 1500, "give_certificate": False, "give_lor": False, "benefits_text": "Premium Virtuole Developer Hoodie"},
+        {"id": 0, "tier_level": 2, "name": "Campus Advocate", "points_required": 500, "give_certificate": False, "give_lor": False, "benefits_text": "Exclusive Virtuole Tech Graphic T-Shirt"},
+        {"id": 0, "tier_level": 1, "name": "Kickstart", "points_required": 0, "give_certificate": False, "give_lor": False, "benefits_text": "Virtuole branded Lanyard and Die-Cut Stickers"}
+    ]
+
+    grouped_ambassadors = [{"tier": t, "ambassadors": []} for t in ambassador_tiers]
+    for a in all_ambassadors:
+        pts = a.get('total_points') or 0
+        assigned = False
+        for group in grouped_ambassadors:
+            if pts >= group['tier']['points_required']:
+                group['ambassadors'].append(a)
+                assigned = True
+                break
+        if not assigned and grouped_ambassadors:
+            grouped_ambassadors[-1]['ambassadors'].append(a)
+            
+    # Reverse ambassador_tiers for the template (so lowest tier is first in the settings form, but grouped_ambassadors is highest first)
+    ambassador_tiers_asc = sorted(ambassador_tiers, key=lambda x: x['points_required'])
+
+    return render_template('dashboard_admin.html', user_name=session.get('name'), total_earnings=round(earnings, 2), total_enrolled=enrolled, total_certified=certified, pending_grading=pend_grading, offered_programs=progs, all_tasks=tasks, user_directory=users, coupons=coupons, all_ambassadors=all_ambassadors, grouped_ambassadors=grouped_ambassadors, ambassador_tiers=ambassador_tiers_asc, active_tab=active_tab, current_filter=timeframe, analytics=analytics)
+
+
+@app.route('/admin/tiers', methods=['POST'])
+@app.route('/api/admin/tiers', methods=['POST'])
+def save_ambassador_tiers():
+    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
+    if not supabase: return "Database Error", 500
+    
+    tier_levels = request.form.getlist('tier_level[]')
+    names = request.form.getlist('name[]')
+    points_reqs = request.form.getlist('points_required[]')
+    give_cert_indexes = request.form.getlist('give_certificate[]')
+    give_lor_indexes = request.form.getlist('give_lor[]')
+    benefits_texts = request.form.getlist('benefits_text[]')
+    
+    existing = supabase.table('ambassador_tiers').select('id').execute().data
+    for row in (existing or []):
+        supabase.table('ambassador_tiers').delete().eq('id', row['id']).execute()
+    
+    inserts = []
+    for i in range(len(tier_levels)):
+        inserts.append({
+            "tier_level": int(tier_levels[i] or 0),
+            "name": names[i],
+            "points_required": int(points_reqs[i] or 0),
+            "give_certificate": str(i) in give_cert_indexes,
+            "give_lor": str(i) in give_lor_indexes,
+            "benefits_text": benefits_texts[i] if i < len(benefits_texts) else ""
+        })
+        
+    if inserts:
+        supabase.table('ambassador_tiers').insert(inserts).execute()
+        
+    return redirect(url_for('dashboard_admin', tab='tiers', message="Ambassador tiers updated successfully."))
 
 
 @app.route('/admin/create-coupon', methods=['POST'])
@@ -1356,7 +1517,21 @@ def dashboard_ambassador():
                 pass
                 
     pts = u.get('total_points') or 0
-    tier_name = "Star Ambassador" if pts >= 3000 else "Community Lead" if pts >= 1500 else "Campus Advocate" if pts >= 500 else "Kickstart"
+    
+    # Fetch Dynamic Tiers
+    amb_tiers_resp = supabase.table('ambassador_tiers').select('*').order('points_required', asc=True).execute()
+    ambassador_tiers = amb_tiers_resp.data if amb_tiers_resp and amb_tiers_resp.data else [
+        {"id": 0, "tier_level": 1, "name": "Kickstart", "points_required": 0, "give_certificate": False, "give_lor": False, "benefits_text": "Virtuole branded Lanyard and Die-Cut Stickers"},
+        {"id": 0, "tier_level": 2, "name": "Campus Advocate", "points_required": 500, "give_certificate": False, "give_lor": False, "benefits_text": "Exclusive Virtuole Tech Graphic T-Shirt"},
+        {"id": 0, "tier_level": 3, "name": "Community Lead", "points_required": 1500, "give_certificate": False, "give_lor": False, "benefits_text": "Premium Virtuole Developer Hoodie"},
+        {"id": 0, "tier_level": 4, "name": "Star Ambassador", "points_required": 3000, "give_certificate": True, "give_lor": True, "benefits_text": "Elite Swag Kit (Mechanical Keyboard & Desk Mat)\nDirect Paid Internship Offer at Virtuole HQ"}
+    ]
+    
+    tier_name = ambassador_tiers[0]['name']
+    for t in ambassador_tiers:
+        if pts >= t['points_required']:
+            tier_name = t['name']
+            
     refs = len(supabase.table('payments').select('id').eq('applied_promo', u['promo_code']).eq('status', 'paid').execute().data) if u.get('promo_code') else 0
     tasks = supabase.table('ambassador_tasks').select('*').eq('is_active', True).execute().data
     
@@ -1365,17 +1540,18 @@ def dashboard_ambassador():
     for c in claims:
         task_claims[c['task_id']] = task_claims.get(c['task_id'], 0) + 1
 
-    analytics = build_ambassador_analytics(u, pts, refs)
-    return render_template('dashboard_ambassador.html', ambassador_name=session.get('name'), valid_until_date=u['ambassador_expiry'].split('T')[0] if u.get('ambassador_expiry') else 'N/A', total_points=pts, current_tier_name=tier_name, total_referrals=refs, promo_code=u.get('promo_code', 'Pending'), amb_id=u.get('public_id', 'Pending'), available_tasks=tasks, task_claims=task_claims, shipping_address=u.get('shipping_address'), analytics=analytics, can_switch_intern=(user_role == 'intern + ambassador'))
+    analytics = build_ambassador_analytics(u, pts, refs, ambassador_tiers)
+    return render_template('dashboard_ambassador.html', ambassador_name=session.get('name'), valid_until_date=u['ambassador_expiry'].split('T')[0] if u.get('ambassador_expiry') else 'N/A', total_points=pts, current_tier_name=tier_name, total_referrals=refs, promo_code=u.get('promo_code', 'Pending'), amb_id=u.get('public_id', 'Pending'), available_tasks=tasks, task_claims=task_claims, shipping_address=u.get('shipping_address'), analytics=analytics, can_switch_intern=(user_role == 'intern + ambassador'), ambassador_tiers=ambassador_tiers)
 
 
-def build_ambassador_analytics(user, points, referrals):
+def build_ambassador_analytics(user, points, referrals, ambassador_tiers):
     """Chart.js-ready series for the ambassador dashboard: tier-progress gauge,
     a cumulative points-earned trend from approved claims, and a referrals
     breakdown. Defensive so missing claim history degrades to a flat line."""
-    tiers = [("Kickstart", 0), ("Campus Advocate", 500), ("Community Lead", 1500), ("Star Ambassador", 3000)]
+    tiers = [(t['name'], t['points_required']) for t in sorted(ambassador_tiers, key=lambda x: x['points_required'])]
     # next-tier progress (points toward the next threshold above current)
-    next_threshold = next((t for _, t in tiers if t > points), 3000)
+    max_pts = tiers[-1][1] if tiers else 3000
+    next_threshold = next((t for _, t in tiers if t > points), max_pts)
     prev_threshold = max([t for _, t in tiers if t <= points] or [0])
     span = max(next_threshold - prev_threshold, 1)
     tier_progress = min(round((points - prev_threshold) / span * 100), 100)
@@ -1418,22 +1594,41 @@ def build_ambassador_analytics(user, points, referrals):
 # 12. PUBLIC & RENDERING PATHS (Including Offer Letters)
 # =====================================================================
 
-@app.route('/download_cert/<tier>')
-def download_cert(tier):
+@app.route('/download_cert')
+def download_cert():
     if str(session.get('role', '')).lower() not in ['ambassador', 'intern + ambassador']: return redirect('/login')
+    
+    tier_id = request.args.get('tier_id')
     u = supabase.table('users').select('*').eq('id', session['user_id']).execute().data[0]
     pts = u['total_points'] or 0
-    tier_name = "Kickstart" if tier == 'kickstart' else "Campus Advocate" if tier == 'advocate' and pts >= 500 else "Community Lead" if tier == 'lead' and pts >= 1500 else "Star Ambassador" if tier == 'star' and pts >= 3000 else None
-    if not tier_name: return "Insufficient Points", 403
-    return get_ambassador_certificate_template(u['full_name'], datetime.utcnow().strftime("%B %d, %Y"), tier_name, pts, u['public_id'])
+    
+    tier = supabase.table('ambassador_tiers').select('*').eq('id', tier_id).execute().data
+    if not tier: return "Tier not found", 404
+    tier = tier[0]
+    
+    if pts < tier['points_required']: return "Insufficient Points", 403
+    if not tier['give_certificate']: return "Tier does not provide a certificate", 403
+    
+    return get_ambassador_certificate_template(u['full_name'], datetime.utcnow().strftime("%B %d, %Y"), tier['name'], pts, u['public_id'])
 
 @app.route('/download_lor/<type>')
 def download_lor(type):
     if str(session.get('role', '')).lower() not in ['ambassador', 'intern + ambassador']: return redirect('/login')
     u = supabase.table('users').select('*').eq('id', session['user_id']).execute().data[0]
-    if type == 'devrel' and (u['total_points'] or 0) >= 1500:
+    pts = u['total_points'] or 0
+    
+    # Check if any of the user's qualified tiers give an LOR
+    tiers = supabase.table('ambassador_tiers').select('*').execute().data
+    qualifies = False
+    for t in (tiers or []):
+        if pts >= t['points_required'] and t['give_lor']:
+            qualifies = True
+            break
+            
+    if type == 'devrel' and qualifies:
         return get_lor_template(u['full_name'], datetime.utcnow().strftime("%B %d, %Y"), "GTM Ambassador Program", "Community Lead", u['public_id'], "Community Leadership and Advocacy.")
-    return "Insufficient Points", 403
+        
+    return "Insufficient Points or Tier does not provide an LOR", 403
 
 @app.route('/download_cert_intern/<enrollment_id>')
 def download_cert_intern(enrollment_id):
