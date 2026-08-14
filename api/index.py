@@ -1519,7 +1519,7 @@ def dashboard_ambassador():
     pts = u.get('total_points') or 0
     
     # Fetch Dynamic Tiers
-    amb_tiers_resp = supabase.table('ambassador_tiers').select('*').order('points_required', asc=True).execute()
+    amb_tiers_resp = supabase.table('ambassador_tiers').select('*').order('points_required', desc=False).execute()
     ambassador_tiers = amb_tiers_resp.data if amb_tiers_resp and amb_tiers_resp.data else [
         {"id": 0, "tier_level": 1, "name": "Kickstart", "points_required": 0, "give_certificate": False, "give_lor": False, "benefits_text": "Virtuole branded Lanyard and Die-Cut Stickers"},
         {"id": 0, "tier_level": 2, "name": "Campus Advocate", "points_required": 500, "give_certificate": False, "give_lor": False, "benefits_text": "Exclusive Virtuole Tech Graphic T-Shirt"},
