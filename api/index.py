@@ -829,8 +829,7 @@ def api_cancel_enrollment():
         # Delete enrollment
         del_resp = supabase.table('enrollments').delete().eq('enrollment_id', enrollment_id).execute()
         if hasattr(del_resp, 'data') and len(del_resp.data) == 0:
-            # If RLS blocked it, data might be empty
-            print("Delete returned empty data, possible RLS issue.")
+            return "Delete failed. Supabase Row Level Security (RLS) is likely blocking delete actions on the enrollments table. Please disable RLS or add a Delete policy.", 403
             
     except Exception as e:
         return f"Database error during cancellation: {str(e)}", 500
