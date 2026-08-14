@@ -48,8 +48,12 @@ class _VercelFix:
             params = urllib.parse.parse_qs(qs)
             
             if '__vercel_path' in params:
-                # Set PATH_INFO to the original path, and remove __vercel_path from QUERY_STRING
-                environ['PATH_INFO'] = '/' + params['__vercel_path'][0]
+                vp = params['__vercel_path'][0]
+                if vp == 'api/index.py' or vp == 'api/index':
+                    environ['PATH_INFO'] = '/'
+                else:
+                    # Set PATH_INFO to the original path, and remove __vercel_path from QUERY_STRING
+                    environ['PATH_INFO'] = '/' + vp
                 
                 # Reconstruct QUERY_STRING without our internal parameter
                 new_params = {k: v for k, v in params.items() if k != '__vercel_path'}
