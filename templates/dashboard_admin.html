@@ -18,7 +18,8 @@
         {'id':'directory','label':'User Directory'},
         {'id':'coupons','label':'Coupon Management'},
         {'id':'ambassadors','label':'Ambassadors'},
-        {'id':'tiers','label':'Ambassador Tiers'}
+        {'id':'tiers','label':'Ambassador Tiers'},
+        {'id':'exports','label':'Data Exports'}
     ] %}
     {% include 'dashboard_nav.html' %}
 
@@ -454,7 +455,93 @@
             </div>
         </div>
 
+        <!-- ===================== DATA EXPORTS ===================== -->
+        <div id="exports-view" class="view-section">
+            <h1 class="dash-greeting">Platform Data Exports</h1>
+            <p class="dash-sub">View and download registered users and newsletter subscribers.</p>
+
+            <div class="dash-section-title">Data Filter</div>
+            <div class="au-panel au-form" style="display:flex;gap:15px;margin:0 0 20px;flex-wrap:wrap;align-items:center;">
+                <label style="font-size:0.9em;color:var(--text-muted);">Select Dataset:</label>
+                <select id="exportDatasetToggle" class="au-input" style="width:250px;" onchange="toggleExportDataset()">
+                    <option value="users">Platform Users</option>
+                    <option value="subscribers">Newsletter Subscribers (Matrix)</option>
+                </select>
+                
+                <div style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;">
+                    <button class="au-btn-ghost sm" onclick="exportData('pdf')" style="color:#ef4444;border-color:rgba(239,68,68,0.2);">📄 PDF</button>
+                    <button class="au-btn-ghost sm" onclick="exportData('excel')" style="color:#10b981;border-color:rgba(16,185,129,0.2);">📊 Excel</button>
+                    <button class="au-btn-ghost sm" onclick="exportData('csv')" style="color:var(--primary);border-color:var(--primary-glow);">📝 CSV</button>
+                </div>
+            </div>
+
+            <!-- Users Table -->
+            <div id="dataset-users" class="au-panel" style="padding:0; overflow-x:auto;">
+                <table class="au-table" id="exportTableUsers">
+                    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Created At</th></tr></thead>
+                    <tbody>
+                        {% for u in user_directory %}
+                        <tr>
+                            <td>{{ u.full_name }}</td>
+                            <td>{{ u.email }}</td>
+                            <td>{{ u.role | title }}</td>
+                            <td>{{ u.created_at.split('T')[0] if u.created_at else '' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Subscribers Table -->
+            <div id="dataset-subscribers" class="au-panel" style="padding:0; overflow-x:auto; display:none;">
+                <table class="au-table" id="exportTableSubscribers">
+                    <thead><tr><th>Email</th><th>Subscribed At</th></tr></thead>
+                    <tbody>
+                        {% for sub in subscribers %}
+                        <tr>
+                            <td>{{ sub.email }}</td>
+                            <td>{{ sub.created_at.split('T')[0] if sub.created_at else '' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="2" style="text-align:center;color:var(--text-muted);">No subscribers yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </main>
+
+    <!-- Required CDNs for Exports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script>
+    function toggleExportDataset() {
+        const val = document.getElementById('exportDatasetToggle').value;
+        document.getElementById('dataset-users').style.display = val === 'users' ? 'block' : 'none';
+        document.getElementById('dataset-subscribers').style.display = val === 'subscribers' ? 'block' : 'none';
+    }
+
+    function exportData(format) {
+        const val = document.getElementById('exportDatasetToggle').value;
+        const tableId = val === 'users' ? 'exportTableUsers' : 'exportTableSubscribers';
+        const table = document.getElementById(tableId);
+        const fileName = (val === 'users' ? 'Virtuole_Users' : 'Virtuole_Subscribers') + '_' + new Date().toISOString().split('T')[0];
+
+        if (format === 'csv' || format === 'excel') {
+            const wb = XLSX.utils.table_to_book(table, {sheet: "Data"});
+            XLSX.writeFile(wb, fileName + (format === 'csv' ? '.csv' : '.xlsx'));
+        } else if (format === 'pdf') {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text(val === 'users' ? 'Virtuole Platform Users' : 'Virtuole Newsletter Subscribers', 14, 15);
+            doc.autoTable({ html: '#' + tableId, startY: 20 });
+            doc.save(fileName + '.pdf');
+        }
+    }
+    </script>
 
     {% include 'footer.html' %}
 

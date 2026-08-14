@@ -1327,6 +1327,12 @@ def dashboard_admin():
         {"id": 0, "tier_level": 2, "name": "Campus Advocate", "points_required": 500, "give_certificate": False, "give_lor": False, "benefits_text": "Exclusive Virtuole Tech Graphic T-Shirt"},
         {"id": 0, "tier_level": 1, "name": "Kickstart", "points_required": 0, "give_certificate": False, "give_lor": False, "benefits_text": "Virtuole branded Lanyard and Die-Cut Stickers"}
     ]
+    
+    # Fetch subscribers
+    try:
+        subscribers = supabase.table('subscribers').select('*').order('created_at', desc=True).execute().data
+    except Exception:
+        subscribers = []
 
     grouped_ambassadors = [{"tier": t, "ambassadors": []} for t in ambassador_tiers]
     for a in all_ambassadors:
@@ -1771,7 +1777,10 @@ def submit_feedback():
 @app.route('/subscribe', methods=['POST'])
 def subscribe_newsletter():
     email = request.form.get('email')
-    print(f"NEW SUBSCRIBER: {email}")
+    try:
+        supabase.table('subscribers').insert({"email": email}).execute()
+    except Exception:
+        pass
     return redirect(url_for('home'))
 
 @app.route('/terms')
