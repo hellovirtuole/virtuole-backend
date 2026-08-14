@@ -470,7 +470,7 @@ def run_maintenance():
 # 5. AUTHENTICATION & GATEWAYS (FIXED LOGIN)
 # =====================================================================
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def home():
     programs = []
     if supabase:
