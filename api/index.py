@@ -42,24 +42,30 @@ class _VercelFix:
         self.wsgi = wsgi
     def __call__(self, environ, start_response):
         import urllib.parse
-        path = environ.get('PATH_INFO', '/')
-        if path == '/api/index.py' or path == '/api/index':
-            qs = environ.get('QUERY_STRING', '')
-            params = urllib.parse.parse_qs(qs)
+        
+        # 1. First, try to get the real path from Vercel's internal headers or WSGI raw URI
+        original_path = environ.get('HTTP_X_INVOKE_PATH') or environ.get('HTTP_X_NOW_ROUTE_MATCHES')
+        if not original_path and 'REQUEST_URI' in environ:
+            original_path = environ['REQUEST_URI'].split('?')[0]
             
-            if '__vercel_path' in params:
-                vp = params['__vercel_path'][0]
-                if vp == 'api/index.py' or vp == 'api/index':
-                    environ['PATH_INFO'] = '/'
-                else:
-                    # Set PATH_INFO to the original path, and remove __vercel_path from QUERY_STRING
-                    environ['PATH_INFO'] = '/' + vp
+        if original_path and original_path not in ['/api/index.py', '/api/index']:
+            environ['PATH_INFO'] = original_path
+        else:
+            # 2. Fallback to query string approach for local dev or if headers are missing
+            path = environ.get('PATH_INFO', '/')
+            if path == '/api/index.py' or path == '/api/index':
+                qs = environ.get('QUERY_STRING', '')
+                params = urllib.parse.parse_qs(qs)
                 
-                # Reconstruct QUERY_STRING without our internal parameter
-                new_params = {k: v for k, v in params.items() if k != '__vercel_path'}
-                environ['QUERY_STRING'] = urllib.parse.urlencode(new_params, doseq=True)
-            else:
-                environ['PATH_INFO'] = '/'
+                if '__vercel_path' in params:
+                    vp = params['__vercel_path'][0]
+                    if vp in ['api/index.py', 'api/index']:
+                        environ['PATH_INFO'] = '/'
+                    else:
+                        environ['PATH_INFO'] = '/' + vp
+                    
+                    new_params = {k: v for k, v in params.items() if k != '__vercel_path'}
+                    environ['QUERY_STRING'] = urllib.parse.urlencode(new_params, doseq=True)
                 
         script = environ.get('SCRIPT_NAME', '')
         if script and '/api/index' in script:
