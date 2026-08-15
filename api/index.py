@@ -1078,6 +1078,8 @@ def update_profile_intern():
     # Update academic/personal details
     existing_shipping['gender'] = request.form.get('gender', '')
     existing_shipping['phone'] = request.form.get('phone', '')
+    existing_shipping['city'] = request.form.get('city', '')
+    existing_shipping['state'] = request.form.get('state', '')
     existing_shipping['college_name'] = request.form.get('college_name', '')
     existing_shipping['course_name'] = request.form.get('course_name', '')
     existing_shipping['session_year'] = request.form.get('session_year', '')
