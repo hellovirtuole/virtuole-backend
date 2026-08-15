@@ -12,11 +12,12 @@ dashboard_bp = Blueprint('dashboard', __name__)
 
 @dashboard_bp.route('/dashboard-intern')
 def dashboard_intern():
-    user_role = str(session.get('role', '')).lower()
-    if user_role not in ['intern', 'intern + ambassador']: return redirect('/login')
-    
-    ambassador_active = False
-    if user_role == 'intern + ambassador':
+    try:
+        user_role = str(session.get('role', '')).lower()
+        if user_role not in ['intern', 'intern + ambassador']: return redirect('/login')
+        
+        ambassador_active = False
+        if user_role == 'intern + ambassador':
         u = supabase.table('users').select('ambassador_expiry').eq('id', session['user_id']).execute().data
         if u and u[0].get('ambassador_expiry'):
             try:
@@ -44,6 +45,8 @@ def dashboard_intern():
         try:
             import json
             profile_details = json.loads(profile_details_raw)
+            if not isinstance(profile_details, dict):
+                profile_details = {}
         except Exception:
             profile_details = {}
     
@@ -121,7 +124,10 @@ def dashboard_intern():
     requested_tab = request.args.get('active_tab')
     default_tab = requested_tab if requested_tab else ('workspace' if active_projects else 'explore')
 
-    return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered, completed_projects=completed_projects, ambassador_active=ambassador_active, active_tab=default_tab, user_profile=user_profile, profile_details=profile_details)
+        return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered, completed_projects=completed_projects, ambassador_active=ambassador_active, active_tab=default_tab, user_profile=user_profile, profile_details=profile_details)
+    except Exception as e:
+        import traceback
+        return f"<h1>Internal Server Error</h1><pre>{traceback.format_exc()}</pre>", 500
 
 @dashboard_bp.route('/dashboard-mentor')
 def dashboard_mentor():
