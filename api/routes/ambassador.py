@@ -32,6 +32,7 @@ import json
 
 def parse_shipping_address(addr_str):
     if not addr_str: return {}
+    if isinstance(addr_str, dict): return addr_str
     try:
         return json.loads(addr_str)
     except Exception:
