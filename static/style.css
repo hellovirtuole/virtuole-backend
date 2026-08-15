@@ -1994,14 +1994,23 @@ body { background: transparent; }
         width: 100% !important;
     }
     /* Tables inside panels that don't use .au-table-wrap */
-    .au-panel > .au-table {
+    .au-table, .au-panel > .au-table {
         display: block;
+        width: 100%;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
     }
+    
+    /* Ensure table headers and cells don't wrap to force scrolling */
+    .au-table th, .au-table td {
+        white-space: nowrap;
+        min-width: max-content;
+    }
+    
     /* Scrollable table indicator */
     .au-panel[style*="overflow-x:auto"],
-    .au-panel > table {
+    .au-panel > table, .au-table-wrap {
         -webkit-overflow-scrolling: touch;
     }
 }
