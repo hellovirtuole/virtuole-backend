@@ -809,46 +809,6 @@ def api_enroll():
     send_system_email(session['email'], "Official Internship Offer Letter - Virtuole", html_offer, is_html=True)
     return redirect(url_for('dashboard_intern'))
 
-@app.route('/api/cancel-enrollment', methods=['POST'])
-def api_cancel_enrollment():
-    if str(session.get('role', '')).lower() not in ['intern', 'intern + ambassador']: 
-        return "Unauthorized role", 403
-        
-    enrollment_id = request.form.get('enrollment_id')
-    if not enrollment_id:
-        return "No enrollment_id provided", 400
-    
-    try:
-        enroll_data = supabase.table('enrollments').select('id, user_id').eq('enrollment_id', enrollment_id).execute().data
-        if not enroll_data:
-            return f"Enrollment {enrollment_id} not found in database.", 404
-            
-        if str(enroll_data[0]['user_id']) != str(session.get('user_id')):
-            return f"User ID mismatch: {enroll_data[0]['user_id']} vs {session.get('user_id')}", 403
-            
-        # Try to delete submissions first
-        try:
-            supabase.table('submissions').delete().eq('enrollment_id', enrollment_id).execute()
-        except:
-            pass
-            
-        # Try to delete enrollment completely
-        try:
-            supabase.table('enrollments').delete().eq('enrollment_id', enrollment_id).execute()
-        except:
-            pass
-            
-        # Fallback: Force status to cancelled to instantly remove it from dashboard view
-        # This handles edge cases where Supabase RLS blocks hard deletes but allows updates
-        try:
-            supabase.table('enrollments').update({"status": "cancelled"}).eq('enrollment_id', enrollment_id).execute()
-        except:
-            pass
-            
-    except Exception as e:
-        return f"Database error during cancellation: {str(e)}", 500
-        
-    return redirect(url_for('dashboard_intern'))
 
 @app.route('/submit-project', methods=['POST'])
 @app.route('/api/submit-project', methods=['POST'])
