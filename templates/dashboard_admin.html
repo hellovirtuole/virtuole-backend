@@ -763,16 +763,16 @@
                         <input type="text" id="adv-filter-search" class="au-input" placeholder="Search by name, email, phone, college, course..." onkeyup="filterAdvancedTable()">
                     </div>
                 </div>
-                <div style="display:flex;gap:15px;flex-wrap:wrap;align-items:end;">
-                        <div style="flex:1;min-width:150px;">
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:15px; align-items:end;">
+                        <div>
                             <label>State</label>
                             <input type="text" id="adv-filter-state" class="au-input" placeholder="Any State" onkeyup="filterAdvancedTable()">
                         </div>
-                        <div style="flex:1;min-width:150px;">
+                        <div>
                             <label>City</label>
                             <input type="text" id="adv-filter-city" class="au-input" placeholder="Any City" onkeyup="filterAdvancedTable()">
                         </div>
-                        <div style="flex:1;min-width:150px;">
+                        <div>
                             <label>Gender</label>
                             <select id="adv-filter-gender" class="au-input" onchange="filterAdvancedTable()">
                                 <option value="">All</option>
@@ -781,11 +781,11 @@
                                 <option value="Other">Other</option>
                             </select>
                         </div>
-                        <div style="flex:1;min-width:150px;">
+                        <div>
                             <label>College / University</label>
                             <input type="text" id="adv-filter-college" class="au-input" placeholder="Any College" onkeyup="filterAdvancedTable()">
                         </div>
-                        <div style="flex:1;min-width:150px;">
+                        <div>
                             <label>Program</label>
                             <select id="adv-filter-program" class="au-input" onchange="filterAdvancedTable()">
                                 <option value="">All Programs</option>
@@ -795,7 +795,7 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div style="flex:1;min-width:150px;">
+                        <div>
                             <label>Track Level</label>
                             <select id="adv-filter-track" class="au-input" onchange="filterAdvancedTable()">
                                 <option value="">All Levels</option>
