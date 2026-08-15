@@ -9,158 +9,212 @@ public_bp = Blueprint('public', __name__)
 
 
 
-@public_bp.route('/validate-promo', methods=['POST'])
-@public_bp.route('/api/validate-promo', methods=['POST'])
-def validate_promo():
-    data = request.get_json()
-    promo_code = data.get('promo_code', '').upper()
-    ambassador = supabase.table('users').select('id').eq('promo_code', promo_code).eq('role', 'ambassador').execute().data
-    coupon = supabase.table('users').select('id, total_points, ambassador_expiry, coupon_usage_limit, coupon_user_limit, coupon_allowed_level').eq('promo_code', promo_code).eq('role', 'coupon').execute().data
+@public_bp.route('/download_cert')
+def download_cert():
+    if str(session.get('role', '')).lower() not in ['ambassador', 'intern + ambassador']: return redirect('/login')
     
-    if ambassador:
-        return jsonify({"valid": True, "discount_percent": 10})
-    elif coupon:
-        c_data = coupon[0]
-        if c_data.get('ambassador_expiry'):
-            try:
-                expiry = datetime.fromisoformat(c_data['ambassador_expiry'])
-                if datetime.utcnow() > expiry.replace(tzinfo=None):
-                    return jsonify({"valid": False, "error": "This coupon has expired."}), 400
-            except ValueError:
-                pass
-                
-        # Validate track level
-        enrollment_id = data.get('enrollment_id')
-        if enrollment_id and c_data.get('coupon_allowed_level'):
-            enroll = supabase.table('enrollments').select('track_level').eq('enrollment_id', enrollment_id).execute().data
-            if enroll and enroll[0]['track_level'].lower() != c_data['coupon_allowed_level'].lower():
-                return jsonify({"valid": False, "error": f"This coupon is only valid for {c_data['coupon_allowed_level']} tracks."}), 400
-                
-        # Validate total usage limit
-        if c_data.get('coupon_usage_limit') is not None:
-            c_payments = supabase.table('payments').select('id').eq('applied_promo', promo_code).eq('status', 'paid').execute().data
-            if len(c_payments) >= c_data['coupon_usage_limit']:
-                return jsonify({"valid": False, "error": "This coupon has reached its maximum global usage limit."}), 400
-                
-        # Validate per-user limit
-        if c_data.get('coupon_user_limit') is not None:
-            user_id = session.get('user_id')
-            if user_id:
-                u_payments = supabase.table('payments').select('id').eq('applied_promo', promo_code).eq('status', 'paid').eq('user_id', user_id).execute().data
-                if len(u_payments) >= c_data['coupon_user_limit']:
-                    return jsonify({"valid": False, "error": "You have reached your personal usage limit for this coupon."}), 400
-                    
-        return jsonify({"valid": True, "discount_percent": c_data.get('total_points', 0)})
-        
-    return jsonify({"valid": False, "error": "Invalid or expired code."}), 400
+    tier_id = request.args.get('tier_id')
+    u = supabase.table('users').select('*').eq('id', session['user_id']).execute().data[0]
+    pts = u['total_points'] or 0
+    
+    tier = supabase.table('ambassador_tiers').select('*').eq('id', tier_id).execute().data
+    if not tier: return "Tier not found", 404
+    tier = tier[0]
+    
+    if pts < tier['points_required']: return "Insufficient Points", 403
+    if not tier['give_certificate']: return "Tier does not provide a certificate", 403
+    
+    return render_template('docs/ambassador_certificate.html', name=u['full_name'], date=datetime.utcnow().strftime("%B %d, %Y"), tier_name=tier['name'], points=pts, amb_id=u['public_id'])
 
-@public_bp.route('/create-payment', methods=['POST'])
-@public_bp.route('/api/create-payment', methods=['POST'])
-@limiter.limit("3 per minute")
-def create_phonepe_payment():
-    if not session.get('email'): 
-        return jsonify({"error": "Unauthorized"}), 401
+@public_bp.route('/download_lor/<type>')
+def download_lor(type):
+    if str(session.get('role', '')).lower() not in ['ambassador', 'intern + ambassador']: return redirect('/login')
+    u = supabase.table('users').select('*').eq('id', session['user_id']).execute().data[0]
+    pts = u['total_points'] or 0
     
-    if request.is_json:
-        data = request.get_json()
-        is_ajax = True
-    else:
-        data = request.form
-        is_ajax = False
-        
-    enrollment_id = data.get('enrollment_id')
-    promo_code = data.get('promo_code', '').upper()
-    
-    enroll_info = supabase.table('enrollments').select('track_level, programs(price_beginner, price_intermediate, price_expert)').eq('enrollment_id', enrollment_id).execute().data[0]
-    track = enroll_info['track_level']
-    base_price = enroll_info['programs'][f'price_{track}']
-    
-    final_price = base_price
-    applied_promo = None
-    if promo_code:
-        is_ambassador = supabase.table('users').select('id').eq('promo_code', promo_code).eq('role', 'ambassador').execute().data
-        is_coupon = supabase.table('users').select('id, total_points, ambassador_expiry').eq('promo_code', promo_code).eq('role', 'coupon').execute().data
-        
-        if is_ambassador:
-            final_price = int(base_price * 0.9)
-            applied_promo = promo_code
-        elif is_coupon:
-            c_data = is_coupon[0]
-            is_expired = False
-            if c_data.get('ambassador_expiry'):
-                try:
-                    expiry = datetime.fromisoformat(c_data['ambassador_expiry'])
-                    if datetime.utcnow() > expiry.replace(tzinfo=None):
-                        is_expired = True
-                except ValueError:
-                    pass
+    # Check if any of the user's qualified tiers give an LOR
+    tiers = supabase.table('ambassador_tiers').select('*').execute().data
+    qualifies = False
+    for t in (tiers or []):
+        if pts >= t['points_required'] and t['give_lor']:
+            qualifies = True
+            break
             
-            if not is_expired:
-                discount_percent = c_data.get('total_points', 0)
-                final_price = int(base_price * ((100 - discount_percent) / 100))
-                applied_promo = promo_code
-
-    transaction_id = f"VT-TXN-{random.randint(100000, 999999)}"
-    amount_in_paise = int(final_price * 100) 
-    safe_merchant_user_id = session.get('public_id', 'VIRT-USER')
-    
-    if amount_in_paise == 0:
-        # 100% discount applied! Skip PhonePe integration.
-        supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": data.get('code_link'), "defense_link": data.get('defense_link')}).execute()
-        supabase.table('payments').insert({"user_id": session['user_id'], "transaction_id": transaction_id, "amount": 0, "status": "paid", "applied_promo": applied_promo}).execute()
+    if type == 'devrel' and qualifies:
+        return render_template('docs/lor.html', name=u['full_name'], date=datetime.utcnow().strftime("%B %d, %Y"), program_title="GTM Ambassador Program", track_level="Community Lead", enroll_id=u['public_id'], project_details="Community Leadership and Advocacy.")
         
-        if is_ajax:
-            return jsonify({"payment_url": "/dashboard-intern"})
-        return redirect("/dashboard-intern")
+    return "Insufficient Points or Tier does not provide an LOR", 403
+
+@public_bp.route('/download_cert_intern/<enrollment_id>')
+def download_cert_intern(enrollment_id):
+    enroll_data = supabase.table('enrollments').select('*, programs(*), users(full_name)').eq('enrollment_id', enrollment_id).execute().data
+    if not enroll_data: return "Invalid Credential", 404
+    e = enroll_data[0]
     
-    payload = {
-        "merchantId": os.getenv("PHONEPE_MERCHANT_ID"),
-        "merchantTransactionId": transaction_id,
-        "merchantUserId": safe_merchant_user_id,
-        "amount": amount_in_paise,
-        "redirectUrl": "https://www.virtuole.in/dashboard-intern", 
-        "redirectMode": "REDIRECT",
-        "callbackUrl": "https://www.virtuole.in/api/phonepe-webhook", 
-        "paymentInstrument": {"type": "PAY_PAGE"}
-    }
-    
-    base64_payload = base64.b64encode(json.dumps(payload).encode('utf-8')).decode('utf-8')
-    checksum = hashlib.sha256((base64_payload + "/pg/v1/pay" + os.getenv("PHONEPE_SALT_KEY")).encode('utf-8')).hexdigest() + "###" + os.getenv("PHONEPE_SALT_INDEX")
-    headers = {"Content-Type": "application/json", "X-VERIFY": checksum}
-    
+    sub = supabase.table('submissions').select('*').eq('enrollment_id', enrollment_id).execute().data
+    if not sub or not sub[0].get('score') or sub[0]['score'] < 80:
+        return "Not Eligible for Certificate", 403
+        
+    s = sub[0]
+    date_str = s.get('evaluated_at', e['created_at']).split('T')[0]
+    return render_template('docs/certificate.html', name=e['users']['full_name'], date=date_str, program_title=e['programs']['title'], track_level=e['track_level'].title(), enroll_id=enrollment_id, score=s['score'])
+
+@public_bp.route('/download_offer/<enrollment_id>')
+def download_offer(enrollment_id):
+    if str(session.get('role', '')).lower() not in ['intern', 'intern + ambassador']: return redirect('/login')
+    enroll_data = supabase.table('enrollments').select('*, programs(*), users(full_name)').eq('enrollment_id', enrollment_id).eq('user_id', session['user_id']).execute().data
+    if not enroll_data: return "Invalid Assignment Context", 403
+        
+    e = enroll_data[0]
     try:
-        response = requests.post("https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay", json={"request": base64_payload}, headers=headers)
-        response_data = response.json()
+        start_dt = datetime.fromisoformat(e['created_at'].replace('Z', '+00:00')) if e.get('created_at') else datetime.utcnow()
+    except:
+        start_dt = datetime.utcnow()
         
-        if response_data.get('success'):
-            supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": data.get('code_link'), "defense_link": data.get('defense_link')}).execute()
-            supabase.table('payments').insert({"user_id": session['user_id'], "transaction_id": transaction_id, "amount": amount_in_paise, "status": "pending", "applied_promo": applied_promo}).execute()
-            
-            payment_url = response_data['data']['instrumentResponse']['redirectInfo']['url']
-            if is_ajax:
-                return jsonify({"payment_url": payment_url})
-            else:
-                return redirect(payment_url)
-                
-        if is_ajax:
-            return jsonify({"error": response_data.get('message', 'Gateway Error')}), 400
-        else:
-            return "Gateway Error encountered.", 400
-            
-    except Exception as e:
-        if is_ajax:
-            return jsonify({"error": str(e)}), 500
-        else:
-            return f"Server Error: {str(e)}", 500
+    duration_days = 90 if e.get('track_level', '').lower() == 'expert' else 30
+    end_dt = start_dt + timedelta(days=duration_days)
+    
+    raw_date = start_dt.strftime("%B %d, %Y")
+    end_date = end_dt.strftime("%B %d, %Y")
+    
+    html_content = render_template('docs/offer_letter.html', name=e['users']['full_name'], date=raw_date, program_title=e['programs']['title'], track_level=e['track_level'].title(), enroll_id=enrollment_id, project_details=e['programs']['short_description'], duration_days=duration_days, end_date=end_date)
+    
+    # Auto-Print dialog script
+    return html_content + "<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); }</script>"
 
-@public_bp.route('/phonepe-webhook', methods=['POST'])
-@public_bp.route('/api/phonepe-webhook', methods=['POST'])
-def phonepe_webhook():
-    decoded_response = json.loads(base64.b64decode(request.json.get('response')).decode('utf-8'))
-    if decoded_response['code'] == 'PAYMENT_SUCCESS':
-        transaction_id = decoded_response['data']['merchantTransactionId']
-        supabase.table('payments').update({"status": "paid"}).eq('transaction_id', transaction_id).execute()
-    return jsonify({"status": "received"}), 200
+@public_bp.route('/contact')
+def contact_page():
+    return render_template('contact.html')
+
+@public_bp.route('/feedback')
+def feedback_page():
+    return render_template('feedback.html')
+
+@public_bp.route('/submit-feedback', methods=['POST'])
+def submit_feedback():
+    name = request.form.get('name')
+    email = request.form.get('email')
+    subject = request.form.get('subject')
+    message = request.form.get('message')
+    
+    # Logs the feedback to your Vercel console
+    print(f"NEW FEEDBACK: {name} | {email} | {subject} | {message}")
+    
+    return render_template('feedback.html', message="Thank you! Your feedback has been successfully submitted.")
+
+@public_bp.route('/subscribe', methods=['POST'])
+def subscribe_newsletter():
+    email = request.form.get('email')
+    try:
+        supabase.table('subscribers').insert({"email": email}).execute()
+    except Exception:
+        pass
+    return redirect(url_for('home'))
+
+@public_bp.route('/terms')
+def terms_page(): return render_template('terms.html')
+@public_bp.route('/refund')
+def refund_page(): return render_template('refund.html')
+@public_bp.route('/privacy')
+def privacy_page(): return render_template('privacy.html')
+@public_bp.route('/cookies')
+def cookies_page(): return render_template('cookies.html')
+@public_bp.route('/verify.html')
+def verify_page_redirect(): return render_template('verify.html')
+@public_bp.route('/offer-letter')
+def offer_letter_page(): return render_template('offer.html')
+
+@public_bp.route('/blog')
+def blog():return render_template('blog.html')
+
+@public_bp.route('/view-offer', methods=['GET'])
+def view_public_offer():
+    enrollment_id = request.args.get('enrollment_id')
+    if not enrollment_id: return render_template('offer.html')
+    try:
+        enroll_data = supabase.table('enrollments').select('*, programs(*), users(full_name)').eq('enrollment_id', enrollment_id).execute().data
+        if not enroll_data: return render_template('offer.html', error=True)
+        e = enroll_data[0]
+        try:
+            start_dt = datetime.fromisoformat(e['created_at'].replace('Z', '+00:00')) if e.get('created_at') else datetime.utcnow()
+        except:
+            start_dt = datetime.utcnow()
+            
+        duration_days = 90 if e.get('track_level', '').lower() == 'expert' else 30
+        end_dt = start_dt + timedelta(days=duration_days)
+        
+        raw_date = start_dt.strftime("%B %d, %Y")
+        end_date = end_dt.strftime("%B %d, %Y")
+        
+        html_content = render_template('docs/offer_letter.html', name=e['users']['full_name'], date=raw_date, program_title=e['programs']['title'], track_level=e['track_level'].title(), enroll_id=enrollment_id, project_details=e['programs']['short_description'], duration_days=duration_days, end_date=end_date)
+        return html_content + "<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); }</script>"
+    except:
+        return render_template('offer.html', error=True)
+
+@public_bp.route('/verify-credential', methods=['GET'])
+def verify_credential():
+    credential_id = request.args.get('credential_id')
+    if not credential_id: return render_template('verify.html')
+    try:
+        enroll_query = supabase.table('enrollments').select('*, programs(title), users(full_name)').eq('enrollment_id', credential_id).execute()
+        if not enroll_query.data: return render_template('verify.html', error=True)
+        
+        e = enroll_query.data[0]
+        
+        if e['status'] == 'failed':
+            sub_query = supabase.table('submissions').select('*').eq('enrollment_id', credential_id).order('evaluated_at', desc=True).limit(1).execute()
+            if sub_query.data and sub_query.data[0].get('certificate_url', '').startswith('failed:'):
+                reason = sub_query.data[0]['certificate_url'].replace('failed:', '')
+            else:
+                reason = "Failed to secure 80% passing grade."
+            return render_template('verify.html', failed=True, reason=reason)
+            
+        if e['status'] != 'graded':
+            return render_template('verify.html', error=True)
+            
+        sub_query = supabase.table('submissions').select('*').eq('enrollment_id', credential_id).execute()
+        return render_template('verify.html', verified_data={
+            "student_name": e['users']['full_name'],
+            "program_title": e['programs']['title'],
+            "track_level": e['track_level'],
+            "score": sub_query.data[0]['score'],
+            "enrollment_id": credential_id,
+            "evaluated_date": sub_query.data[0]['evaluated_at'].split('T')[0] if sub_query.data[0].get('evaluated_at') else "N/A"
+        })
+    except:
+        return render_template('verify.html', error=True)
+
+@public_bp.route('/apply-ambassador', methods=['GET', 'POST'])
+@public_bp.route('/api/apply-ambassador', methods=['GET', 'POST'])
+def apply_ambassador():
+    if request.method == 'GET':
+        return render_template('applyambass.html')
+
+    name = request.form.get('name')
+    email = request.form.get('email')
+    college = request.form.get('college')
+    motivation = request.form.get('motivation', '')
+
+    if not name or not email:
+        return render_template('applyambass.html', error="Please provide your name and email.")
+
+    # Fold college into motivation so the detail is preserved without assuming
+    # a dedicated column exists in the ambassador_applications table.
+    if college:
+        motivation = f"College: {college}\n\n{motivation}"
+
+    try:
+        supabase.table('ambassador_applications').insert({
+            "name": name, "email": email, "motivation": motivation, "status": "pending"
+        }).execute()
+    except Exception as e:
+        return render_template('applyambass.html', error=f"Submission failed: {e}")
+
+    return render_template('applyambass.html', submitted=True)
+
+@public_bp.route('/static/logo.png')
+def serve_logo():
+    return send_from_directory('templates', 'logo.png')
 
 @public_bp.route('/credential/<enroll_id>')
 def view_credential(enroll_id):
@@ -233,3 +287,6 @@ def view_credential_by_user(public_id):
         return render_template('credential.html', credential=credential)
     except Exception as e:
         return f"Error loading credential: {str(e)}", 500
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)

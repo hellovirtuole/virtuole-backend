@@ -9,93 +9,73 @@ mentor_bp = Blueprint('mentor', __name__)
 
 
 
-@mentor_bp.route('/cron/maintenance', methods=['GET', 'POST'])
-@mentor_bp.route('/api/cron/maintenance', methods=['GET', 'POST'])
-def run_maintenance():
-    auth_header = request.headers.get('Authorization')
-    if auth_header != f"Bearer {os.getenv('CRON_SECRET_KEY')}":
-        return jsonify({"error": "Unauthorized"}), 401
+@mentor_bp.route('/grade-submission', methods=['POST'])
+@mentor_bp.route('/api/grade-submission', methods=['POST'])
+def grade_submission():
+    if str(session.get('role', '')).lower() != 'mentor': return redirect('/login')
+    sub_id = request.form.get('submission_id')
+    enrollment_id = request.form.get('enrollment_id')
+    score = int(request.form.get('score'))
+    feedback = request.form.get('feedback', 'No specific feedback.')
     
-    if not supabase: return jsonify({"error": "No database"}), 500
+    enroll_data = supabase.table('enrollments').select('*, programs(title, short_description)').eq('enrollment_id', enrollment_id).execute().data[0]
+    student = supabase.table('users').select('email', 'full_name').eq('id', enroll_data['user_id']).execute().data[0]
     
-    try:
-        now = datetime.utcnow()
-        thirty_days_ago = (now - timedelta(days=30)).isoformat()
-        supabase.table('enrollments').update({"status": "expired"}).eq('status', 'active').lt('created_at', thirty_days_ago).execute()
-
-        twenty_four_hours_ago = (now - timedelta(hours=24)).isoformat()
-        expired_fails = supabase.table('enrollments').select('id', 'user_id').eq('status', 'failed').lt('created_at', twenty_four_hours_ago).execute()
-        for row in expired_fails.data:
-            supabase.table('enrollments').update({"status": "expired"}).eq('id', row['id']).execute()
-
-        seven_days_ago = (now - timedelta(days=7)).isoformat()
-        reminders = supabase.table('enrollments').select('id', 'user_id').eq('status', 'active').gt('created_at', seven_days_ago).execute()
-        for row in reminders.data:
-            user = supabase.table('users').select('email', 'full_name').eq('id', row['user_id']).execute().data[0]
-            send_system_email(user['email'], "Virtuole Internship: Pending Submission Reminder", f"Hello {user['full_name']},\n\nDon't forget to submit your architecture. You have a 30-day window from enrollment to qualify for credentials.")
-
-        expired_ambassadors = supabase.table('users').select('id', 'email', 'full_name').eq('role', 'ambassador').lt('ambassador_expiry', now.isoformat()).execute()
-        for row in expired_ambassadors.data:
-            supabase.table('users').update({"role": "intern", "promo_code": None, "ambassador_expiry": None}).eq('id', row['id']).execute()
-            send_ambassador_email(row['email'], "Virtuole Ambassador Program: Term Completed", f"Hello {row['full_name']},\n\nYour 1-year term as a Virtuole Ambassador has officially concluded. Your account has now been seamlessly transitioned back to a standard Intern profile.")
+    if score >= 80:
+        db_updates = {"score": score, "certificate_url": f"https://www.virtuole.in/verify-credential?credential_id={enrollment_id}", "evaluated_at": datetime.utcnow().isoformat()}
+        if score == 100:
+            db_updates["lor_url"] = f"https://www.virtuole.in/verify-credential?credential_id={enrollment_id}"
+            body_msg = f"Congratulations {student['full_name']}! You can view your Certificate and Elite LoR here: https://www.virtuole.in/verify-credential?credential_id={enrollment_id}"
+        else:
+            body_msg = f"Congratulations {student['full_name']}! You can view your Certificate here: https://www.virtuole.in/verify-credential?credential_id={enrollment_id}"
             
-        # Process Email Queue (Brevo Limits)
-        pending_emails = supabase.table('email_queue').select('*').eq('status', 'pending').order('created_at').execute()
-        
-        today_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
-        try:
-            sent_today = supabase.table('email_queue').select('id').eq('status', 'sent').gte('sent_at', today_midnight).execute()
-            daily_count = len(sent_today.data) if sent_today.data else 0
-        except Exception:
-            daily_count = 0
+        supabase.table('submissions').update(db_updates).eq('id', sub_id).execute()
+        supabase.table('enrollments').update({"status": "graded"}).eq('enrollment_id', enrollment_id).execute()
+        send_system_email(student['email'], "Certification Passed - Virtuole", body_msg)
+    else:
+        # Check if they are already in 'resubmit' status (this was their second try)
+        if enroll_data.get('status') == 'resubmit':
+            # They failed their second attempt. Record failure reason.
+            supabase.table('enrollments').update({"status": "failed"}).eq('enrollment_id', enrollment_id).execute()
+            supabase.table('submissions').update({
+                "score": score,
+                "certificate_url": f"failed:{feedback}",
+                "evaluated_at": datetime.utcnow().isoformat()
+            }).eq('id', sub_id).execute()
             
-        allowance = 300 - daily_count
-        
-        if allowance > 0 and pending_emails.data:
-            for i, email_record in enumerate(pending_emails.data):
-                if i >= allowance:
-                    break
-                    
-                msg = MIMEMultipart()
-                msg['From'] = f"Virtuole Support <{os.getenv('BREVO_SMTP_USER', 'support@virtuole.in')}>"
-                msg['To'] = email_record['recipient']
-                msg['Subject'] = email_record['subject']
-                msg.add_header('reply-to', 'support@virtuole.in')
-                
-                if email_record['is_html']:
-                    msg.attach(MIMEText(email_record['body_content'], 'html'))
-                else:
-                    msg.attach(MIMEText(email_record['body_content'], 'plain'))
-                    
-                try:
-                    with smtplib.SMTP("smtp-relay.brevo.com", 587) as server:
-                        server.starttls()
-                        server.login(os.getenv("BREVO_SMTP_USER"), os.getenv("BREVO_SMTP_PASS"))
-                        server.send_message(msg)
-                    
-                    # Delete the pending record from queue
-                    try:
-                        supabase.table('email_queue').delete().eq('id', email_record['id']).execute()
-                    except Exception as inner_e:
-                        print(f"Failed to delete pending email: {inner_e}")
-                    
-                    # Insert a new 'sent' record for tracking daily limits
-                    try:
-                        supabase.table('email_queue').insert({
-                            "recipient": email_record['recipient'],
-                            "subject": email_record['subject'],
-                            "body_content": email_record['body_content'],
-                            "is_html": email_record['is_html'],
-                            "status": "sent",
-                            "sent_at": datetime.utcnow().isoformat()
-                        }).execute()
-                    except Exception as inner_e:
-                        print(f"Failed to insert sent email to queue: {inner_e}")
-                    
-                except Exception as e:
-                    print(f"Brevo Queue Delivery Exception: {e}")
+            failure_email_body = f"Dear {student['full_name']},\n\nYour resubmission scored {score}%. Feedback: \"{feedback}\"\nUnfortunately, this means you did not secure the passing grade of 80% and the credential cannot be issued."
+            send_system_email(student['email'], "Certification Failed", failure_email_body)
+        else:
+            # First failure. Give them 24 hours to resubmit.
+            supabase.table('enrollments').update({
+                "status": "resubmit", 
+                "created_at": datetime.utcnow().isoformat() # Start 24h countdown
+            }).eq('enrollment_id', enrollment_id).execute()
+            
+            # Delete old submission to allow inserting a new one
+            supabase.table('submissions').delete().eq('id', sub_id).execute() 
+            
+            failure_email_body = f"Dear {student['full_name']},\n\nYour submission scored {score}%. Feedback: \"{feedback}\"\nYou have exactly 24 hours to resubmit your project in your dashboard."
+            send_system_email(student['email'], "ACTION REQUIRED: Submission Failed", failure_email_body)
+            
+    return redirect(url_for('dashboard_mentor'))
 
-        return jsonify({"status": "Maintenance execution completed successfully"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+@mentor_bp.route('/evaluate-task', methods=['POST'])
+@mentor_bp.route('/api/evaluate-task', methods=['POST'])
+def evaluate_task():
+    if str(session.get('role', '')).lower() != 'mentor': return redirect('/login')
+    claim_id = request.form.get('claim_id')
+    action = request.form.get('action') 
+    claim_data = supabase.table('ambassador_claims').select('ambassador_id, users(email, full_name)').eq('id', claim_id).execute().data[0]
+    
+    if action == 'approve':
+        pts = int(request.form.get('point_value'))
+        supabase.table('ambassador_claims').update({"status": "approved"}).eq('id', claim_id).execute()
+        curr_pts = supabase.table('users').select('total_points').eq('id', claim_data['ambassador_id']).execute().data[0]['total_points'] or 0
+        supabase.table('users').update({"total_points": curr_pts + pts}).eq('id', claim_data['ambassador_id']).execute()
+        send_ambassador_email(claim_data['users']['email'], "Task Approved!", f"Great job! +{pts} Points added.")
+    elif action == 'reject':
+        supabase.table('ambassador_claims').update({"status": "rejected"}).eq('id', claim_id).execute()
+        send_ambassador_email(claim_data['users']['email'], "Task Proof Rejected", "Your task proof could not be verified.")
+    return redirect(url_for('dashboard_mentor'))
 

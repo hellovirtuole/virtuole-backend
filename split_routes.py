@@ -43,23 +43,19 @@ def write_bp(name, parts, file_path):
         part = re.sub(r'@app\.route', f'@{name}_bp.route', part)
         bp_code += "\n" + part
         
-    # special fix for render_template strings for templates we moved
-    # for public_bp and intern_bp, they use get_offer_letter_template etc.
-    # We will replace them with render_template('docs/...')
-    bp_code = re.sub(r'get_offer_letter_template\((.*?)\)', 
-                     r"render_template('docs/offer_letter.html', name=\1.split(',')[0], date=\1.split(',')[1], program_title=\1.split(',')[2], track_level=\1.split(',')[3], enroll_id=\1.split(',')[4], project_details=\1.split(',')[5], duration_days=\1.split(',')[6], end_date=\1.split(',')[7])", bp_code)
+
     
     with open(file_path, 'w', encoding='utf-8') as f:
         f.write(bp_code)
 
 
-write_bp('auth', [sections[5]], os.path.join(api_dir, 'routes', 'auth.py'))
-write_bp('intern', [sections[6], sections[7]], os.path.join(api_dir, 'routes', 'intern.py'))
-write_bp('mentor', [sections[8]], os.path.join(api_dir, 'routes', 'mentor.py'))
-write_bp('admin', [sections[9]], os.path.join(api_dir, 'routes', 'admin.py'))
-write_bp('ambassador', [sections[10]], os.path.join(api_dir, 'routes', 'ambassador.py'))
-write_bp('dashboard', [sections[11]], os.path.join(api_dir, 'routes', 'dashboard.py'))
-write_bp('public', [sections[12]], os.path.join(api_dir, 'routes', 'public.py'))
+write_bp('auth', [sections[8]], os.path.join(api_dir, 'routes', 'auth.py'))
+write_bp('intern', [sections[10], sections[12]], os.path.join(api_dir, 'routes', 'intern.py'))
+write_bp('mentor', [sections[14]], os.path.join(api_dir, 'routes', 'mentor.py'))
+write_bp('admin', [sections[16]], os.path.join(api_dir, 'routes', 'admin.py'))
+write_bp('ambassador', [sections[18]], os.path.join(api_dir, 'routes', 'ambassador.py'))
+write_bp('dashboard', [sections[20]], os.path.join(api_dir, 'routes', 'dashboard.py'))
+write_bp('public', [sections[22]], os.path.join(api_dir, 'routes', 'public.py'))
 
 # Now reconstruct index.py
 new_index = f"""import os
@@ -145,7 +141,7 @@ app.register_blueprint(dashboard_bp)
 app.register_blueprint(public_bp)
 
 # Cron Maintenance route
-{sections[4].replace('@app.route', '@app.route')}
+{sections[6].replace('@app.route', '@app.route')}
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

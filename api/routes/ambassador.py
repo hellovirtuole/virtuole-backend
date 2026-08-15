@@ -9,148 +9,78 @@ ambassador_bp = Blueprint('ambassador', __name__)
 
 
 
-@ambassador_bp.route('/', methods=['GET', 'POST'])
-def home():
-    programs = []
-    if supabase:
-        programs = supabase.table('programs').select('*').eq('is_active', True).execute().data
-    return render_template('index.html', offered_programs=programs)
-
-@ambassador_bp.route('/register', methods=['POST'])
-@ambassador_bp.route('/api/register', methods=['POST'])
-@limiter.limit("5 per minute")
-def register():
-    full_name = request.form.get('full_name')
-    email = request.form.get('email')
-    password = request.form.get('password')
-    confirm_password = request.form.get('confirm_password')
-    promo_used = request.form.get('promo_code')
+@ambassador_bp.route('/claim-points', methods=['POST'])
+@ambassador_bp.route('/api/claim-points', methods=['POST'])
+def claim_points():
+    if str(session.get('role', '')).lower() not in ['ambassador', 'intern + ambassador']: return redirect('/login')
+    task_id = request.form.get('task_id')
     
-    if not full_name or not email or not password:
-        return render_template('login.html', error="Please fill in your name, email and password.")
+    task_data = supabase.table('ambassador_tasks').select('max_completions').eq('id', task_id).execute().data
+    if task_data:
+        max_c = task_data[0].get('max_completions', 1)
+        existing = len(supabase.table('ambassador_claims').select('id').eq('ambassador_id', session['user_id']).eq('task_id', task_id).in_('status', ['pending', 'approved']).execute().data)
+        if existing >= max_c:
+            return redirect(url_for('dashboard_ambassador'))
 
-    if password != confirm_password:
-        return render_template('login.html', error="Passwords do not match. Please try again.")
+    supabase.table('ambassador_claims').insert({
+        "ambassador_id": session['user_id'], "task_id": task_id,
+        "proof_link": request.form.get('proof_link'), "notes": request.form.get('notes')
+    }).execute()
+    return redirect(url_for('dashboard_ambassador'))
 
-    if not supabase:
-        return render_template('login.html', error="Registration is temporarily unavailable. Please try again later.")
+import json
 
-    public_id = f"VT-2026-{random.randint(1000, 9999)}"
-
+def parse_shipping_address(addr_str):
+    if not addr_str: return {}
     try:
-        auth_user = supabase.auth.sign_up({"email": email, "password": password})
-        if auth_user and auth_user.user:
-            supabase.table('users').insert({
-                "id": auth_user.user.id, "full_name": full_name, "email": email, "public_id": public_id, "role": "intern"
-            }).execute()
-            if promo_used:
-                send_ambassador_email("ambassador@virtuole.in", f"Conversion Logged: Code {promo_used}", f"A new student has registered using promo code {promo_used}.")
-            send_system_email(email, "Welcome to Virtuole", f"Hello {full_name},\nYour public identity ID is {public_id}. Please log in to your dashboard to view offered programs and begin your internship.")
-            return redirect(url_for('login', message="Account created successfully. Please login."))
-        # sign_up returned no user (e.g. confirmation pending / duplicate email)
-        return render_template('login.html', error="We could not create your account. This email may already be registered — try logging in instead.")
-    except Exception as e:
-        return render_template('login.html', error=str(e))
+        return json.loads(addr_str)
+    except Exception:
+        return {"name": "", "addr1": addr_str, "addr2": "", "city": "", "state": "", "pin": "", "phone": ""}
 
-@ambassador_bp.route('/login', methods=['GET', 'POST'])
-@ambassador_bp.route('/api/login', methods=['GET', 'POST'])
-@limiter.limit("10 per minute")
-def login():
-    message = request.args.get('message')
+@ambassador_bp.route('/api/update-address', methods=['POST'])
+def update_address():
+    if str(session.get('role', '')).lower() not in ['ambassador', 'intern + ambassador']: return redirect('/login')
+    
+    addr_data = {
+        "name": request.form.get('addr_name', ''),
+        "addr1": request.form.get('addr_line1', ''),
+        "addr2": request.form.get('addr_line2', ''),
+        "city": request.form.get('addr_city', ''),
+        "state": request.form.get('addr_state', ''),
+        "pin": request.form.get('addr_pin', ''),
+        "phone": request.form.get('addr_phone', '')
+    }
+    supabase.table('users').update({"shipping_address": json.dumps(addr_data)}).eq('id', session['user_id']).execute()
+    return redirect(url_for('dashboard_ambassador', active_tab='profile'))
 
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
+@ambassador_bp.route('/api/update-profile-intern', methods=['POST'])
+def update_profile_intern():
+    if str(session.get('role', '')).lower() not in ['intern', 'intern + ambassador']: return redirect('/login')
+    
+    full_name = request.form.get('full_name')
+    
+    # Load existing shipping details to preserve address info if they have it
+    u_data = supabase.table('users').select('shipping_address').eq('id', session['user_id']).execute().data
+    existing_shipping = parse_shipping_address(u_data[0].get('shipping_address', '')) if u_data else {}
+    
+    # Update academic/personal details
+    existing_shipping['gender'] = request.form.get('gender', '')
+    existing_shipping['phone'] = request.form.get('phone', '')
+    existing_shipping['city'] = request.form.get('city', '')
+    existing_shipping['state'] = request.form.get('state', '')
+    existing_shipping['college_name'] = request.form.get('college_name', '')
+    existing_shipping['course_name'] = request.form.get('course_name', '')
+    existing_shipping['session_year'] = request.form.get('session_year', '')
+    
+    update_payload = {"shipping_address": json.dumps(existing_shipping)}
+    if full_name:
+        update_payload["full_name"] = full_name
         
-        try:
-            # 1. Authorize via Supabase
-            auth_response = supabase.auth.sign_in_with_password({"email": email, "password": password})
-            
-            # 2. Grab profile from Database
-            user_data_response = supabase.table('users').select('*').eq('email', email).execute()
-            if not user_data_response.data:
-                return render_template('login.html', error="Profile data missing in the database.")
-            
-            user_data = user_data_response.data[0]
-            
-            # 3. Establish strict session data
-            session.permanent = True
-            session['user_id'] = user_data['id']
-            session['email'] = user_data['email']
-            session['name'] = user_data['full_name']
-            session['public_id'] = user_data['public_id']
-            
-            # 4. Normalize the role string to completely eliminate redirect loop issues
-            user_role = str(user_data.get('role', 'intern')).strip().lower()
-            session['role'] = user_role
-            
-            # Force Flask to instantly save the session
-            session.modified = True 
-            
-            # 5. Smart Routing based on normalized role
-            if user_role == 'admin' or email == "admin@virtuole.in": 
-                return redirect(url_for('dashboard_admin'))
-            elif user_role == 'mentor': 
-                return redirect(url_for('dashboard_mentor'))
-            elif user_role == 'ambassador': 
-                return redirect(url_for('dashboard_ambassador'))
-            else: 
-                return redirect(url_for('dashboard_intern'))
-                
-        except Exception as e:
-            error_str = str(e)
-            if "Invalid login credentials" in error_str or "AuthApiError" in error_str:
-                return render_template('login.html', error="Incorrect email or password.")
-            return render_template('login.html', error=f"Login Error: {error_str}")
-            
-    return render_template('login.html', message=message)
-
-@ambassador_bp.route('/logout')
-@ambassador_bp.route('/api/logout')
-def logout():
-    session.clear()
-    from flask import make_response
-    response = make_response(redirect('/login'))
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    return response
-
-@ambassador_bp.route('/forgot-password', methods=['POST'])
-@ambassador_bp.route('/api/forgot-password', methods=['POST'])
-@limiter.limit("3 per minute")
-def forgot_password():
-    email = request.form.get('email')
-    try:
-        supabase.auth.reset_password_for_email(
-            email, 
-            options={"redirect_to": "https://www.virtuole.in/reset-password"}
-        )
-        return redirect(url_for('login', message="If an account exists, a password reset link has been sent to your email!"))
-    except Exception as e:
-        return render_template('login.html', error=str(e))
-
-@ambassador_bp.route('/reset-password')
-def reset_password_page():
-    return render_template('reset_password.html')
-
-@ambassador_bp.route('/update-password', methods=['POST'])
-@ambassador_bp.route('/api/update-password', methods=['POST'])
-def update_password():
-    new_password = request.form.get('password')
-    confirm_password = request.form.get('confirm_password')
-    access_token = request.form.get('access_token')
-    refresh_token = request.form.get('refresh_token')
-
-    if new_password != confirm_password:
-        return render_template('reset_password.html', error="Passwords do not match. Try again.")
-    if not access_token or not refresh_token:
-        return render_template('reset_password.html', error="Invalid reset session context.")
-
-    try:
-        supabase.auth.set_session(access_token, refresh_token)
-        supabase.auth.update_user({"password": new_password})
-        supabase.auth.sign_out()
-        return redirect(url_for('login', message="Password updated successfully! Please log in."))
-    except Exception as e:
-        return render_template('reset_password.html', error=str(e))
+    supabase.table('users').update(update_payload).eq('id', session['user_id']).execute()
+    
+    # Update session name just in case
+    if full_name:
+        session['name'] = full_name
+        
+    return redirect(url_for('dashboard_intern', active_tab='profile'))
 
