@@ -18,8 +18,8 @@
         {'id':'directory','label':'User Directory'},
         {'id':'coupons','label':'Coupon Management'},
         {'id':'ambassadors','label':'Ambassadors'},
-        {'id':'tiers','label':'Ambassador Tiers'},
-        {'id':'exports','label':'Data Exports'}
+        {'id':'exports','label':'Data Exports'},
+        {'id':'adv_exports','label':'Advanced Demographics'}
     ] %}
     {% include 'dashboard_nav.html' %}
 
@@ -464,7 +464,6 @@
                 <select id="exportDatasetToggle" class="au-input" style="width:250px;" onchange="toggleExportDataset()">
                     <option value="users">Platform Users</option>
                     <option value="subscribers">Newsletter Subscribers (Matrix)</option>
-                    <option value="advanced">Advanced Demographics</option>
                 </select>
                 
                 <div style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;">
@@ -506,10 +505,16 @@
                         {% endfor %}
                     </tbody>
                 </table>
-            <!-- Advanced Demographics -->
-            <div id="dataset-advanced" style="display:none;">
-                <div class="au-panel au-form" style="margin-bottom: 20px;">
-                    <div style="display:flex;gap:15px;flex-wrap:wrap;align-items:end;">
+            </div>
+        </div>
+
+        <!-- ===================== ADVANCED DATA EXPORTS ===================== -->
+        <div id="adv_exports-view" class="view-section">
+            <h1 class="dash-greeting">Advanced Data Exports</h1>
+            <p class="dash-sub">Filter cross-referenced user and enrollment data before exporting.</p>
+
+            <div class="au-panel au-form" style="margin-bottom: 20px;">
+                <div style="display:flex;gap:15px;flex-wrap:wrap;align-items:end;">
                         <div style="flex:1;min-width:150px;">
                             <label>State</label>
                             <input type="text" id="adv-filter-state" class="au-input" placeholder="Any State" onkeyup="filterAdvancedTable()">
@@ -551,6 +556,12 @@
                                 <option value="Expert">Expert</option>
                             </select>
                         </div>
+                    </div>
+                    
+                    <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end;">
+                        <button class="au-btn-ghost sm" onclick="exportFilteredData('pdf')" style="color:#ef4444;border-color:rgba(239,68,68,0.2);">📄 PDF</button>
+                        <button class="au-btn-ghost sm" onclick="exportFilteredData('excel')" style="color:#10b981;border-color:rgba(16,185,129,0.2);">📊 Excel</button>
+                        <button class="au-btn-ghost sm" onclick="exportFilteredData('csv')" style="color:var(--primary);border-color:var(--primary-glow);">📝 CSV</button>
                     </div>
                 </div>
 
@@ -607,15 +618,10 @@
         const val = document.getElementById('exportDatasetToggle').value;
         document.getElementById('dataset-users').style.display = val === 'users' ? 'block' : 'none';
         document.getElementById('dataset-subscribers').style.display = val === 'subscribers' ? 'block' : 'none';
-        document.getElementById('dataset-advanced').style.display = val === 'advanced' ? 'block' : 'none';
     }
 
     function exportData(format) {
         const val = document.getElementById('exportDatasetToggle').value;
-        if (val === 'advanced') {
-            return exportFilteredData(format);
-        }
-        
         const tableId = val === 'users' ? 'exportTableUsers' : 'exportTableSubscribers';
         const table = document.getElementById(tableId);
         const fileName = (val === 'users' ? 'Virtuole_Users' : 'Virtuole_Subscribers') + '_' + new Date().toISOString().split('T')[0];
