@@ -33,16 +33,28 @@ def dashboard_intern():
     # Fetch full user profile for the profile tab
     u_data = supabase.table('users').select('*').eq('id', u_id).execute().data
     user_profile = u_data[0] if u_data else {}
-    shipping_details = parse_shipping_address(user_profile.get('shipping_address', ''))
+    
+    # Attempt to parse profile_details JSON, fallback to empty dict
+    profile_details_raw = user_profile.get('profile_details', '')
+    if not profile_details_raw:
+        profile_details = {}
+    elif isinstance(profile_details_raw, dict):
+        profile_details = profile_details_raw
+    else:
+        try:
+            import json
+            profile_details = json.loads(profile_details_raw)
+        except Exception:
+            profile_details = {}
     
     # Auto-fill academic details from first enrollment if missing in profile
-    if not shipping_details.get('college_name'):
+    if not profile_details.get('college_name'):
         try:
             first_enroll = supabase.table('enrollments').select('college_name, course_name, session_year').eq('user_id', u_id).order('created_at', desc=False).limit(1).execute().data
             if first_enroll:
-                shipping_details['college_name'] = first_enroll[0].get('college_name', '')
-                shipping_details['course_name'] = first_enroll[0].get('course_name', '')
-                shipping_details['session_year'] = first_enroll[0].get('session_year', '')
+                profile_details['college_name'] = first_enroll[0].get('college_name', '')
+                profile_details['course_name'] = first_enroll[0].get('course_name', '')
+                profile_details['session_year'] = first_enroll[0].get('session_year', '')
         except Exception:
             pass
     
@@ -109,7 +121,7 @@ def dashboard_intern():
     requested_tab = request.args.get('active_tab')
     default_tab = requested_tab if requested_tab else ('workspace' if active_projects else 'explore')
 
-    return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered, completed_projects=completed_projects, ambassador_active=ambassador_active, active_tab=default_tab, user_profile=user_profile, shipping_details=shipping_details)
+    return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered, completed_projects=completed_projects, ambassador_active=ambassador_active, active_tab=default_tab, user_profile=user_profile, profile_details=profile_details)
 
 @dashboard_bp.route('/dashboard-mentor')
 def dashboard_mentor():
