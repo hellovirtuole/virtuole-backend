@@ -1326,4 +1326,578 @@ body { background: transparent; }
             .lookup-card, .cred-body { padding-left: 22px; padding-right: 22px; }
             .cred-top { padding-left: 22px; padding-right: 22px; }
         }
-    
+
+/* =====================================================================
+   COMPREHENSIVE MOBILE RESPONSIVENESS OVERHAUL
+   All rules below are ADDITIVE — no existing rules above are modified.
+   Breakpoints: 850px (tablet), 600px (phone), 480px (small phone)
+===================================================================== */
+
+/* ==========================
+   1. GLOBAL NAVBAR MOBILE
+   ========================== */
+
+/* Fix nav-center mobile panel for proper scrolling & better UX */
+@media (max-width: 850px) {
+    /* Shrink logo text on phones so it doesn't fight the hamburger */
+    nav .logo-text { font-size: 1.3em; }
+
+    /* Make mobile nav panel scrollable with momentum */
+    .nav-center {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-left: 1px solid var(--card-border);
+        box-shadow: -20px 0 60px -20px rgba(4,8,20,.8);
+    }
+
+    /* Dropdowns should expand inline in mobile menu (no absolute positioning) */
+    .nav-center .dropdown { display: block; width: 100%; }
+    .nav-center .dropdown-content {
+        display: none;
+        position: static;
+        box-shadow: none;
+        border: none;
+        border-radius: 0;
+        background: rgba(255,255,255,0.04);
+        min-width: 0;
+        width: 100%;
+        padding-left: 16px;
+        backdrop-filter: none;
+    }
+    .light-mode .nav-center .dropdown-content {
+        background: rgba(0,0,0,0.03);
+    }
+    .nav-center .dropdown-content a {
+        padding: 11px 16px;
+        font-size: 0.92em;
+        border-bottom-color: rgba(255,255,255,0.04);
+    }
+    /* On mobile, tapping the dropdown trigger toggles it */
+    .nav-center .dropdown.open .dropdown-content { display: block; }
+
+    /* Make nav links full-width tappable rows */
+    .nav-center .nav-link {
+        display: block;
+        width: 100%;
+        padding: 13px 16px;
+        border-radius: 12px;
+        font-size: 1em;
+        box-sizing: border-box;
+    }
+
+    /* Back button within mobile menu */
+    .nav-center .back-btn.mobile-only {
+        border-radius: 12px;
+        font-size: 0.95em;
+    }
+}
+
+/* Very small phones: further shrink nav */
+@media (max-width: 480px) {
+    nav { padding: 12px 4%; }
+    nav .logo-text { font-size: 1.15em; }
+    nav .logo-img { height: 32px; }
+    .hamburger { font-size: 1.6em; }
+    .nav-center {
+        width: 78% !important;
+        padding: 32px 18px;
+        top: 60px;
+    }
+}
+
+
+/* ==========================
+   2. HOMEPAGE MOBILE
+   ========================== */
+
+@media (max-width: 850px) {
+    /* Hero: less dead space at top */
+    .hero { padding: 120px 16px 50px; }
+    .hero p { font-size: 1.05em; }
+
+    /* Journey tabs: smaller tabs */
+    .tabs-container { gap: 8px; padding-bottom: 10px; }
+    .tabs-container .tab { min-width: 100px; padding: 14px 14px; font-size: 0.85em; }
+
+    /* Tab content: less padding */
+    .tab-content-box { padding: 28px 20px; }
+    .tab-content-box h3 { font-size: 1.3em; }
+
+    /* Programs: single column cards */
+    .grid { padding: 0 4px; }
+    .card img { height: 180px !important; }
+
+    /* Ambassador banner: tighter */
+    .ambassador-banner { padding: 60px 16px; }
+    .ambassador-banner h2 { font-size: 2em; }
+    .ambassador-banner p { font-size: 1em; }
+
+    /* Perks list: wrap nicely */
+    .perks-list { gap: 10px; }
+    .perk { font-size: 0.82em; padding: 8px 14px; }
+
+    /* Testimonial slider: smaller cards */
+    .slide-card { width: 270px; padding: 20px; }
+    .slider-track { width: calc(300px * 14); }
+    @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-300px * 7)); } }
+    .infinite-slider-section { padding: 50px 0; }
+    .infinite-slider-section h2 { font-size: 1.8em; margin-bottom: 24px; }
+
+    /* Bottom CTA tighter */
+    .bottom-cta { padding: 70px 16px; }
+    .bottom-cta p { font-size: 1em; }
+}
+
+@media (max-width: 480px) {
+    /* Extra small phones */
+    .hero { padding: 100px 14px 40px; }
+    .hero h1 { font-size: 1.8em !important; }
+    .hero p { font-size: 0.95em; margin-bottom: 28px; }
+
+    .au-pill { font-size: 0.75em; padding: 6px 12px; }
+
+    /* Hero buttons: ensure proper spacing */
+    .hero-buttons { gap: 12px; padding: 0 4px; }
+    .hero-buttons .au-btn,
+    .hero-buttons .au-btn-ghost { padding: 13px 20px; font-size: 0.92em; }
+
+    /* Hero tags: stack vertically */
+    .hero-tags { flex-direction: column; gap: 8px; align-items: center; }
+
+    /* Sections: tighter headings */
+    .about-section h2, .why-choose h2, .journey-section h2 { font-size: 1.6em !important; }
+    .about-section p { font-size: 1em; }
+    .about-section { padding: 36px 16px; margin-bottom: 40px; }
+    .why-choose { margin-bottom: 40px; }
+    .why-choose > p { font-size: 0.95em; margin-bottom: 30px; }
+
+    /* Benefits grid: single column with less margin */
+    .benefits-grid { grid-template-columns: 1fr; gap: 14px; }
+    .benefit-card { margin: 0 !important; padding: 24px 18px; }
+
+    /* Journey section */
+    .journey-section { padding: 50px 14px; }
+    .journey-section h2 { margin-bottom: 10px; }
+    .journey-section > p { font-size: 0.95em; margin-bottom: 24px; }
+    .tabs-container .tab { min-width: 90px; padding: 12px 10px; font-size: 0.8em; gap: 6px; }
+    .tab-content-box { padding: 22px 16px; margin-top: 20px; }
+    .tab-content-box h3 { font-size: 1.15em; }
+    .tab-content-box h4 { font-size: 0.8em; }
+    .tab-content-box p { font-size: 0.95em; }
+
+    /* Programs */
+    .domains { padding: 50px 14px; }
+    .domains h2 { font-size: 1.6em !important; margin-bottom: 28px !important; }
+    .grid { gap: 16px; }
+    .card img { height: 160px !important; }
+    .card h3 { font-size: 1.2em; }
+    .card p { font-size: 0.9em; margin-bottom: 20px; }
+    .show-more-btn { font-size: 0.95em; padding: 10px 28px; }
+
+    /* Ambassador banner */
+    .ambassador-banner { padding: 44px 14px; }
+    .ambassador-banner h2 { font-size: 1.6em; }
+
+    /* Slider */
+    .slide-card { width: 240px; padding: 18px; font-size: 0.9em; }
+    .slider-track { width: calc(270px * 14); }
+    @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-270px * 7)); } }
+
+    /* Bottom CTA */
+    .bottom-cta { padding: 50px 14px; }
+    .bottom-cta h2 { font-size: 1.6em !important; }
+    .bottom-cta p { font-size: 0.92em; margin-bottom: 24px; }
+    .bottom-cta-pill { font-size: 0.75em; padding: 5px 12px; margin-bottom: 18px; }
+    .bottom-tags { flex-direction: column; gap: 10px; align-items: center; margin-top: 30px; }
+    .bottom-tags span { font-size: 0.85em; }
+}
+
+
+/* ==========================
+   3. DASHBOARD NAV MOBILE
+   ========================== */
+
+@media (max-width: 900px) {
+    /* Ensure slide-out is usable on small phones */
+    .dnav-center {
+        width: min(82%, 340px);
+        padding: 80px 18px 24px;
+        -webkit-overflow-scrolling: touch;
+    }
+    /* Larger tap targets */
+    .dnav-tab {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        padding: 14px 16px;
+        font-size: 0.98em;
+    }
+    /* Mobile footer inside slide-out */
+    .dnav-mobile-foot {
+        gap: 14px;
+        padding-top: 16px;
+    }
+    .dnav-logout.mobile-only {
+        padding: 12px 20px;
+        text-align: center;
+        font-size: 0.92em;
+    }
+}
+
+@media (max-width: 480px) {
+    .dnav { padding: 12px 4%; }
+    .dnav .logo-text { font-size: 1.2em; }
+    .dnav .logo-img { height: 30px; }
+    .dnav-hamburger { font-size: 1.5em; }
+    .dnav-center {
+        width: min(88%, 300px);
+        padding: 70px 14px 20px;
+    }
+    .dnav-tab { font-size: 0.9em; padding: 12px 14px; }
+}
+
+
+/* ==========================
+   4. DASHBOARD CONTENT MOBILE
+   ========================== */
+
+@media (max-width: 850px) {
+    /* Main content area */
+    .dash-main { padding: 80px 4% 50px; }
+    .dash-greeting { font-size: clamp(1.4em, 5vw, 1.8em); }
+    .dash-sub { font-size: 0.95em; margin-bottom: 24px; }
+    .dash-section-title { font-size: 1.15em; margin: 30px 0 16px; flex-wrap: wrap; gap: 8px; }
+
+    /* Stat grid: 2 columns on phones */
+    .au-stat-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px; }
+    .au-stat { padding: 18px 16px 16px; }
+    .au-stat .num { font-size: 1.6em; }
+    .au-stat h4 { font-size: 0.7em; letter-spacing: 0.8px; }
+    .au-stat .stat-foot { font-size: 0.75em; }
+
+    /* Charts: always single column */
+    .au-charts-grid { grid-template-columns: 1fr !important; gap: 14px; }
+    .au-chart-card { padding: 16px 14px 10px; }
+    .au-chart-wrap, .au-chart-card:not(.wide) .au-chart-wrap { height: 200px; }
+    .au-chart-head h4 { font-size: 0.92em; }
+
+    /* Content grid: single column */
+    .au-grid { grid-template-columns: 1fr !important; gap: 14px; }
+
+    /* Tables: smooth touch scrolling */
+    .au-table-wrap {
+        padding: 14px;
+        -webkit-overflow-scrolling: touch;
+    }
+    .au-table { min-width: 600px; }
+    .au-table th { padding: 10px 12px; font-size: 0.7em; }
+    .au-table td { padding: 12px; font-size: 0.88em; }
+
+    /* Modals: near-full-screen on mobile */
+    .au-modal { padding: 12px; }
+    .au-modal-card {
+        max-width: 100%;
+        max-height: 92vh;
+        padding: 24px 18px;
+        border-radius: var(--au-radius);
+    }
+    .au-modal-card h3 { font-size: 1.2em; }
+
+    /* Forms in dashboard */
+    .au-form-group { margin-bottom: 16px; }
+    .au-form input, .au-form select, .au-form textarea, .au-input {
+        padding: 12px 14px;
+        font-size: 0.93em;
+    }
+
+    /* Buttons */
+    .au-btn.sm, .au-btn-ghost.sm { padding: 10px 14px; font-size: 0.84em; }
+    .au-btn { padding: 13px 22px; font-size: 0.93em; }
+
+    /* Panels */
+    .au-panel { padding: 20px 16px; }
+}
+
+@media (max-width: 480px) {
+    .dash-main { padding: 72px 3% 40px; }
+
+    /* Stat grid: force single column on very small phones */
+    .au-stat-grid { grid-template-columns: 1fr !important; }
+    .au-stat .num { font-size: 1.8em; }
+
+    /* Chart height reduced */
+    .au-chart-wrap, .au-chart-card:not(.wide) .au-chart-wrap { height: 180px; }
+
+    /* Modals */
+    .au-modal-card { padding: 20px 14px; border-radius: 14px; }
+
+    /* Section title: allow form to wrap below */
+    .dash-section-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .dash-section-title form { width: 100%; }
+    .dash-section-title .au-input,
+    .dash-section-title select.au-input { width: 100% !important; }
+}
+
+
+/* ==========================
+   5. BLOG PAGE MOBILE
+   ========================== */
+
+@media (max-width: 850px) {
+    .page-container { margin: 80px auto 30px; padding: 0 14px; }
+    .blog-sidebar { max-height: 240px; }
+    .blog-sidebar h3 { font-size: 1.1em; }
+    .blog-post h1 { font-size: 1.8em; }
+    .blog-body { font-size: 1em; }
+}
+
+@media (max-width: 480px) {
+    .page-container { margin: 70px auto 20px; padding: 0 10px; }
+    .blog-sidebar { max-height: 200px; }
+    .blog-list-item { padding: 12px; }
+    .blog-list-item h4 { font-size: 0.95em; }
+    .blog-post { padding: 28px 0; }
+    .blog-post h1 { font-size: 1.4em; }
+    .blog-meta { font-size: 0.82em; margin-bottom: 20px; }
+    .blog-body { font-size: 0.95em; line-height: 1.7; }
+}
+
+
+/* ==========================
+   6. FEEDBACK PAGE MOBILE
+   ========================== */
+
+@media (max-width: 850px) {
+    .container { margin-top: 80px; }
+    .info-box, .form-box { padding: 28px 20px; }
+}
+
+@media (max-width: 480px) {
+    .container { margin-top: 70px; padding: 0 10px; gap: 20px; }
+    .info-box, .form-box { padding: 22px 16px; }
+    .info-box h2, .form-box h2 { font-size: 1.3em; }
+    .reviews-list { max-height: 300px; }
+    .form-box input, .form-box textarea { padding: 12px; font-size: 0.95em; }
+    .form-box button { padding: 14px; font-size: 0.95em; }
+}
+
+
+/* ==========================
+   7. FOOTER MOBILE
+   ========================== */
+
+@media (max-width: 600px) {
+    .mega-footer { padding: 50px 4% 20px; font-size: 0.9em; }
+    .footer-top { margin-bottom: 36px; }
+    .footer-brand p { font-size: 0.9em; }
+
+    /* 2 columns on medium phones, then 1 column below */
+    .footer-links-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 28px; }
+    .footer-col h4 { font-size: 1em; margin-bottom: 16px; }
+    .footer-col a, .footer-col p { font-size: 0.9em; margin-bottom: 10px; }
+
+    .footer-newsletter { padding: 22px; }
+    .footer-newsletter h3 { font-size: 1.15em; }
+    .footer-newsletter p { font-size: 0.85em; }
+
+    .footer-bottom { font-size: 0.82em; }
+    .social-circles a { width: 36px; height: 36px; }
+    .social-circles a svg { width: 17px; height: 17px; }
+}
+
+@media (max-width: 400px) {
+    .footer-links-grid { grid-template-columns: 1fr; gap: 24px; text-align: center; }
+    .footer-col h4 { margin-bottom: 12px; }
+    .legal-links a { margin: 0 6px; font-size: 0.85em; }
+}
+
+
+/* ==========================
+   8. LOGIN / AUTH MOBILE
+   ========================== */
+
+@media (max-width: 850px) {
+    .auth-wrapper { margin: 100px auto 60px; }
+}
+
+@media (max-width: 480px) {
+    .auth-wrapper { margin: 80px auto 40px; padding: 0 14px; }
+    .auth-header h1 { font-size: 1.7em; }
+    .auth-header p { font-size: 0.95em; }
+    .auth-header { margin-bottom: 28px; }
+    .tabs { margin-bottom: 24px; }
+    .tabs .tab { padding: 13px 4px; font-size: 0.9em; }
+    input { padding: 14px; font-size: 0.95em; min-height: 48px; box-sizing: border-box; }
+    .submit-btn { padding: 14px; font-size: 1em; min-height: 48px; }
+    .form-group { margin-bottom: 20px; }
+    label { font-size: 0.8em; }
+    .forgot-link { font-size: 0.82em; }
+}
+
+
+/* ==========================
+   9. CREDENTIAL PAGE MOBILE
+   ========================== */
+
+@media (max-width: 600px) {
+    .cred-container {
+        margin: 80px 8px 30px;
+        border-radius: 12px;
+    }
+    .cred-header { padding: 28px 18px; }
+    .cred-header h1 { font-size: 1.5em; letter-spacing: 1px; }
+    .cred-header .msme-badge { font-size: 0.65em; padding: 4px 10px; word-break: break-word; }
+    .cred-body { padding: 30px 18px; }
+    .intern-name { font-size: 1.6em; }
+    .program-title { font-size: 1.05em; }
+    .score-box { padding: 12px 20px; font-size: 1.2em; }
+    .meta-grid {
+        grid-template-columns: 1fr;
+        padding: 18px;
+        gap: 14px;
+    }
+    .meta-item span { font-size: 0.95em; word-break: break-all; }
+    .repo-link { padding: 10px 20px; font-size: 0.9em; }
+    .action-buttons {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .action-buttons .au-btn,
+    .action-buttons .action-btn,
+    .action-buttons a { width: 100%; justify-content: center; text-align: center; box-sizing: border-box; }
+    .footer { font-size: 0.8em; padding: 16px 14px; }
+}
+
+@media (max-width: 400px) {
+    .cred-container { margin: 70px 4px 20px; }
+    .cred-header h1 { font-size: 1.3em; }
+    .intern-name { font-size: 1.3em; }
+    .score-box { font-size: 1em; padding: 10px 16px; }
+}
+
+
+/* ==========================
+   10. LEGAL / POLICY PAGES MOBILE
+   ========================== */
+
+@media (max-width: 600px) {
+    .page-shell { padding: 90px 4% 50px; }
+    .page-head { margin-bottom: 30px; }
+    .page-head h1 { margin: 14px 0 10px; }
+    .page-head p { font-size: 0.98em; }
+
+    .legal-card { padding: 24px 18px; }
+    .legal-card h2 { margin-bottom: 12px; }
+    .legal-card p, .legal-card li { font-size: 0.93em; }
+    .legal-card ul { padding-left: 18px; }
+
+    /* Contact tiles */
+    .contact-grid { grid-template-columns: 1fr; gap: 14px; }
+    .contact-tile { padding: 24px 18px; }
+    .contact-tile .ico { width: 52px; height: 52px; font-size: 1.5em; }
+
+    /* Ambassador apply page */
+    .apply-card { padding: 26px 18px; }
+    .apply-card h2 { font-size: 1.3em; }
+    .perks-grid { grid-template-columns: 1fr; gap: 12px; }
+    .perk-tile { padding: 22px 18px; }
+
+    /* CTA rows */
+    .cta-row { flex-direction: column; align-items: stretch; gap: 10px; }
+    .cta-row .au-btn,
+    .cta-row .au-btn-ghost { width: 100%; text-align: center; justify-content: center; box-sizing: border-box; }
+}
+
+@media (max-width: 400px) {
+    .page-shell { padding: 80px 3% 40px; }
+    .legal-card { padding: 20px 14px; }
+    .page-head h1 { font-size: 1.6em; }
+}
+
+
+/* ==========================
+   11. VERIFY / OFFER PAGES MOBILE
+   ========================== */
+
+@media (max-width: 480px) {
+    /* Verify/Offer lookup */
+    .lookup-card { padding: 28px 16px; }
+    .lookup-form input { padding: 14px; font-size: 0.98em; min-height: 48px; }
+    .lookup-form .au-btn { min-height: 48px; }
+    .shield-icon, .doc-icon { width: 46px; height: 46px; }
+
+    /* Verified credential card */
+    .cred-top { padding: 26px 16px 20px; }
+    .cred-name { font-size: 1.3em; }
+    .cred-program { font-size: 0.9em; }
+    .score-big { font-size: clamp(2.2em, 10vw, 3.2em); }
+    .score-label { font-size: 0.7em; }
+
+    /* Meta grid force single col on very small screens */
+    .meta-grid { grid-template-columns: 1fr; gap: 12px; }
+    .meta-item .m-value { font-size: 0.92em; word-break: break-all; }
+    .meta-item .m-value.mono { font-size: 0.88em; }
+
+    /* Error card */
+    .error-card { padding: 20px 18px; }
+    .error-card h3 { font-size: 1.05em; }
+}
+
+
+/* ==========================
+   RESET PASSWORD MOBILE
+   ========================== */
+
+@media (max-width: 480px) {
+    .auth-shell { padding: 80px 14px 40px; }
+    .auth-container { padding: 30px 20px; }
+    .auth-logo { font-size: 1.6em; }
+    p.subtitle { font-size: 0.88em; }
+}
+
+
+/* ==========================
+   GENERAL TOUCH-FRIENDLY OVERRIDES
+   ========================== */
+
+@media (max-width: 850px) {
+    /* All interactive elements: minimum 44px touch target */
+    .au-btn, .au-btn-ghost, .enroll-btn, .show-more-btn,
+    .login-btn, .dnav-logout, .submit-btn,
+    .action-btn, .repo-link, button {
+        min-height: 44px;
+    }
+
+    /* Prevent accidental double-tap zoom on buttons */
+    button, a, input, select, textarea {
+        touch-action: manipulation;
+    }
+
+    /* Safe area support for notched phones */
+    body {
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+    nav, .dnav {
+        padding-left: max(4%, env(safe-area-inset-left));
+        padding-right: max(4%, env(safe-area-inset-right));
+    }
+}
+
+/* Utility: smooth scroll for all mobile panels */
+@media (max-width: 850px) {
+    .nav-center, .dnav-center, .au-table-wrap, .blog-sidebar, .reviews-list {
+        scrollbar-width: none;
+    }
+    .nav-center::-webkit-scrollbar,
+    .dnav-center::-webkit-scrollbar,
+    .au-table-wrap::-webkit-scrollbar,
+    .blog-sidebar::-webkit-scrollbar,
+    .reviews-list::-webkit-scrollbar { display: none; }
+}

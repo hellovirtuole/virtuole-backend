@@ -120,7 +120,27 @@
             hamburger.addEventListener('click', () => {
                 const open = navCenter.classList.toggle('active');
                 hamburger.textContent = open ? '✕' : '☰';
+                // Lock body scroll when mobile menu is open
+                document.body.style.overflow = open ? 'hidden' : '';
             });
+
+            // ---- Mobile dropdown toggle (tap-friendly) ----
+            navCenter.querySelectorAll('.dropdown > .nav-link').forEach(trigger => {
+                trigger.addEventListener('click', (e) => {
+                    // Only intercept on mobile (when hamburger is visible)
+                    if (window.innerWidth <= 850) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const dropdown = trigger.parentElement;
+                        // Close other open dropdowns
+                        navCenter.querySelectorAll('.dropdown.open').forEach(d => {
+                            if (d !== dropdown) d.classList.remove('open');
+                        });
+                        dropdown.classList.toggle('open');
+                    }
+                });
+            });
+
             navCenter.querySelectorAll('a').forEach(link => {
                 link.addEventListener('click', (e) => {
                     // Prevent closing the mobile menu if clicking a dropdown trigger
@@ -132,9 +152,11 @@
                     }
                     navCenter.classList.remove('active');
                     hamburger.textContent = '☰';
+                    document.body.style.overflow = '';
                 });
             });
         }
+
 
         // ---- Light / Dark theme toggle (syncs every toggle on the page) ----
         document.querySelectorAll('.nav-theme-toggle').forEach(toggle => {
