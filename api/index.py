@@ -55,7 +55,7 @@ class _VercelFix:
             path = environ.get('PATH_INFO', '/')
             if path == '/api/index.py' or path == '/api/index':
                 qs = environ.get('QUERY_STRING', '')
-                params = urllib.parse.parse_qs(qs)
+                params = urllib.parse.parse_qs(qs, keep_blank_values=True)
                 
                 if '__vercel_path' in params:
                     vp = params['__vercel_path'][0]
