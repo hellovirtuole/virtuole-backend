@@ -147,6 +147,13 @@
         if (center) center.classList.remove('active');
         if (burger) burger.textContent = '☰';
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        // Update URL to match current tab so reloads stay in place
+        if (window.history && window.history.replaceState) {
+            var url = new URL(window.location);
+            url.searchParams.set('tab', viewId);
+            window.history.replaceState(null, '', url.toString());
+        }
     }
 
     /* Theme is applied early by theme.html's own script if present; guard anyway. */
