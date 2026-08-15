@@ -1411,7 +1411,42 @@ def dashboard_admin():
     # Reverse ambassador_tiers for the template (so lowest tier is first in the settings form, but grouped_ambassadors is highest first)
     ambassador_tiers_asc = sorted(ambassador_tiers, key=lambda x: x['points_required'])
 
-    return render_template('dashboard_admin.html', user_name=session.get('name'), total_earnings=round(earnings, 2), total_enrolled=enrolled, total_certified=certified, pending_grading=pend_grading, offered_programs=progs, all_tasks=tasks, user_directory=users, coupons=coupons, all_ambassadors=all_ambassadors, grouped_ambassadors=grouped_ambassadors, ambassador_tiers=ambassador_tiers_asc, active_tab=active_tab, current_filter=timeframe, analytics=analytics, subscribers=subscribers, advanced_users=advanced_users)
+    activity_feed = []
+    for u in users:
+        date_str = u.get('created_at')
+        if not date_str: continue
+        try:
+            dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+            activity_feed.append({
+                "type": "signup",
+                "title": "New User Registration",
+                "description": f"{u.get('full_name')} ({u.get('email')}) joined the platform.",
+                "timestamp": dt.strftime('%b %d, %Y %I:%M %p'),
+                "date_obj": dt
+            })
+        except: pass
+        
+    for e in enrollments:
+        date_str = e.get('created_at')
+        if not date_str: continue
+        try:
+            dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+            user = next((x for x in users if x['id'] == e['user_id']), None)
+            u_name = user['full_name'] if user else 'A user'
+            prog_title = prog_dict.get(e['program_id'], {}).get('title', 'a program')
+            activity_feed.append({
+                "type": "enrollment",
+                "title": "New Enrollment",
+                "description": f"{u_name} enrolled in {prog_title}.",
+                "timestamp": dt.strftime('%b %d, %Y %I:%M %p'),
+                "date_obj": dt
+            })
+        except: pass
+        
+    activity_feed.sort(key=lambda x: x['date_obj'], reverse=True)
+    activity_feed = activity_feed[:15]
+
+    return render_template('dashboard_admin.html', user_name=session.get('name'), total_earnings=round(earnings, 2), total_enrolled=enrolled, total_certified=certified, pending_grading=pend_grading, offered_programs=progs, all_tasks=tasks, user_directory=users, coupons=coupons, all_ambassadors=all_ambassadors, grouped_ambassadors=grouped_ambassadors, ambassador_tiers=ambassador_tiers_asc, active_tab=active_tab, current_filter=timeframe, analytics=analytics, subscribers=subscribers, advanced_users=advanced_users, activity_feed=activity_feed)
 
 
 @app.route('/admin/tiers', methods=['POST'])
