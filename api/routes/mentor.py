@@ -58,7 +58,7 @@ def grade_submission():
             failure_email_body = f"Dear {student['full_name']},\n\nYour submission scored {score}%. Feedback: \"{feedback}\"\nYou have exactly 24 hours to resubmit your project in your dashboard."
             send_system_email(student['email'], "ACTION REQUIRED: Submission Failed", failure_email_body)
             
-    return redirect(url_for('dashboard_mentor'))
+    return redirect(url_for('dashboard.dashboard_mentor'))
 
 @mentor_bp.route('/evaluate-task', methods=['POST'])
 @mentor_bp.route('/api/evaluate-task', methods=['POST'])
@@ -77,5 +77,5 @@ def evaluate_task():
     elif action == 'reject':
         supabase.table('ambassador_claims').update({"status": "rejected"}).eq('id', claim_id).execute()
         send_ambassador_email(claim_data['users']['email'], "Task Proof Rejected", "Your task proof could not be verified.")
-    return redirect(url_for('dashboard_mentor'))
+    return redirect(url_for('dashboard.dashboard_mentor'))
 

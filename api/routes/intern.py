@@ -175,7 +175,7 @@ def api_enroll():
     
     existing = supabase.table('enrollments').select('id').eq('user_id', session['user_id']).eq('program_id', program_id).eq('track_level', track_level).in_('status', ['active', 'submitted']).execute().data
     if existing:
-        return redirect(url_for('dashboard_intern'))
+        return redirect(url_for('dashboard.dashboard_intern'))
         
     supabase.table('enrollments').insert({
         "enrollment_id": enrollment_id, "user_id": session['user_id'], "program_id": program_id,
@@ -190,7 +190,7 @@ def api_enroll():
     html_offer = render_template('docs/offer_letter.html', name=session['name'], date=datetime.utcnow().strftime("%B %d, %Y"), program_title=prog['title'], track_level=track_level.title(), enroll_id=enrollment_id, project_details=prog['short_description'], duration_days=duration_days, end_date=end_date)
     
     send_system_email(session['email'], "Official Internship Offer Letter - Virtuole", html_offer, is_html=True)
-    return redirect(url_for('dashboard_intern'))
+    return redirect(url_for('dashboard.dashboard_intern'))
 
 
 @intern_bp.route('/submit-project', methods=['POST'])
@@ -235,5 +235,5 @@ def api_submit_project():
     supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": request.form.get('code_link'), "defense_link": request.form.get('defense_link')}).execute()
     supabase.table('enrollments').update({"status": "submitted"}).eq('enrollment_id', enrollment_id).execute()
     send_system_email(session['email'], "Submission Received", f"Your architecture for {enrollment_id} has entered evaluation.")
-    return redirect(url_for('dashboard_intern'))
+    return redirect(url_for('dashboard.dashboard_intern'))
 

@@ -20,7 +20,7 @@ def add_program():
         "price_expert": int(request.form.get('price_expert')), "is_active": True,
         "image_url": request.form.get('image_url', '')
     }).execute()
-    return redirect(url_for('dashboard_admin', tab='programs'))
+    return redirect(url_for('dashboard.dashboard_admin', tab='programs'))
 
 @admin_bp.route('/admin/delete-program', methods=['POST'])
 @admin_bp.route('/api/admin/delete-program', methods=['POST'])
@@ -28,7 +28,7 @@ def delete_program():
     if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
     # Soft Delete: Preserves student data history
     supabase.table('programs').update({"is_active": False}).eq('id', request.form.get('program_id')).execute()
-    return redirect(url_for('dashboard_admin', tab='programs'))
+    return redirect(url_for('dashboard.dashboard_admin', tab='programs'))
 
 @admin_bp.route('/admin/add-task', methods=['POST'])
 @admin_bp.route('/api/admin/add-task', methods=['POST'])
@@ -36,14 +36,14 @@ def add_task():
     if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
     max_completions = int(request.form.get('max_completions', 1) or 1)
     supabase.table('ambassador_tasks').insert({"title": request.form.get('title'), "description": request.form.get('description'), "point_value": int(request.form.get('point_value')), "is_active": True, "max_completions": max_completions}).execute()
-    return redirect(url_for('dashboard_admin', tab='tasks'))
+    return redirect(url_for('dashboard.dashboard_admin', tab='tasks'))
 
 @admin_bp.route('/admin/delete-task', methods=['POST'])
 @admin_bp.route('/api/admin/delete-task', methods=['POST'])
 def delete_task():
     if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
     supabase.table('ambassador_tasks').delete().eq('id', request.form.get('task_id')).execute()
-    return redirect(url_for('dashboard_admin', tab='tasks'))
+    return redirect(url_for('dashboard.dashboard_admin', tab='tasks'))
 
 @admin_bp.route('/admin/mark-swag-sent', methods=['POST'])
 @admin_bp.route('/api/admin/mark-swag-sent', methods=['POST'])
@@ -64,7 +64,7 @@ def mark_swag_sent():
             "Your Virtuole Ambassador Swag Has Shipped!",
             f"Hi {user['full_name']},\n\nGreat news — your Tier {swag_tier} Ambassador swag kit has been dispatched. Courier tracking details will follow shortly.\n\nThank you for representing Virtuole.\n\n— The Virtuole Ambassador Team"
         )
-    return redirect(url_for('dashboard_admin', tab='swag'))
+    return redirect(url_for('dashboard.dashboard_admin', tab='swag'))
 
 @admin_bp.route('/admin/update-role', methods=['POST'])
 @admin_bp.route('/api/admin/update-role', methods=['POST'])
@@ -92,5 +92,5 @@ def update_role():
     except Exception as e:
         print(f"ERROR IN UPDATE ROLE: {e}")
         return f"Database Error: {e}", 500
-    return redirect(url_for('dashboard_admin', tab='users'))
+    return redirect(url_for('dashboard.dashboard_admin', tab='users'))
 

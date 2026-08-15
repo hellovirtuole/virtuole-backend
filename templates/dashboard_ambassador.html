@@ -122,10 +122,10 @@
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
                     {% if total_points >= tier.points_required %}
                         {% if tier.give_certificate %}
-                        <a href="{{ url_for('download_cert', tier_id=tier.id) }}" class="au-btn sm" style="--au-b1:#fbbf24;--au-b2:#f59e0b;color:#111827;max-width:250px;">Download Certificate</a>
+                        <a href="{{ url_for('public.download_cert', tier_id=tier.id) }}" class="au-btn sm" style="--au-b1:#fbbf24;--au-b2:#f59e0b;color:#111827;max-width:250px;">Download Certificate</a>
                         {% endif %}
                         {% if tier.give_lor %}
-                        <a href="{{ url_for('download_lor', type='devrel') }}" class="au-btn violet sm" style="max-width:250px;">Download LoR</a>
+                        <a href="{{ url_for('public.download_lor', type='devrel') }}" class="au-btn violet sm" style="max-width:250px;">Download LoR</a>
                         {% endif %}
                     {% else %}
                         <button class="au-btn-ghost sm" style="max-width:250px;cursor:not-allowed;opacity:.7;{% if loop.last %}border-color:var(--au-gold);color:var(--au-gold);{% endif %}" disabled>Locked ({{ tier.points_required - total_points }} pts needed)</button>

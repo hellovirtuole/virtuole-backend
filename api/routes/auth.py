@@ -46,7 +46,7 @@ def register():
             if promo_used:
                 send_ambassador_email("ambassador@virtuole.in", f"Conversion Logged: Code {promo_used}", f"A new student has registered using promo code {promo_used}.")
             send_system_email(email, "Welcome to Virtuole", f"Hello {full_name},\nYour public identity ID is {public_id}. Please log in to your dashboard to view offered programs and begin your internship.")
-            return redirect(url_for('login', message="Account created successfully. Please login."))
+            return redirect(url_for('auth.login', message="Account created successfully. Please login."))
         # sign_up returned no user (e.g. confirmation pending / duplicate email)
         return render_template('login.html', error="We could not create your account. This email may already be registered — try logging in instead.")
     except Exception as e:
@@ -89,13 +89,13 @@ def login():
             
             # 5. Smart Routing based on normalized role
             if user_role == 'admin' or email == "admin@virtuole.in": 
-                return redirect(url_for('dashboard_admin'))
+                return redirect(url_for('dashboard.dashboard_admin'))
             elif user_role == 'mentor': 
-                return redirect(url_for('dashboard_mentor'))
+                return redirect(url_for('dashboard.dashboard_mentor'))
             elif user_role == 'ambassador': 
-                return redirect(url_for('dashboard_ambassador'))
+                return redirect(url_for('dashboard.dashboard_ambassador'))
             else: 
-                return redirect(url_for('dashboard_intern'))
+                return redirect(url_for('dashboard.dashboard_intern'))
                 
         except Exception as e:
             error_str = str(e)
@@ -125,7 +125,7 @@ def forgot_password():
             email, 
             options={"redirect_to": "https://www.virtuole.in/reset-password"}
         )
-        return redirect(url_for('login', message="If an account exists, a password reset link has been sent to your email!"))
+        return redirect(url_for('auth.login', message="If an account exists, a password reset link has been sent to your email!"))
     except Exception as e:
         return render_template('login.html', error=str(e))
 
@@ -150,7 +150,7 @@ def update_password():
         supabase.auth.set_session(access_token, refresh_token)
         supabase.auth.update_user({"password": new_password})
         supabase.auth.sign_out()
-        return redirect(url_for('login', message="Password updated successfully! Please log in."))
+        return redirect(url_for('auth.login', message="Password updated successfully! Please log in."))
     except Exception as e:
         return render_template('reset_password.html', error=str(e))
 

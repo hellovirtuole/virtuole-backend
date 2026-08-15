@@ -408,7 +408,7 @@ def save_ambassador_tiers():
     if inserts:
         supabase.table('ambassador_tiers').insert(inserts).execute()
         
-    return redirect(url_for('dashboard_admin', tab='tiers', message="Ambassador tiers updated successfully."))
+    return redirect(url_for('dashboard.dashboard_admin', tab='tiers', message="Ambassador tiers updated successfully."))
 
 
 @dashboard_bp.route('/admin/create-coupon', methods=['POST'])
@@ -479,7 +479,7 @@ def api_admin_create_coupon():
         "coupon_allowed_level": allowed_level
     }).execute()
     
-    return redirect(url_for('dashboard_admin', tab='coupons'))
+    return redirect(url_for('dashboard.dashboard_admin', tab='coupons'))
 
 @dashboard_bp.route('/admin/delete-coupon', methods=['POST'])
 @dashboard_bp.route('/api/admin/delete-coupon', methods=['POST'])
@@ -490,7 +490,7 @@ def api_admin_delete_coupon():
     if promo_code:
         supabase.table('users').delete().eq('promo_code', promo_code).eq('role', 'coupon').execute()
         
-    return redirect(url_for('dashboard_admin', tab='coupons'))
+    return redirect(url_for('dashboard.dashboard_admin', tab='coupons'))
 
 
 def build_admin_analytics(programs, users):

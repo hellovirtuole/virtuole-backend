@@ -109,7 +109,7 @@ def subscribe_newsletter():
         supabase.table('subscribers').insert({"email": email}).execute()
     except Exception:
         pass
-    return redirect(url_for('home'))
+    return redirect(url_for('auth.home'))
 
 @public_bp.route('/terms')
 def terms_page(): return render_template('terms.html')

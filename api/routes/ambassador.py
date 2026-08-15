@@ -20,13 +20,13 @@ def claim_points():
         max_c = task_data[0].get('max_completions', 1)
         existing = len(supabase.table('ambassador_claims').select('id').eq('ambassador_id', session['user_id']).eq('task_id', task_id).in_('status', ['pending', 'approved']).execute().data)
         if existing >= max_c:
-            return redirect(url_for('dashboard_ambassador'))
+            return redirect(url_for('dashboard.dashboard_ambassador'))
 
     supabase.table('ambassador_claims').insert({
         "ambassador_id": session['user_id'], "task_id": task_id,
         "proof_link": request.form.get('proof_link'), "notes": request.form.get('notes')
     }).execute()
-    return redirect(url_for('dashboard_ambassador'))
+    return redirect(url_for('dashboard.dashboard_ambassador'))
 
 import json
 
@@ -51,7 +51,7 @@ def update_address():
         "phone": request.form.get('addr_phone', '')
     }
     supabase.table('users').update({"shipping_address": json.dumps(addr_data)}).eq('id', session['user_id']).execute()
-    return redirect(url_for('dashboard_ambassador', active_tab='profile'))
+    return redirect(url_for('dashboard.dashboard_ambassador', active_tab='profile'))
 
 @ambassador_bp.route('/api/update-profile-intern', methods=['POST'])
 def update_profile_intern():
@@ -82,5 +82,5 @@ def update_profile_intern():
     if full_name:
         session['name'] = full_name
         
-    return redirect(url_for('dashboard_intern', active_tab='profile'))
+    return redirect(url_for('dashboard.dashboard_intern', active_tab='profile'))
 
