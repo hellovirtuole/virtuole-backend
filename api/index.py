@@ -61,6 +61,8 @@ def add_header(response):
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '-1'
+    response.headers['X-Debug-Path'] = request.environ.get('PATH_INFO', 'none')
+    response.headers['X-Debug-Original'] = request.environ.get('HTTP_X_INVOKE_PATH', 'none')
     return response
 
 # Register Blueprints
