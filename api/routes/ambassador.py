@@ -54,34 +54,3 @@ def update_address():
     supabase.table('users').update({"shipping_address": json.dumps(addr_data)}).eq('id', session['user_id']).execute()
     return redirect(url_for('dashboard.dashboard_ambassador', active_tab='profile'))
 
-@ambassador_bp.route('/api/update-profile-intern', methods=['POST'])
-def update_profile_intern():
-    if str(session.get('role', '')).lower() not in ['intern', 'intern + ambassador']: return redirect('/login')
-    
-    full_name = request.form.get('full_name')
-    
-    # Load existing shipping details to preserve address info if they have it
-    u_data = supabase.table('users').select('shipping_address').eq('id', session['user_id']).execute().data
-    existing_shipping = parse_shipping_address(u_data[0].get('shipping_address', '')) if u_data else {}
-    
-    # Update academic/personal details
-    existing_shipping['gender'] = request.form.get('gender', '')
-    existing_shipping['phone'] = request.form.get('phone', '')
-    existing_shipping['city'] = request.form.get('city', '')
-    existing_shipping['state'] = request.form.get('state', '')
-    existing_shipping['college_name'] = request.form.get('college_name', '')
-    existing_shipping['course_name'] = request.form.get('course_name', '')
-    existing_shipping['session_year'] = request.form.get('session_year', '')
-    
-    update_payload = {"shipping_address": json.dumps(existing_shipping)}
-    if full_name:
-        update_payload["full_name"] = full_name
-        
-    supabase.table('users').update(update_payload).eq('id', session['user_id']).execute()
-    
-    # Update session name just in case
-    if full_name:
-        session['name'] = full_name
-        
-    return redirect(url_for('dashboard.dashboard_intern', active_tab='profile'))
-

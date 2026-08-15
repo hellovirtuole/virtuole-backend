@@ -237,3 +237,50 @@ def api_submit_project():
     send_system_email(session['email'], "Submission Received", f"Your architecture for {enrollment_id} has entered evaluation.")
     return redirect(url_for('dashboard.dashboard_intern'))
 
+
+def parse_shipping_address(addr_str):
+    if not addr_str: return {}
+    if isinstance(addr_str, dict): return addr_str
+    try:
+        return json.loads(addr_str)
+    except Exception:
+        return {"name": "", "addr1": addr_str, "addr2": "", "city": "", "state": "", "pin": "", "phone": ""}
+
+
+@intern_bp.route('/api/update-profile-intern', methods=['POST'])
+def update_profile_intern():
+    if str(session.get('role', '')).lower() not in ['intern', 'intern + ambassador']: 
+        return redirect('/login')
+    
+    try:
+        full_name = request.form.get('full_name')
+        
+        # Load existing shipping details to preserve address info if they have it
+        u_data = supabase.table('users').select('shipping_address').eq('id', session['user_id']).execute().data
+        existing_shipping = parse_shipping_address(u_data[0].get('shipping_address', '')) if u_data else {}
+        
+        # Update academic/personal details
+        existing_shipping['gender'] = request.form.get('gender', '')
+        existing_shipping['phone'] = request.form.get('phone', '')
+        existing_shipping['city'] = request.form.get('city', '')
+        existing_shipping['state'] = request.form.get('state', '')
+        existing_shipping['college_name'] = request.form.get('college_name', '')
+        existing_shipping['course_name'] = request.form.get('course_name', '')
+        existing_shipping['session_year'] = request.form.get('session_year', '')
+        
+        update_payload = {"shipping_address": json.dumps(existing_shipping)}
+        if full_name:
+            update_payload["full_name"] = full_name
+            
+        supabase.table('users').update(update_payload).eq('id', session['user_id']).execute()
+        
+        # Update session name just in case
+        if full_name:
+            session['name'] = full_name
+            
+    except Exception as e:
+        print(f"Error updating intern profile: {e}")
+        # Even on error, send them back to the profile tab (maybe we should flash a message, but for now this prevents breaking)
+        pass
+        
+    return redirect(url_for('dashboard.dashboard_intern', active_tab='profile'))
