@@ -80,6 +80,13 @@ app.register_blueprint(ambassador_bp)
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(public_bp)
 
+from api.config import limiter
+limiter.init_app(app)
+
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    return send_from_directory(os.path.join(base_dir, 'static'), filename)
+
 # Cron Maintenance route
 
 
