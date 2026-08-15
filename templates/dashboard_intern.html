@@ -217,9 +217,9 @@
             <p style="color:var(--text-muted);font-size:.9em;margin:0 0 22px;">Provide your academic details exactly as they should appear on your official Offer Letter.</p>
             <form action="/enroll" method="POST" onsubmit="var btn = this.querySelector('button[type=submit]'); btn.disabled=true; btn.innerText='Enrolling...';">
                 <input type="hidden" id="enroll-program-name" name="program_id">
-                <div class="au-form-group"><label>Institution / College Name</label><input type="text" name="college_name" value="{{ shipping_details.get('college_name', '') }}" readonly style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.1);"></div>
-                <div class="au-form-group"><label>Academic Course</label><input type="text" name="course_name" value="{{ shipping_details.get('course_name', '') }}" readonly style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.1);"></div>
-                <div class="au-form-group"><label>Academic Session / Year</label><input type="text" name="session_year" value="{{ shipping_details.get('session_year', '') }}" readonly style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.1);"></div>
+                <div class="au-form-group"><label>Institution / College Name</label><input type="text" name="college_name" value="{{ profile_details.get('college_name', '') }}" readonly style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.1);"></div>
+                <div class="au-form-group"><label>Academic Course</label><input type="text" name="course_name" value="{{ profile_details.get('course_name', '') }}" readonly style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.1);"></div>
+                <div class="au-form-group"><label>Academic Session / Year</label><input type="text" name="session_year" value="{{ profile_details.get('session_year', '') }}" readonly style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.1);"></div>
                 <p style="font-size: 0.8em; color: var(--au-gold); margin-top: -10px; margin-bottom: 15px;">(Academic details are synced from your Profile)</p>
                 
                 <div class="au-form-group"><label>Select Complexity Track</label><select name="track_level" id="dynamic-track-select" required></select></div>
