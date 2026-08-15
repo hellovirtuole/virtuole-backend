@@ -1335,6 +1335,40 @@ def dashboard_admin():
         subscribers = supabase.table('subscribers').select('*').order('created_at', desc=True).execute().data
     except Exception:
         subscribers = []
+        
+    try:
+        enrollments = supabase.table('enrollments').select('*').execute().data
+    except Exception:
+        enrollments = []
+        
+    prog_dict = {p['id']: p for p in progs}
+    advanced_users = []
+    
+    for u in users:
+        s_details = parse_shipping_address(u.get('shipping_address', ''))
+        u_enrolls = [e for e in enrollments if e['user_id'] == u['id']]
+        
+        base_data = {
+            "name": u.get('full_name', ''),
+            "email": u.get('email', ''),
+            "role": u.get('role', ''),
+            "state": s_details.get('state', ''),
+            "city": s_details.get('city', ''),
+            "gender": s_details.get('gender', ''),
+            "college": s_details.get('college_name', '')
+        }
+        
+        if not u_enrolls:
+            d = base_data.copy()
+            d["program"] = "None"
+            d["track"] = "None"
+            advanced_users.append(d)
+        else:
+            for e in u_enrolls:
+                d = base_data.copy()
+                d["program"] = prog_dict.get(e['program_id'], {}).get('title', 'Unknown')
+                d["track"] = str(e.get('track_level', ''))
+                advanced_users.append(d)
 
     grouped_ambassadors = [{"tier": t, "ambassadors": []} for t in ambassador_tiers]
     for a in all_ambassadors:
@@ -1351,7 +1385,7 @@ def dashboard_admin():
     # Reverse ambassador_tiers for the template (so lowest tier is first in the settings form, but grouped_ambassadors is highest first)
     ambassador_tiers_asc = sorted(ambassador_tiers, key=lambda x: x['points_required'])
 
-    return render_template('dashboard_admin.html', user_name=session.get('name'), total_earnings=round(earnings, 2), total_enrolled=enrolled, total_certified=certified, pending_grading=pend_grading, offered_programs=progs, all_tasks=tasks, user_directory=users, coupons=coupons, all_ambassadors=all_ambassadors, grouped_ambassadors=grouped_ambassadors, ambassador_tiers=ambassador_tiers_asc, active_tab=active_tab, current_filter=timeframe, analytics=analytics)
+    return render_template('dashboard_admin.html', user_name=session.get('name'), total_earnings=round(earnings, 2), total_enrolled=enrolled, total_certified=certified, pending_grading=pend_grading, offered_programs=progs, all_tasks=tasks, user_directory=users, coupons=coupons, all_ambassadors=all_ambassadors, grouped_ambassadors=grouped_ambassadors, ambassador_tiers=ambassador_tiers_asc, active_tab=active_tab, current_filter=timeframe, analytics=analytics, subscribers=subscribers, advanced_users=advanced_users)
 
 
 @app.route('/admin/tiers', methods=['POST'])

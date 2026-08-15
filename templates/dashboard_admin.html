@@ -19,7 +19,8 @@
         {'id':'coupons','label':'Coupon Management'},
         {'id':'ambassadors','label':'Ambassadors'},
         {'id':'tiers','label':'Ambassador Tiers'},
-        {'id':'exports','label':'Data Exports'}
+        {'id':'exports','label':'Data Exports'},
+        {'id':'adv_exports','label':'Advanced Exports'}
     ] %}
     {% include 'dashboard_nav.html' %}
 
@@ -512,6 +513,103 @@
 
     </main>
 
+    <!-- ===================== ADVANCED DATA EXPORTS ===================== -->
+    <div id="adv_exports-view" class="view-section">
+        <h1 class="dash-greeting">Advanced Data Exports</h1>
+        <p class="dash-sub">Filter cross-referenced user and enrollment data before exporting.</p>
+
+        <div class="au-panel au-form" style="margin-bottom: 20px;">
+            <div style="display:flex;gap:15px;flex-wrap:wrap;align-items:end;">
+                <div style="flex:1;min-width:150px;">
+                    <label>State</label>
+                    <input type="text" id="adv-filter-state" class="au-input" placeholder="Any State" onkeyup="filterAdvancedTable()">
+                </div>
+                <div style="flex:1;min-width:150px;">
+                    <label>City</label>
+                    <input type="text" id="adv-filter-city" class="au-input" placeholder="Any City" onkeyup="filterAdvancedTable()">
+                </div>
+                <div style="flex:1;min-width:150px;">
+                    <label>Gender</label>
+                    <select id="adv-filter-gender" class="au-input" onchange="filterAdvancedTable()">
+                        <option value="">All</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div style="flex:1;min-width:150px;">
+                    <label>College / University</label>
+                    <input type="text" id="adv-filter-college" class="au-input" placeholder="Any College" onkeyup="filterAdvancedTable()">
+                </div>
+                <div style="flex:1;min-width:150px;">
+                    <label>Program</label>
+                    <select id="adv-filter-program" class="au-input" onchange="filterAdvancedTable()">
+                        <option value="">All Programs</option>
+                        <option value="None">None (Unenrolled)</option>
+                        {% for p in offered_programs %}
+                        <option value="{{ p.title }}">{{ p.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="flex:1;min-width:150px;">
+                    <label>Track Level</label>
+                    <select id="adv-filter-track" class="au-input" onchange="filterAdvancedTable()">
+                        <option value="">All Levels</option>
+                        <option value="None">None</option>
+                        <option value="Novice">Novice</option>
+                        <option value="Advanced">Advanced</option>
+                        <option value="Expert">Expert</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end;">
+                <button class="au-btn-ghost sm" onclick="exportFilteredData('pdf')" style="color:#ef4444;border-color:rgba(239,68,68,0.2);">📄 PDF</button>
+                <button class="au-btn-ghost sm" onclick="exportFilteredData('excel')" style="color:#10b981;border-color:rgba(16,185,129,0.2);">📊 Excel</button>
+                <button class="au-btn-ghost sm" onclick="exportFilteredData('csv')" style="color:var(--primary);border-color:var(--primary-glow);">📝 CSV</button>
+            </div>
+        </div>
+
+        <div class="au-panel" style="padding:0; overflow-x:auto;">
+            <table class="au-table" id="exportTableAdvanced">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>State</th>
+                        <th>City</th>
+                        <th>Gender</th>
+                        <th>College</th>
+                        <th>Program</th>
+                        <th>Level</th>
+                    </tr>
+                </thead>
+                <tbody id="adv-tbody">
+                    {% for u in advanced_users %}
+                    <tr class="adv-row" 
+                        data-state="{{ u.state | lower }}" 
+                        data-city="{{ u.city | lower }}" 
+                        data-gender="{{ u.gender | lower }}" 
+                        data-college="{{ u.college | lower }}" 
+                        data-program="{{ u.program | lower }}" 
+                        data-track="{{ u.track | lower }}">
+                        <td>{{ u.name }}</td>
+                        <td>{{ u.email }}</td>
+                        <td>{{ u.role | title }}</td>
+                        <td>{{ u.state }}</td>
+                        <td>{{ u.city }}</td>
+                        <td>{{ u.gender }}</td>
+                        <td>{{ u.college }}</td>
+                        <td>{{ u.program }}</td>
+                        <td>{{ u.track | title }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- Required CDNs for Exports -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
@@ -541,6 +639,60 @@
             doc.save(fileName + '.pdf');
         }
     }
+
+    function filterAdvancedTable() {
+        const fState = document.getElementById('adv-filter-state').value.toLowerCase();
+        const fCity = document.getElementById('adv-filter-city').value.toLowerCase();
+        const fGender = document.getElementById('adv-filter-gender').value.toLowerCase();
+        const fCollege = document.getElementById('adv-filter-college').value.toLowerCase();
+        const fProg = document.getElementById('adv-filter-program').value.toLowerCase();
+        const fTrack = document.getElementById('adv-filter-track').value.toLowerCase();
+
+        const rows = document.querySelectorAll('#adv-tbody .adv-row');
+        rows.forEach(r => {
+            const state = r.getAttribute('data-state');
+            const city = r.getAttribute('data-city');
+            const gender = r.getAttribute('data-gender');
+            const college = r.getAttribute('data-college');
+            const prog = r.getAttribute('data-program');
+            const track = r.getAttribute('data-track');
+
+            let show = true;
+            if (fState && !state.includes(fState)) show = false;
+            if (fCity && !city.includes(fCity)) show = false;
+            if (fGender && gender !== fGender) show = false;
+            if (fCollege && !college.includes(fCollege)) show = false;
+            if (fProg && !prog.includes(fProg)) show = false;
+            if (fTrack && track !== fTrack) show = false;
+
+            r.style.display = show ? '' : 'none';
+        });
+    }
+
+    function exportFilteredData(format) {
+        // Only grab visible rows for the export
+        const table = document.getElementById('exportTableAdvanced');
+        
+        // jspdf-autotable handles hidden rows automatically if we use html: table
+        // XLSX table_to_book also respects display: none elements natively!
+        const fileName = 'Virtuole_Advanced_Export_' + new Date().toISOString().split('T')[0];
+
+        if (format === 'csv' || format === 'excel') {
+            const wb = XLSX.utils.table_to_book(table, {sheet: "Data", display: true});
+            XLSX.writeFile(wb, fileName + (format === 'csv' ? '.csv' : '.xlsx'));
+        } else if (format === 'pdf') {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape' });
+            doc.text('Virtuole Advanced Data Export', 14, 15);
+            doc.autoTable({ 
+                html: '#exportTableAdvanced', 
+                startY: 20,
+                styles: { fontSize: 7 }
+            });
+            doc.save(fileName + '.pdf');
+        }
+    }
+
     </script>
 
     {% include 'footer.html' %}
