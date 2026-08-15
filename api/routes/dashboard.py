@@ -96,12 +96,14 @@ def dashboard_intern():
     offered = supabase.table('programs').select('*').eq('is_active', True).execute().data
     
     completed_projects = []
-    graded_enrolls = supabase.table('enrollments').select('*, programs(title)').eq('user_id', u_id).in_('status', ['graded', 'submitted']).execute().data
+    graded_enrolls = supabase.table('enrollments').select('*, programs(title)').eq('user_id', u_id).in_('status', ['graded', 'submitted', 'certified', 'completed', 'graduated']).execute().data
     for e in graded_enrolls:
         sub = supabase.table('submissions').select('*').eq('enrollment_id', e['enrollment_id']).execute().data
         if sub:
             s = sub[0]
             completed_projects.append({'score': s.get('score'), 'program_title': e['programs']['title'], 'track_level': e['track_level'], 'enrollment_id': e['enrollment_id'], 'evaluated_date': s.get('evaluated_at', '').split('T')[0] if s.get('evaluated_at') else 'Pending', 'certificate_url': s.get('certificate_url'), 'lor_url': s.get('lor_url')})
+        else:
+            completed_projects.append({'score': e.get('final_score', 100), 'program_title': e['programs']['title'], 'track_level': e['track_level'], 'enrollment_id': e['enrollment_id'], 'evaluated_date': e.get('updated_at', '').split('T')[0] if e.get('updated_at') else 'Pending', 'certificate_url': None, 'lor_url': None})
 
     # Determine the default active tab: Explore if no active programs, otherwise Workspace.
     requested_tab = request.args.get('active_tab')

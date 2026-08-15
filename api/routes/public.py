@@ -52,12 +52,17 @@ def download_cert_intern(enrollment_id):
     e = enroll_data[0]
     
     sub = supabase.table('submissions').select('*').eq('enrollment_id', enrollment_id).execute().data
-    if not sub or not sub[0].get('score') or sub[0]['score'] < 80:
+    if sub and sub[0].get('score'):
+        score = sub[0]['score']
+        date_str = sub[0].get('evaluated_at', e['created_at']).split('T')[0]
+    else:
+        score = e.get('final_score')
+        date_str = e.get('updated_at', e['created_at']).split('T')[0]
+
+    if not score or int(score) < 80:
         return "Not Eligible for Certificate", 403
         
-    s = sub[0]
-    date_str = s.get('evaluated_at', e['created_at']).split('T')[0]
-    return render_template('docs/certificate.html', name=e['users']['full_name'], date=date_str, program_title=e['programs']['title'], track_level=e['track_level'].title(), enroll_id=enrollment_id, score=s['score'])
+    return render_template('docs/certificate.html', name=e['users']['full_name'], date=date_str, program_title=e['programs']['title'], track_level=e['track_level'].title(), enroll_id=enrollment_id, score=score)
 
 @public_bp.route('/download_offer/<enrollment_id>')
 def download_offer(enrollment_id):
@@ -224,7 +229,7 @@ def view_credential(enroll_id):
             return "Credential not found.", 404
             
         enroll_data = response.data[0]
-        if enroll_data.get('status') not in ['certified', 'completed'] and not enroll_data.get('final_score'):
+        if enroll_data.get('status') not in ['certified', 'completed', 'graded', 'submitted', 'graduated'] and not enroll_data.get('final_score'):
             return "Credential not yet certified.", 403
             
         submission = supabase.table('submissions').select('code_link').eq('enrollment_id', enroll_id).execute()
@@ -264,7 +269,7 @@ def view_credential_by_user(public_id):
         
         user_id = user_res.data[0]['id']
         
-        response = supabase.table('enrollments').select('*, programs(title)').eq('user_id', user_id).in_('status', ['certified', 'completed']).order('updated_at', desc=True).limit(1).execute()
+        response = supabase.table('enrollments').select('*, programs(title)').eq('user_id', user_id).in_('status', ['certified', 'completed', 'graded', 'submitted', 'graduated']).order('updated_at', desc=True).limit(1).execute()
         
         if not response.data:
             return "No certified credentials found for this user.", 404
