@@ -498,13 +498,10 @@
                             <td>{{ c.usage_count }}</td>
                             <td style="color:#10b981; font-weight:bold;">₹{{ "%.2f"|format(c.revenue_generated) }}</td>
                             <td>
-                                <div style="display:flex; gap:5px; align-items:center;">
-                                    <button class="au-btn-ghost sm" data-referrals="{{ c.referred_users | tojson | forceescape }}" data-name="{{ c.full_name | forceescape }}" onclick="openReferralsModal(this)" style="padding: 4px 10px;">View Users</button>
-                                    <form action="/admin/delete-coupon" method="POST" style="margin:0;" onsubmit="return confirm('Are you sure you want to take this coupon offline?');">
-                                        <input type="hidden" name="promo_code" value="{{ c.promo_code }}">
-                                        <button type="submit" class="au-btn-ghost sm" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.2); padding: 4px 10px;">Offline</button>
-                                    </form>
-                                </div>
+                                <form action="/admin/delete-coupon" method="POST" style="margin:0;" onsubmit="return confirm('Are you sure you want to take this coupon offline?');">
+                                    <input type="hidden" name="promo_code" value="{{ c.promo_code }}">
+                                    <button type="submit" class="au-btn-ghost sm" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.2); padding: 4px 10px;">Offline</button>
+                                </form>
                             </td>
                         </tr>
                         {% else %}
@@ -531,7 +528,7 @@
                                 <th>Total Points</th>
                                 <th>Referrals</th>
                                 <th>Expiry Date</th>
-                                <th>Actions</th>
+                                <th>Expiry Date</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -551,9 +548,6 @@
                                     {% else %}
                                         N/A
                                     {% endif %}
-                                </td>
-                                <td>
-                                    <button class="au-btn-ghost sm" data-referrals="{{ a.referred_users | tojson | forceescape }}" data-name="{{ a.full_name | forceescape }}" onclick="openReferralsModal(this)" style="padding: 4px 10px;">View Users</button>
                                 </td>
                             </tr>
                             {% else %}
@@ -864,85 +858,12 @@
 
     </main>
 
-    <!-- ===================== REFERRALS MODAL ===================== -->
-    <div id="referralsModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:20px;">
-        <div style="background:var(--card-bg); width:100%; max-width:800px; border-radius:var(--au-radius); border:1px solid var(--card-border); box-shadow:var(--au-shadow-lg); display:flex; flex-direction:column; max-height:90vh;">
-            <div style="padding:20px 24px; border-bottom:1px solid var(--card-border); display:flex; justify-content:space-between; align-items:center;">
-                <h3 id="refModalTitle" style="margin:0; font-size:1.4em; color:var(--text-main);">Referred Users</h3>
-                <button onclick="document.getElementById('referralsModal').style.display='none'" style="background:transparent; border:none; font-size:1.5em; color:var(--text-muted); cursor:pointer;">&times;</button>
-            </div>
-            
-            <div style="padding:16px 24px; display:flex; gap:10px; justify-content:flex-end; background:rgba(0,0,0,0.02); border-bottom:1px solid var(--card-border);">
-                <button class="au-btn-ghost sm" onclick="exportReferralsData('pdf')" style="color:#ef4444; border-color:rgba(239,68,68,0.2);">📄 PDF</button>
-                <button class="au-btn-ghost sm" onclick="exportReferralsData('excel')" style="color:#10b981; border-color:rgba(16,185,129,0.2);">📊 Excel</button>
-                <button class="au-btn-ghost sm" onclick="exportReferralsData('csv')" style="color:var(--primary); border-color:var(--primary-glow);">📝 CSV</button>
-            </div>
-
-            <div style="padding:24px; overflow-y:auto; flex:1;">
-                <table class="au-table" id="referralsTable">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>College</th>
-                            <th>Date Used</th>
-                        </tr>
-                    </thead>
-                    <tbody id="refModalBody">
-                        <!-- Populated by JS -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
     <!-- Required CDNs for Exports -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <script>
-    function openReferralsModal(btn) {
-        const users = JSON.parse(btn.getAttribute('data-referrals') || '[]');
-        const campaignName = btn.getAttribute('data-name') || 'Unknown';
-        document.getElementById('refModalTitle').innerText = `Referred Users — ${campaignName}`;
-        const tbody = document.getElementById('refModalBody');
-        tbody.innerHTML = '';
-        
-        if (!users || users.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px; color:var(--text-muted);">No users have used this code yet.</td></tr>';
-        } else {
-            users.forEach(u => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="font-weight:600;">${u.name || 'N/A'}</td>
-                    <td>${u.email || 'N/A'}</td>
-                    <td>${u.college || 'N/A'}</td>
-                    <td>${u.date || 'N/A'}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-        document.getElementById('referralsModal').style.display = 'flex';
-    }
-
-    function exportReferralsData(format) {
-        const table = document.getElementById('referralsTable');
-        const titleText = document.getElementById('refModalTitle').innerText;
-        const fileName = titleText.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_' + new Date().toISOString().split('T')[0];
-
-        if (format === 'csv' || format === 'excel') {
-            const wb = XLSX.utils.table_to_book(table, {sheet: "Referrals"});
-            XLSX.writeFile(wb, fileName + (format === 'csv' ? '.csv' : '.xlsx'));
-        } else if (format === 'pdf') {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.text(titleText, 14, 15);
-            doc.autoTable({ html: '#referralsTable', startY: 20 });
-            doc.save(fileName + '.pdf');
-        }
-    }
-
     function toggleExportDataset() {
         const val = document.getElementById('exportDatasetToggle').value;
         document.getElementById('dataset-users').style.display = val === 'users' ? 'block' : 'none';
