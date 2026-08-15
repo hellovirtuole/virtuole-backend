@@ -499,7 +499,7 @@
                             <td style="color:#10b981; font-weight:bold;">₹{{ "%.2f"|format(c.revenue_generated) }}</td>
                             <td>
                                 <div style="display:flex; gap:5px; align-items:center;">
-                                    <button class="au-btn-ghost sm" data-referrals="{{ c.referred_users | tojson | forceescape }}" onclick="openReferralsModal(this, '{{ c.full_name | escape }}')" style="padding: 4px 10px;">View Users</button>
+                                    <button class="au-btn-ghost sm" data-referrals="{{ c.referred_users | tojson | forceescape }}" data-name="{{ c.full_name | forceescape }}" onclick="openReferralsModal(this)" style="padding: 4px 10px;">View Users</button>
                                     <form action="/admin/delete-coupon" method="POST" style="margin:0;" onsubmit="return confirm('Are you sure you want to take this coupon offline?');">
                                         <input type="hidden" name="promo_code" value="{{ c.promo_code }}">
                                         <button type="submit" class="au-btn-ghost sm" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.2); padding: 4px 10px;">Offline</button>
@@ -553,7 +553,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <button class="au-btn-ghost sm" data-referrals="{{ a.referred_users | tojson | forceescape }}" onclick="openReferralsModal(this, '{{ a.full_name | escape }}')" style="padding: 4px 10px;">View Users</button>
+                                    <button class="au-btn-ghost sm" data-referrals="{{ a.referred_users | tojson | forceescape }}" data-name="{{ a.full_name | forceescape }}" onclick="openReferralsModal(this)" style="padding: 4px 10px;">View Users</button>
                                 </td>
                             </tr>
                             {% else %}
@@ -902,8 +902,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <script>
-    function openReferralsModal(btn, campaignName) {
+    function openReferralsModal(btn) {
         const users = JSON.parse(btn.getAttribute('data-referrals') || '[]');
+        const campaignName = btn.getAttribute('data-name') || 'Unknown';
         document.getElementById('refModalTitle').innerText = `Referred Users — ${campaignName}`;
         const tbody = document.getElementById('refModalBody');
         tbody.innerHTML = '';
