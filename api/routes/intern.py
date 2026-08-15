@@ -255,20 +255,33 @@ def update_profile_intern():
     try:
         full_name = request.form.get('full_name')
         
-        # Load existing shipping details to preserve address info if they have it
-        u_data = supabase.table('users').select('shipping_address').eq('id', session['user_id']).execute().data
-        existing_shipping = parse_shipping_address(u_data[0].get('shipping_address', '')) if u_data else {}
+        # Load existing profile details to preserve any other keys if they exist
+        u_data = supabase.table('users').select('profile_details').eq('id', session['user_id']).execute().data
+        
+        raw_profile = u_data[0].get('profile_details', '') if u_data else ''
+        if not raw_profile:
+            existing_profile = {}
+        elif isinstance(raw_profile, dict):
+            existing_profile = raw_profile
+        else:
+            try:
+                import json
+                existing_profile = json.loads(raw_profile)
+                if not isinstance(existing_profile, dict):
+                    existing_profile = {}
+            except Exception:
+                existing_profile = {}
         
         # Update academic/personal details
-        existing_shipping['gender'] = request.form.get('gender', '')
-        existing_shipping['phone'] = request.form.get('phone', '')
-        existing_shipping['city'] = request.form.get('city', '')
-        existing_shipping['state'] = request.form.get('state', '')
-        existing_shipping['college_name'] = request.form.get('college_name', '')
-        existing_shipping['course_name'] = request.form.get('course_name', '')
-        existing_shipping['session_year'] = request.form.get('session_year', '')
+        existing_profile['gender'] = request.form.get('gender', '')
+        existing_profile['phone'] = request.form.get('phone', '')
+        existing_profile['city'] = request.form.get('city', '')
+        existing_profile['state'] = request.form.get('state', '')
+        existing_profile['college_name'] = request.form.get('college_name', '')
+        existing_profile['course_name'] = request.form.get('course_name', '')
+        existing_profile['session_year'] = request.form.get('session_year', '')
         
-        update_payload = {"shipping_address": json.dumps(existing_shipping)}
+        update_payload = {"profile_details": json.dumps(existing_profile)}
         if full_name:
             update_payload["full_name"] = full_name
             
