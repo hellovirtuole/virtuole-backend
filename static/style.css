@@ -522,8 +522,7 @@ body { background: transparent; }
         .dnav-tab { width: 100%; box-sizing: border-box; padding: 12px 20px; font-size: 1em; flex-shrink: 0; }
         .dnav-right { margin-top: auto; flex-direction: column; align-items: stretch; width: 100%; gap: 20px; flex-shrink: 0; }
         .dnav-logout { text-align: center; }
-        .theme-switch-wrapper.desktop-only { justify-content: space-between; width: 100%; }
-        .theme-switch-wrapper.desktop-only::before { content: "Theme Mode"; color: var(--text-main); font-weight: 600; font-size: 0.9em; }
+        .theme-switch-wrapper.desktop-only { justify-content: flex-end; width: auto; }
     }
 
     @media (max-width: 900px) {
