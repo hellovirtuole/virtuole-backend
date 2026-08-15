@@ -1446,7 +1446,26 @@ def dashboard_admin():
     activity_feed.sort(key=lambda x: x['date_obj'], reverse=True)
     activity_feed = activity_feed[:15]
 
-    return render_template('dashboard_admin.html', user_name=session.get('name'), total_earnings=round(earnings, 2), total_enrolled=enrolled, total_certified=certified, pending_grading=pend_grading, offered_programs=progs, all_tasks=tasks, user_directory=users, coupons=coupons, all_ambassadors=all_ambassadors, grouped_ambassadors=grouped_ambassadors, ambassador_tiers=ambassador_tiers_asc, active_tab=active_tab, current_filter=timeframe, analytics=analytics, subscribers=subscribers, advanced_users=advanced_users, activity_feed=activity_feed)
+    top_ambassadors = sorted(all_ambassadors, key=lambda x: x.get('total_points') or 0, reverse=True)[:10]
+
+    state_counts = {}
+    for u in advanced_users:
+        st = u.get('state')
+        if st and str(st).strip() and str(st).strip().lower() != 'unknown':
+            state_counts[st] = state_counts.get(st, 0) + 1
+    top_states = sorted(state_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+
+    projected_revenue = 0
+    try:
+        seven_days_ago = (datetime.utcnow() - timedelta(days=7)).isoformat()
+        recent_payments = supabase.table('payments').select('amount').eq('status', 'paid').gte('created_at', seven_days_ago).execute().data
+        if recent_payments:
+            recent_revenue = sum([p['amount'] / 100 for p in recent_payments])
+            projected_revenue = (recent_revenue / 7) * 30
+    except Exception:
+        pass
+
+    return render_template('dashboard_admin.html', user_name=session.get('name'), total_earnings=round(earnings, 2), total_enrolled=enrolled, total_certified=certified, pending_grading=pend_grading, offered_programs=progs, all_tasks=tasks, user_directory=users, coupons=coupons, all_ambassadors=all_ambassadors, grouped_ambassadors=grouped_ambassadors, ambassador_tiers=ambassador_tiers_asc, active_tab=active_tab, current_filter=timeframe, analytics=analytics, subscribers=subscribers, advanced_users=advanced_users, activity_feed=activity_feed, top_ambassadors=top_ambassadors, top_states=top_states, projected_revenue=round(projected_revenue, 2))
 
 
 @app.route('/admin/tiers', methods=['POST'])
