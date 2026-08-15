@@ -19,8 +19,7 @@
         {'id':'coupons','label':'Coupon Management'},
         {'id':'ambassadors','label':'Ambassadors'},
         {'id':'tiers','label':'Ambassador Tiers'},
-        {'id':'exports','label':'Data Exports'},
-        {'id':'adv_exports','label':'Advanced Exports'}
+        {'id':'exports','label':'Data Exports'}
     ] %}
     {% include 'dashboard_nav.html' %}
 
@@ -467,6 +466,7 @@
                 <select id="exportDatasetToggle" class="au-input" style="width:250px;" onchange="toggleExportDataset()">
                     <option value="users">Platform Users</option>
                     <option value="subscribers">Newsletter Subscribers (Matrix)</option>
+                    <option value="advanced">Advanced Demographics</option>
                 </select>
                 
                 <div style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;">
@@ -508,107 +508,96 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            <!-- Advanced Demographics -->
+            <div id="dataset-advanced" style="display:none;">
+                <div class="au-panel au-form" style="margin-bottom: 20px;">
+                    <div style="display:flex;gap:15px;flex-wrap:wrap;align-items:end;">
+                        <div style="flex:1;min-width:150px;">
+                            <label>State</label>
+                            <input type="text" id="adv-filter-state" class="au-input" placeholder="Any State" onkeyup="filterAdvancedTable()">
+                        </div>
+                        <div style="flex:1;min-width:150px;">
+                            <label>City</label>
+                            <input type="text" id="adv-filter-city" class="au-input" placeholder="Any City" onkeyup="filterAdvancedTable()">
+                        </div>
+                        <div style="flex:1;min-width:150px;">
+                            <label>Gender</label>
+                            <select id="adv-filter-gender" class="au-input" onchange="filterAdvancedTable()">
+                                <option value="">All</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div style="flex:1;min-width:150px;">
+                            <label>College / University</label>
+                            <input type="text" id="adv-filter-college" class="au-input" placeholder="Any College" onkeyup="filterAdvancedTable()">
+                        </div>
+                        <div style="flex:1;min-width:150px;">
+                            <label>Program</label>
+                            <select id="adv-filter-program" class="au-input" onchange="filterAdvancedTable()">
+                                <option value="">All Programs</option>
+                                <option value="None">None (Unenrolled)</option>
+                                {% for p in offered_programs %}
+                                <option value="{{ p.title }}">{{ p.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div style="flex:1;min-width:150px;">
+                            <label>Track Level</label>
+                            <select id="adv-filter-track" class="au-input" onchange="filterAdvancedTable()">
+                                <option value="">All Levels</option>
+                                <option value="None">None</option>
+                                <option value="Novice">Novice</option>
+                                <option value="Advanced">Advanced</option>
+                                <option value="Expert">Expert</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="au-panel" style="padding:0; overflow-x:auto;">
+                    <table class="au-table" id="exportTableAdvanced">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>State</th>
+                                <th>City</th>
+                                <th>Gender</th>
+                                <th>College</th>
+                                <th>Program</th>
+                                <th>Level</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adv-tbody">
+                            {% for u in advanced_users %}
+                            <tr class="adv-row" 
+                                data-state="{{ u.state | lower }}" 
+                                data-city="{{ u.city | lower }}" 
+                                data-gender="{{ u.gender | lower }}" 
+                                data-college="{{ u.college | lower }}" 
+                                data-program="{{ u.program | lower }}" 
+                                data-track="{{ u.track | lower }}">
+                                <td>{{ u.name }}</td>
+                                <td>{{ u.email }}</td>
+                                <td>{{ u.role | title }}</td>
+                                <td>{{ u.state }}</td>
+                                <td>{{ u.city }}</td>
+                                <td>{{ u.gender }}</td>
+                                <td>{{ u.college }}</td>
+                                <td>{{ u.program }}</td>
+                                <td>{{ u.track | title }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
     </main>
-
-    <!-- ===================== ADVANCED DATA EXPORTS ===================== -->
-    <div id="adv_exports-view" class="view-section">
-        <h1 class="dash-greeting">Advanced Data Exports</h1>
-        <p class="dash-sub">Filter cross-referenced user and enrollment data before exporting.</p>
-
-        <div class="au-panel au-form" style="margin-bottom: 20px;">
-            <div style="display:flex;gap:15px;flex-wrap:wrap;align-items:end;">
-                <div style="flex:1;min-width:150px;">
-                    <label>State</label>
-                    <input type="text" id="adv-filter-state" class="au-input" placeholder="Any State" onkeyup="filterAdvancedTable()">
-                </div>
-                <div style="flex:1;min-width:150px;">
-                    <label>City</label>
-                    <input type="text" id="adv-filter-city" class="au-input" placeholder="Any City" onkeyup="filterAdvancedTable()">
-                </div>
-                <div style="flex:1;min-width:150px;">
-                    <label>Gender</label>
-                    <select id="adv-filter-gender" class="au-input" onchange="filterAdvancedTable()">
-                        <option value="">All</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                <div style="flex:1;min-width:150px;">
-                    <label>College / University</label>
-                    <input type="text" id="adv-filter-college" class="au-input" placeholder="Any College" onkeyup="filterAdvancedTable()">
-                </div>
-                <div style="flex:1;min-width:150px;">
-                    <label>Program</label>
-                    <select id="adv-filter-program" class="au-input" onchange="filterAdvancedTable()">
-                        <option value="">All Programs</option>
-                        <option value="None">None (Unenrolled)</option>
-                        {% for p in offered_programs %}
-                        <option value="{{ p.title }}">{{ p.title }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div style="flex:1;min-width:150px;">
-                    <label>Track Level</label>
-                    <select id="adv-filter-track" class="au-input" onchange="filterAdvancedTable()">
-                        <option value="">All Levels</option>
-                        <option value="None">None</option>
-                        <option value="Novice">Novice</option>
-                        <option value="Advanced">Advanced</option>
-                        <option value="Expert">Expert</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end;">
-                <button class="au-btn-ghost sm" onclick="exportFilteredData('pdf')" style="color:#ef4444;border-color:rgba(239,68,68,0.2);">📄 PDF</button>
-                <button class="au-btn-ghost sm" onclick="exportFilteredData('excel')" style="color:#10b981;border-color:rgba(16,185,129,0.2);">📊 Excel</button>
-                <button class="au-btn-ghost sm" onclick="exportFilteredData('csv')" style="color:var(--primary);border-color:var(--primary-glow);">📝 CSV</button>
-            </div>
-        </div>
-
-        <div class="au-panel" style="padding:0; overflow-x:auto;">
-            <table class="au-table" id="exportTableAdvanced">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>State</th>
-                        <th>City</th>
-                        <th>Gender</th>
-                        <th>College</th>
-                        <th>Program</th>
-                        <th>Level</th>
-                    </tr>
-                </thead>
-                <tbody id="adv-tbody">
-                    {% for u in advanced_users %}
-                    <tr class="adv-row" 
-                        data-state="{{ u.state | lower }}" 
-                        data-city="{{ u.city | lower }}" 
-                        data-gender="{{ u.gender | lower }}" 
-                        data-college="{{ u.college | lower }}" 
-                        data-program="{{ u.program | lower }}" 
-                        data-track="{{ u.track | lower }}">
-                        <td>{{ u.name }}</td>
-                        <td>{{ u.email }}</td>
-                        <td>{{ u.role | title }}</td>
-                        <td>{{ u.state }}</td>
-                        <td>{{ u.city }}</td>
-                        <td>{{ u.gender }}</td>
-                        <td>{{ u.college }}</td>
-                        <td>{{ u.program }}</td>
-                        <td>{{ u.track | title }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
 
     <!-- Required CDNs for Exports -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -620,10 +609,15 @@
         const val = document.getElementById('exportDatasetToggle').value;
         document.getElementById('dataset-users').style.display = val === 'users' ? 'block' : 'none';
         document.getElementById('dataset-subscribers').style.display = val === 'subscribers' ? 'block' : 'none';
+        document.getElementById('dataset-advanced').style.display = val === 'advanced' ? 'block' : 'none';
     }
 
     function exportData(format) {
         const val = document.getElementById('exportDatasetToggle').value;
+        if (val === 'advanced') {
+            return exportFilteredData(format);
+        }
+        
         const tableId = val === 'users' ? 'exportTableUsers' : 'exportTableSubscribers';
         const table = document.getElementById(tableId);
         const fileName = (val === 'users' ? 'Virtuole_Users' : 'Virtuole_Subscribers') + '_' + new Date().toISOString().split('T')[0];
