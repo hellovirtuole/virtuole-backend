@@ -31,6 +31,12 @@
             <h1 class="dash-greeting">Master Command Center</h1>
             <p class="dash-sub">Overview of platform operations, financial telemetry, and user growth metrics.</p>
 
+            <div style="background: linear-gradient(135deg, #3b82f6, #2563eb); padding: 20px; border-radius: 12px; margin-bottom: 30px; text-align: center; color: white; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);">
+                <h3 style="margin: 0 0 10px 0; font-size: 1.2em;">🔍 Test the New Live Profile Feature</h3>
+                <p style="margin: 0 0 15px 0; font-size: 0.9em; opacity: 0.9;">Click the button below to preview what a Live Public Profile looks like (includes the Download and Share features).</p>
+                <a href="/credential/user/test_preview" target="_blank" class="au-btn" style="background: white; color: #2563eb; border: none; font-weight: bold; font-size: 1em; padding: 10px 24px; text-decoration: none; display: inline-block;">Open Sample Live Profile ↗</a>
+            </div>
+
             <div class="dash-section-title" style="margin-top:8px;">
                 <span>System Telemetry</span>
                 <form action="/dashboard-admin" method="GET" id="filter-form" style="margin-left:auto;">
@@ -380,6 +386,9 @@
                                     <span class="au-badge bad">Admin</span>
                                 {% endif %}
                                 <div style="font-family:monospace;color:var(--text-muted);margin-top:6px;font-size:.85em;">ID: {{ user.public_id | default("VERIFIED") }}</div>
+                                {% if user.role == 'intern' or user.role == 'intern + ambassador' %}
+                                <a href="/credential/user/{{ user.public_id }}" target="_blank" class="au-btn outline sm" style="margin-top:8px; display:inline-block; font-size:0.8em; padding:4px 8px;">View Live Profile ↗</a>
+                                {% endif %}
                             </td>
                             <td>
                                 <form class="au-form" action="/admin/update-role" method="POST" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">

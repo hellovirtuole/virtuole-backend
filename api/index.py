@@ -2004,5 +2004,77 @@ def apply_ambassador():
 def serve_logo():
     return send_from_directory('templates', 'logo.png')
 
+@app.route('/credential/<enroll_id>')
+def view_credential(enroll_id):
+    try:
+        response = supabase.table('enrollments').select('*, users(full_name), programs(title)').eq('enrollment_id', enroll_id).execute()
+        if not response.data:
+            return "Credential not found.", 404
+            
+        enroll_data = response.data[0]
+        if enroll_data.get('status') not in ['certified', 'completed'] and not enroll_data.get('final_score'):
+            return "Credential not yet certified.", 403
+            
+        submission = supabase.table('submissions').select('code_link').eq('enrollment_id', enroll_id).execute()
+        repo_link = submission.data[0]['code_link'] if submission.data else None
+        
+        credential = {
+            'id': enroll_data['enrollment_id'],
+            'intern_name': enroll_data['users']['full_name'],
+            'program_title': enroll_data['programs']['title'],
+            'track_level': enroll_data['track_level'],
+            'score': enroll_data.get('final_score', '100'),
+            'updated_at': enroll_data.get('updated_at', datetime.utcnow().isoformat()),
+            'repo_link': repo_link
+        }
+        return render_template('credential.html', credential=credential)
+    except Exception as e:
+        return f"Error loading credential: {str(e)}", 500
+
+@app.route('/credential/user/<public_id>')
+def view_credential_by_user(public_id):
+    try:
+        if public_id == 'test_preview':
+            credential = {
+                'id': 'VT-E-SAMPLE123',
+                'intern_name': 'Test Intern Profile',
+                'program_title': 'Advanced Software Engineering',
+                'track_level': 'elite',
+                'score': '100',
+                'updated_at': datetime.utcnow().isoformat(),
+                'repo_link': 'https://github.com/virtuole/sample-repo'
+            }
+            return render_template('credential.html', credential=credential)
+            
+        user_res = supabase.table('users').select('id, full_name').eq('public_id', public_id).execute()
+        if not user_res.data:
+            return "User not found.", 404
+        
+        user_id = user_res.data[0]['id']
+        
+        response = supabase.table('enrollments').select('*, programs(title)').eq('user_id', user_id).in_('status', ['certified', 'completed']).order('updated_at', desc=True).limit(1).execute()
+        
+        if not response.data:
+            return "No certified credentials found for this user.", 404
+            
+        enroll_data = response.data[0]
+        enroll_id = enroll_data['enrollment_id']
+            
+        submission = supabase.table('submissions').select('code_link').eq('enrollment_id', enroll_id).execute()
+        repo_link = submission.data[0]['code_link'] if submission.data else None
+        
+        credential = {
+            'id': enroll_data['enrollment_id'],
+            'intern_name': user_res.data[0]['full_name'],
+            'program_title': enroll_data['programs']['title'],
+            'track_level': enroll_data['track_level'],
+            'score': enroll_data.get('final_score', '100'),
+            'updated_at': enroll_data.get('updated_at', datetime.utcnow().isoformat()),
+            'repo_link': repo_link
+        }
+        return render_template('credential.html', credential=credential)
+    except Exception as e:
+        return f"Error loading credential: {str(e)}", 500
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
