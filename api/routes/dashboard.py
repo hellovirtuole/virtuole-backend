@@ -12,116 +12,121 @@ dashboard_bp = Blueprint('dashboard', __name__)
 
 @dashboard_bp.route('/dashboard-intern')
 def dashboard_intern():
-    user_role = str(session.get('role', '')).lower()
-    if user_role not in ['intern', 'intern + ambassador']: return redirect('/login')
+    try:
+        user_role = str(session.get('role', '')).lower()
+        if user_role not in ['intern', 'intern + ambassador']: return redirect('/login')
     
-    ambassador_active = False
-    if user_role == 'intern + ambassador':
-        u = supabase.table('users').select('ambassador_expiry').eq('id', session['user_id']).execute().data
-        if u and u[0].get('ambassador_expiry'):
-            try:
-                expiry = datetime.fromisoformat(u[0]['ambassador_expiry'])
-                if datetime.utcnow() <= expiry.replace(tzinfo=None):
-                    ambassador_active = True
-            except ValueError:
-                pass
+        ambassador_active = False
+        if user_role == 'intern + ambassador':
+            u = supabase.table('users').select('ambassador_expiry').eq('id', session['user_id']).execute().data
+            if u and u[0].get('ambassador_expiry'):
+                try:
+                    expiry = datetime.fromisoformat(u[0]['ambassador_expiry'])
+                    if datetime.utcnow() <= expiry.replace(tzinfo=None):
+                        ambassador_active = True
+                except ValueError:
+                    pass
                 
-    u_id = session['user_id']
-    active_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).in_('status', ['active', 'resubmit']).execute().data
-    active_projects = []
+        u_id = session['user_id']
+        active_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).in_('status', ['active', 'resubmit']).execute().data
+        active_projects = []
     
-    # Fetch full user profile for the profile tab
-    u_data = supabase.table('users').select('*').eq('id', u_id).execute().data
-    user_profile = u_data[0] if u_data else {}
+        # Fetch full user profile for the profile tab
+        u_data = supabase.table('users').select('*').eq('id', u_id).execute().data
+        user_profile = u_data[0] if u_data else {}
     
-    # Attempt to parse profile_details JSON, fallback to empty dict
-    profile_details_raw = user_profile.get('profile_details', '')
-    if not profile_details_raw:
-        profile_details = {}
-    elif isinstance(profile_details_raw, dict):
-        profile_details = profile_details_raw
-    else:
-        try:
-            import json
-            profile_details = json.loads(profile_details_raw)
-        except Exception:
+        # Attempt to parse profile_details JSON, fallback to empty dict
+        profile_details_raw = user_profile.get('profile_details', '')
+        if not profile_details_raw:
             profile_details = {}
-    
-    # Auto-fill academic details from first enrollment if missing in profile
-    if not profile_details.get('college_name'):
-        try:
-            first_enroll = supabase.table('enrollments').select('college_name, course_name, session_year').eq('user_id', u_id).order('created_at', desc=False).limit(1).execute().data
-            if first_enroll:
-                profile_details['college_name'] = first_enroll[0].get('college_name', '')
-                profile_details['course_name'] = first_enroll[0].get('course_name', '')
-                profile_details['session_year'] = first_enroll[0].get('session_year', '')
-        except Exception:
-            pass
-    
-    now = datetime.utcnow()
-    for e in active_enrolls:
-        try:
-            start_dt = datetime.fromisoformat(e['created_at'].replace('Z', '+00:00')) if e.get('created_at') else now
-        except:
-            start_dt = now
-        
-        # Ensure naive datetime for math
-        start_dt = start_dt.replace(tzinfo=None)
-        
-        if e['status'] == 'resubmit':
-            duration_days = 1
+        elif isinstance(profile_details_raw, dict):
+            profile_details = profile_details_raw
         else:
-            duration_days = 90 if e.get('track_level', '').lower() == 'expert' else 30
-            
-        end_dt = start_dt + timedelta(days=duration_days)
-        
-        if now > end_dt:
-            if e['status'] == 'active':
-                # Auto-delete expired enrollment
-                supabase.table('enrollments').delete().eq('id', e['id']).execute()
-            elif e['status'] == 'resubmit':
-                # Mark as failed permanently
-                supabase.table('enrollments').update({"status": "failed"}).eq('id', e['id']).execute()
-                supabase.table('submissions').insert({
-                    "enrollment_id": e['enrollment_id'], 
-                    "score": 0, 
-                    "certificate_url": "failed:Missed 24-hour resubmission deadline.",
-                    "evaluated_at": now.isoformat()
-                }).execute()
-            continue
-            
-        remaining_days = max(0, (end_dt - now).days)
-        remaining_hours = max(0, int((end_dt - now).total_seconds() / 3600))
-        
-        active_projects.append({
-            'program_title': e['programs']['title'], 
-            'description': e['programs']['short_description'], 
-            'track_level': e['track_level'], 
-            'enrollment_id': e['enrollment_id'], 
-            'specs_link': e['programs'].get(f"specs_{e['track_level']}", '#'), 
-            'amount_due': e['programs'].get(f"price_{e['track_level']}", 0),
-            'status': e['status'],
-            'remaining_days': remaining_days,
-            'remaining_hours': remaining_hours,
-            'duration_days': duration_days
-        })
-    offered = supabase.table('programs').select('*').eq('is_active', True).execute().data
+            try:
+                import json
+                profile_details = json.loads(profile_details_raw)
+            except Exception:
+                profile_details = {}
     
-    completed_projects = []
-    graded_enrolls = supabase.table('enrollments').select('*, programs(title)').eq('user_id', u_id).in_('status', ['graded', 'submitted', 'certified', 'completed', 'graduated']).execute().data
-    for e in graded_enrolls:
-        sub = supabase.table('submissions').select('*').eq('enrollment_id', e['enrollment_id']).execute().data
-        if sub:
-            s = sub[0]
-            completed_projects.append({'score': s.get('score'), 'program_title': e['programs']['title'], 'track_level': e['track_level'], 'enrollment_id': e['enrollment_id'], 'evaluated_date': s.get('evaluated_at', '').split('T')[0] if s.get('evaluated_at') else 'Pending', 'certificate_url': s.get('certificate_url'), 'lor_url': s.get('lor_url')})
-        else:
-            completed_projects.append({'score': e.get('final_score', 100), 'program_title': e['programs']['title'], 'track_level': e['track_level'], 'enrollment_id': e['enrollment_id'], 'evaluated_date': e.get('updated_at', '').split('T')[0] if e.get('updated_at') else 'Pending', 'certificate_url': None, 'lor_url': None})
+        # Auto-fill academic details from first enrollment if missing in profile
+        if not profile_details.get('college_name'):
+            try:
+                first_enroll = supabase.table('enrollments').select('college_name, course_name, session_year').eq('user_id', u_id).order('created_at', desc=False).limit(1).execute().data
+                if first_enroll:
+                    profile_details['college_name'] = first_enroll[0].get('college_name', '')
+                    profile_details['course_name'] = first_enroll[0].get('course_name', '')
+                    profile_details['session_year'] = first_enroll[0].get('session_year', '')
+            except Exception:
+                pass
+    
+        now = datetime.utcnow()
+        for e in active_enrolls:
+            try:
+                start_dt = datetime.fromisoformat(e['created_at'].replace('Z', '+00:00')) if e.get('created_at') else now
+            except:
+                start_dt = now
+        
+            # Ensure naive datetime for math
+            start_dt = start_dt.replace(tzinfo=None)
+        
+            if e['status'] == 'resubmit':
+                duration_days = 1
+            else:
+                duration_days = 90 if e.get('track_level', '').lower() == 'expert' else 30
+            
+            end_dt = start_dt + timedelta(days=duration_days)
+        
+            if now > end_dt:
+                if e['status'] == 'active':
+                    # Auto-delete expired enrollment
+                    supabase.table('enrollments').delete().eq('id', e['id']).execute()
+                elif e['status'] == 'resubmit':
+                    # Mark as failed permanently
+                    supabase.table('enrollments').update({"status": "failed"}).eq('id', e['id']).execute()
+                    supabase.table('submissions').insert({
+                        "enrollment_id": e['enrollment_id'], 
+                        "score": 0, 
+                        "certificate_url": "failed:Missed 24-hour resubmission deadline.",
+                        "evaluated_at": now.isoformat()
+                    }).execute()
+                continue
+            
+            remaining_days = max(0, (end_dt - now).days)
+            remaining_hours = max(0, int((end_dt - now).total_seconds() / 3600))
+        
+            active_projects.append({
+                'program_title': e['programs']['title'], 
+                'description': e['programs']['short_description'], 
+                'track_level': e['track_level'], 
+                'enrollment_id': e['enrollment_id'], 
+                'specs_link': e['programs'].get(f"specs_{e['track_level']}", '#'), 
+                'amount_due': e['programs'].get(f"price_{e['track_level']}", 0),
+                'status': e['status'],
+                'remaining_days': remaining_days,
+                'remaining_hours': remaining_hours,
+                'duration_days': duration_days
+            })
+        offered = supabase.table('programs').select('*').eq('is_active', True).execute().data
+    
+        completed_projects = []
+        graded_enrolls = supabase.table('enrollments').select('*, programs(title)').eq('user_id', u_id).in_('status', ['graded', 'submitted', 'certified', 'completed', 'graduated']).execute().data
+        for e in graded_enrolls:
+            sub = supabase.table('submissions').select('*').eq('enrollment_id', e['enrollment_id']).execute().data
+            if sub:
+                s = sub[0]
+                completed_projects.append({'score': s.get('score'), 'program_title': e['programs']['title'], 'track_level': e['track_level'], 'enrollment_id': e['enrollment_id'], 'evaluated_date': s.get('evaluated_at', '').split('T')[0] if s.get('evaluated_at') else 'Pending', 'certificate_url': s.get('certificate_url'), 'lor_url': s.get('lor_url')})
+            else:
+                completed_projects.append({'score': e.get('final_score', 100), 'program_title': e['programs']['title'], 'track_level': e['track_level'], 'enrollment_id': e['enrollment_id'], 'evaluated_date': e.get('updated_at', '').split('T')[0] if e.get('updated_at') else 'Pending', 'certificate_url': None, 'lor_url': None})
 
-    # Determine the default active tab: Explore if no active programs, otherwise Workspace.
-    requested_tab = request.args.get('active_tab')
-    default_tab = requested_tab if requested_tab else ('workspace' if active_projects else 'explore')
+        # Determine the default active tab: Explore if no active programs, otherwise Workspace.
+        requested_tab = request.args.get('active_tab')
+        default_tab = requested_tab if requested_tab else ('workspace' if active_projects else 'explore')
 
-    return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered, completed_projects=completed_projects, ambassador_active=ambassador_active, active_tab=default_tab, user_profile=user_profile, profile_details=profile_details)
+        return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered, completed_projects=completed_projects, ambassador_active=ambassador_active, active_tab=default_tab, user_profile=user_profile, profile_details=profile_details)
+    except Exception as e:
+        import traceback
+        return f"<h1>Internal Server Error inside dashboard_intern</h1><pre>{traceback.format_exc()}</pre>", 500
+
 
 @dashboard_bp.route('/dashboard-mentor')
 def dashboard_mentor():
