@@ -195,14 +195,20 @@
                         <p style="margin:0;color:var(--text-muted);font-size:.9em;"><strong>Email:</strong> {{ amb.email }}</p>
                         <p style="{% if loop.index == 1 %}color:var(--au-gold);{% else %}color:var(--primary);{% endif %}margin-top:8px;font-size:.9em;"><strong>Shipping Address:</strong><br>{{ amb.shipping_address | default("User has not provided an address yet.") }}</p>
                     </div>
-                    <form class="au-form" action="/admin/mark-swag-sent" method="POST" style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;">
-                        <input type="hidden" name="ambassador_id" value="{{ amb.id }}">
-                        <input type="hidden" name="swag_tier" value="{{ tier.tier_level }}">
-                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--text-main);font-size:.9em;text-transform:none;letter-spacing:0;margin:0;">
-                            <input type="checkbox" required style="width:18px;height:18px;cursor:pointer;padding:0;"> Sent via Courier
-                        </label>
-                        <button type="submit" class="au-btn {% if loop.index == 1 %}success{% endif %} sm">Update Ledger</button>
-                    </form>
+                    {% if amb.swag_dispatched %}
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span class="au-badge success">✅ Sent via Courier</span>
+                        </div>
+                    {% else %}
+                        <form class="au-form" action="/admin/mark-swag-sent" method="POST" style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;">
+                            <input type="hidden" name="ambassador_id" value="{{ amb.id }}">
+                            <input type="hidden" name="swag_tier" value="{{ tier.tier_level }}">
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--text-main);font-size:.9em;text-transform:none;letter-spacing:0;margin:0;">
+                                <input type="checkbox" required style="width:18px;height:18px;cursor:pointer;padding:0;"> Sent via Courier
+                            </label>
+                            <button type="submit" class="au-btn {% if loop.index == 1 %}success{% endif %} sm">Update Ledger</button>
+                        </form>
+                    {% endif %}
                 </div>
                 {% else %}
                 <div style="color:var(--text-muted);text-align:center;font-style:italic;">All items for this tier are currently fulfilled or the queue is empty.</div>

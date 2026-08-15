@@ -1403,14 +1403,10 @@ def dashboard_admin():
     grouped_ambassadors = [{"tier": t, "ambassadors": []} for t in ambassador_tiers]
     for a in all_ambassadors:
         pts = a.get('total_points') or 0
-        assigned = False
         for group in grouped_ambassadors:
             if pts >= group['tier']['points_required']:
                 group['ambassadors'].append(a)
-                assigned = True
                 break
-        if not assigned and grouped_ambassadors:
-            grouped_ambassadors[-1]['ambassadors'].append(a)
             
     # Reverse ambassador_tiers for the template (so lowest tier is first in the settings form, but grouped_ambassadors is highest first)
     ambassador_tiers_asc = sorted(ambassador_tiers, key=lambda x: x['points_required'])
