@@ -144,6 +144,10 @@
                 <form action="/api/update-address" method="POST">
                     <div style="display:flex; gap:15px; flex-wrap:wrap;">
                         <div class="au-form-group" style="flex:1; min-width: 100%;">
+                            <label>Full Name</label>
+                            <input type="text" name="addr_name" class="au-input" value="{{ shipping_details.get('name', ambassador_name) }}" required placeholder="Your full name">
+                        </div>
+                        <div class="au-form-group" style="flex:1; min-width: 100%;">
                             <label>Address Line 1</label>
                             <input type="text" name="addr_line1" class="au-input" value="{{ shipping_details.get('addr1', '') }}" required placeholder="Flat, House no., Building, Company, Apartment">
                         </div>

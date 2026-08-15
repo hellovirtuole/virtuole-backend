@@ -1047,13 +1047,14 @@ def parse_shipping_address(addr_str):
     try:
         return json.loads(addr_str)
     except Exception:
-        return {"addr1": addr_str, "addr2": "", "city": "", "state": "", "pin": "", "phone": ""}
+        return {"name": "", "addr1": addr_str, "addr2": "", "city": "", "state": "", "pin": "", "phone": ""}
 
 @app.route('/api/update-address', methods=['POST'])
 def update_address():
     if str(session.get('role', '')).lower() not in ['ambassador', 'intern + ambassador']: return redirect('/login')
     
     addr_data = {
+        "name": request.form.get('addr_name', ''),
         "addr1": request.form.get('addr_line1', ''),
         "addr2": request.form.get('addr_line2', ''),
         "city": request.form.get('addr_city', ''),
