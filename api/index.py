@@ -1351,13 +1351,13 @@ def dashboard_admin():
         u_enrolls = [e for e in enrollments if e['user_id'] == u['id']]
         
         base_data = {
-            "name": u.get('full_name', ''),
-            "email": u.get('email', ''),
-            "role": u.get('role', ''),
-            "state": s_details.get('state', ''),
-            "city": s_details.get('city', ''),
-            "gender": s_details.get('gender', ''),
-            "college": s_details.get('college_name', '')
+            "name": u.get('full_name') or '',
+            "email": u.get('email') or '',
+            "role": u.get('role') or '',
+            "state": s_details.get('state') or '',
+            "city": s_details.get('city') or '',
+            "gender": s_details.get('gender') or '',
+            "college": s_details.get('college_name') or ''
         }
         
         if not u_enrolls:

@@ -415,13 +415,11 @@
                             {% else %}
                             <tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No ambassadors enrolled yet.</td></tr>
                             {% endfor %}
-                        </tbody>
-                    </table>
+                       </table>
             </div>
-        </div>
-        <!-- ===================== AMBASSADOR TIERS ===================== -->
-        <div id="tiers-view" class="view-section">
-            <h1 class="dash-greeting">Ambassador Tiers</h1>
+
+            <!-- ===================== AMBASSADOR TIERS ===================== -->
+            <h1 class="dash-greeting" style="margin-top: 40px;">Ambassador Tiers</h1>
             <p class="dash-sub">Configure the tier structure, required points, and benefits for your ambassadors.</p>
             <div class="au-panel">
                 <form action="/admin/tiers" method="POST" id="tiers-form" onsubmit="reindexTiers()">
@@ -448,8 +446,8 @@
                         {% endfor %}
                     </div>
                     <div style="margin-top:20px; display:flex; gap:10px;">
-                        <button type="button" class="au-btn" style="background:rgba(255,255,255,0.05);" onclick="addTierRow()">+ Add New Tier</button>
-                        <button type="submit" class="au-btn">Save All Tiers</button>
+                        <button type="button" class="au-btn outline" onclick="addTierRow()">+ Add Tier</button>
+                        <button type="submit" class="au-btn violet">Save Tiers</button>
                     </div>
                 </form>
             </div>
@@ -644,12 +642,12 @@
 
         const rows = document.querySelectorAll('#adv-tbody .adv-row');
         rows.forEach(r => {
-            const state = r.getAttribute('data-state');
-            const city = r.getAttribute('data-city');
-            const gender = r.getAttribute('data-gender');
-            const college = r.getAttribute('data-college');
-            const prog = r.getAttribute('data-program');
-            const track = r.getAttribute('data-track');
+            const state = r.getAttribute('data-state') || '';
+            const city = r.getAttribute('data-city') || '';
+            const gender = r.getAttribute('data-gender') || '';
+            const college = r.getAttribute('data-college') || '';
+            const prog = r.getAttribute('data-program') || '';
+            const track = r.getAttribute('data-track') || '';
 
             let show = true;
             if (fState && !state.includes(fState)) show = false;
