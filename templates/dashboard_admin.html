@@ -16,8 +16,8 @@
         {'id':'tasks','label':'GTM Task Matrix'},
         {'id':'swag','label':'Swag Fulfillment'},
         {'id':'directory','label':'User Directory'},
-        {'id':'coupons','label':'Coupon Management'},
         {'id':'ambassadors','label':'Ambassadors'},
+        {'id':'letters','label':'Official Letters'},
         {'id':'exports','label':'Data Exports'},
         {'id':'adv_exports','label':'Advanced Export'}
     ] %}
@@ -463,6 +463,108 @@
                         <button type="submit" class="au-btn violet">Save Tiers</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- ===================== OFFICIAL LETTERS ===================== -->
+        <div id="letters-view" class="view-section">
+            <h1 class="dash-greeting">Official Letter Generator</h1>
+            <p class="dash-sub">Draft and instantly download official PDF letters with the Virtuole brand.</p>
+
+            <div style="display:flex; gap:30px; flex-wrap:wrap; margin-top:20px;">
+                <!-- Editor Side -->
+                <div style="flex:1; min-width:300px; display:flex; flex-direction:column; gap:15px;" class="au-panel">
+                    <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                        <div style="flex:1;">
+                            <label>Recipient Name</label>
+                            <input type="text" id="let-name" class="au-input" placeholder="e.g. Jane Doe" oninput="updateLetterPreview()">
+                        </div>
+                        <div style="flex:1;">
+                            <label>Date</label>
+                            <input type="date" id="let-date" class="au-input" onchange="updateLetterPreview()">
+                        </div>
+                    </div>
+                    <div>
+                        <label>Recipient Title/Role</label>
+                        <input type="text" id="let-title" class="au-input" placeholder="e.g. Go-To-Market Ambassador" oninput="updateLetterPreview()">
+                    </div>
+                    <div>
+                        <label>Letter Body</label>
+                        <textarea id="let-body" class="au-input" rows="8" placeholder="Type the main content here..." oninput="updateLetterPreview()"></textarea>
+                    </div>
+                    <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                        <div style="flex:1;">
+                            <label>Sign-off Name</label>
+                            <input type="text" id="let-sign-name" class="au-input" value="Vishal" oninput="updateLetterPreview()">
+                        </div>
+                        <div style="flex:1;">
+                            <label>Sign-off Title</label>
+                            <input type="text" id="let-sign-title" class="au-input" value="Founder, Virtuole" oninput="updateLetterPreview()">
+                        </div>
+                    </div>
+                    <div>
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--text-main);font-size:.9em;margin-top:10px;">
+                            <input type="checkbox" id="let-stamp" onchange="updateLetterPreview()" checked style="width:18px;height:18px;">
+                            Include Virtuole Digital Stamp
+                        </label>
+                    </div>
+                    <button class="au-btn" style="margin-top:10px;" onclick="downloadLetterPDF()">Download as PDF</button>
+                </div>
+
+                <!-- Preview Side -->
+                <div style="flex:1.5; min-width:400px; overflow-x:auto;">
+                    <div class="dash-section-title" style="margin-bottom:10px;">Live Preview (A4 Size)</div>
+                    <div id="letter-preview-paper" style="background:white; color:black; padding:50px; box-shadow:0 10px 25px rgba(0,0,0,0.1); border-radius:4px; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; font-size:14px; line-height:1.6; min-height:842px; width:100%; max-width:595px; margin:0 auto; position:relative; box-sizing:border-box;">
+                        
+                        <!-- Header / Logo -->
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #2563eb; padding-bottom:20px; margin-bottom:30px;">
+                            <div>
+                                <h1 style="margin:0; font-size:24px; color:#2563eb; font-weight:700; letter-spacing:1px;">VIRTUOLE</h1>
+                                <p style="margin:0; font-size:12px; color:#64748b;">www.virtuole.com</p>
+                            </div>
+                            <div style="text-align:right;">
+                                <div id="preview-date" style="font-weight:600; color:#333;">August 15, 2026</div>
+                            </div>
+                        </div>
+
+                        <!-- Recipient Block -->
+                        <div style="margin-bottom:30px;">
+                            <div style="font-weight:bold; font-size:16px;" id="preview-name">[Recipient Name]</div>
+                            <div style="color:#475569;" id="preview-title">[Recipient Title]</div>
+                        </div>
+
+                        <!-- Body -->
+                        <div id="preview-body" style="min-height:350px; text-align:justify; color:#333;">
+                            [Letter Content]
+                        </div>
+
+                        <!-- Sign-off -->
+                        <div style="margin-top:50px; position:relative;">
+                            <p style="margin-bottom:40px;">Sincerely,</p>
+                            
+                            <!-- Digital Stamp (SVG) -->
+                            <div id="preview-stamp" style="position:absolute; top:20px; left:120px; opacity:0.8;">
+                                <svg width="100" height="100" viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="45" fill="none" stroke="#2563eb" stroke-width="2" stroke-dasharray="4 2"/>
+                                    <circle cx="50" cy="50" r="38" fill="none" stroke="#2563eb" stroke-width="1"/>
+                                    <path id="curve" d="M 15 50 A 35 35 0 1 1 85 50 A 35 35 0 1 1 15 50" fill="transparent" />
+                                    <text fill="#2563eb" font-size="10" font-weight="bold" letter-spacing="2">
+                                        <textPath href="#curve" startOffset="50%" text-anchor="middle">OFFICIAL DIGITAL STAMP</textPath>
+                                    </text>
+                                    <text x="50" y="55" font-size="20" font-weight="900" fill="#2563eb" text-anchor="middle">V</text>
+                                </svg>
+                            </div>
+
+                            <div style="font-weight:bold; font-size:16px;" id="preview-sign-name">Vishal</div>
+                            <div style="color:#475569;" id="preview-sign-title">Founder, Virtuole</div>
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div style="position:absolute; bottom:40px; left:50px; right:50px; border-top:1px solid #cbd5e1; padding-top:10px; text-align:center; font-size:10px; color:#94a3b8;">
+                            This is an officially generated document by Virtuole. Verify authenticity by contacting support@virtuole.com.
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -940,6 +1042,51 @@
             const wb = XLSX.utils.table_to_book(table, {sheet: "Data"});
             XLSX.writeFile(wb, fileName);
         }
+
+        // --- Letter Generator Logic ---
+        function updateLetterPreview() {
+            document.getElementById('preview-name').innerText = document.getElementById('let-name').value || '[Recipient Name]';
+            document.getElementById('preview-title').innerText = document.getElementById('let-title').value || '[Recipient Title]';
+            
+            const dateVal = document.getElementById('let-date').value;
+            if (dateVal) {
+                const d = new Date(dateVal + 'T00:00:00'); // Force local tz
+                document.getElementById('preview-date').innerText = d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            } else {
+                document.getElementById('preview-date').innerText = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            }
+            
+            document.getElementById('preview-body').innerHTML = (document.getElementById('let-body').value || '[Letter Content]').replace(/\n/g, '<br>');
+            document.getElementById('preview-sign-name').innerText = document.getElementById('let-sign-name').value || '';
+            document.getElementById('preview-sign-title').innerText = document.getElementById('let-sign-title').value || '';
+            document.getElementById('preview-stamp').style.display = document.getElementById('let-stamp').checked ? 'block' : 'none';
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('let-date');
+            if(dateInput) dateInput.value = today;
+            if(typeof updateLetterPreview === 'function') updateLetterPreview();
+        });
+
+        function downloadLetterPDF() {
+            const element = document.getElementById('letter-preview-paper');
+            const name = document.getElementById('let-name').value || 'Letter';
+            const opt = {
+                margin:       0,
+                filename:     `Virtuole_Letter_${name.replace(/\s+/g, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+            
+            if (typeof html2pdf !== 'undefined') {
+                html2pdf().set(opt).from(element).save();
+            } else {
+                alert("PDF generation library is still loading. Please try again in a moment.");
+            }
+        }
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </body>
 </html>
