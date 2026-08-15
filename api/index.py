@@ -19,29 +19,24 @@ class _VercelFix:
         self.wsgi = wsgi
     def __call__(self, environ, start_response):
         import urllib.parse
-        original_path = environ.get('HTTP_X_INVOKE_PATH') or environ.get('HTTP_X_NOW_ROUTE_MATCHES')
-        if not original_path and 'REQUEST_URI' in environ:
-            original_path = environ['REQUEST_URI'].split('?')[0]
-            
-        if original_path and original_path not in ['/api/index.py', '/api/index']:
-            environ['PATH_INFO'] = original_path
-        else:
-            path = environ.get('PATH_INFO', '/')
-            if path == '/api/index.py' or path == '/api/index':
-                qs = environ.get('QUERY_STRING', '')
-                params = urllib.parse.parse_qs(qs, keep_blank_values=True)
-                if '__vercel_path' in params:
-                    vp = params['__vercel_path'][0]
-                    if vp in ['api/index.py', 'api/index']:
-                        environ['PATH_INFO'] = '/'
-                    else:
-                        environ['PATH_INFO'] = '/' + vp
-                    new_params = {k: v for k, v in params.items() if k != '__vercel_path'}
-                    environ['QUERY_STRING'] = urllib.parse.urlencode(new_params, doseq=True)
+        qs = environ.get('QUERY_STRING', '')
+        params = urllib.parse.parse_qs(qs, keep_blank_values=True)
+        if '__vercel_path' in params:
+            vp = params['__vercel_path'][0]
+            if vp in ['api/index.py', 'api/index']:
+                environ['PATH_INFO'] = '/'
+            else:
+                if not vp.startswith('/'):
+                    vp = '/' + vp
+                environ['PATH_INFO'] = vp
                 
+            new_params = {k: v for k, v in params.items() if k != '__vercel_path'}
+            environ['QUERY_STRING'] = urllib.parse.urlencode(new_params, doseq=True)
+            
         script = environ.get('SCRIPT_NAME', '')
         if script and '/api/index' in script:
             environ['SCRIPT_NAME'] = ''
+            
         return self.wsgi(environ, start_response)
 
 app.wsgi_app = _VercelFix(app.wsgi_app)
