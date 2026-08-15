@@ -4,6 +4,7 @@ from api.config import supabase, limiter
 from api.utils.email import send_system_email, send_ambassador_email
 import random, string, uuid, json
 from datetime import datetime, timedelta
+from api.routes.ambassador import parse_shipping_address
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
