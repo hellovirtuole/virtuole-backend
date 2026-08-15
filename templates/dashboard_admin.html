@@ -361,10 +361,13 @@
                             <td>{{ c.usage_count }}</td>
                             <td style="color:#10b981; font-weight:bold;">₹{{ "%.2f"|format(c.revenue_generated) }}</td>
                             <td>
-                                <form action="/admin/delete-coupon" method="POST" style="margin:0;" onsubmit="return confirm('Are you sure you want to take this coupon offline?');">
-                                    <input type="hidden" name="promo_code" value="{{ c.promo_code }}">
-                                    <button type="submit" class="au-btn-ghost sm" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.2); padding: 4px 10px;">Offline</button>
-                                </form>
+                                <div style="display:flex; gap:5px; align-items:center;">
+                                    <button class="au-btn-ghost sm" onclick='openReferralsModal({{ c.referred_users | tojson | safe }}, "{{ c.full_name }}")' style="padding: 4px 10px;">View Users</button>
+                                    <form action="/admin/delete-coupon" method="POST" style="margin:0;" onsubmit="return confirm('Are you sure you want to take this coupon offline?');">
+                                        <input type="hidden" name="promo_code" value="{{ c.promo_code }}">
+                                        <button type="submit" class="au-btn-ghost sm" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.2); padding: 4px 10px;">Offline</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         {% else %}
@@ -391,6 +394,7 @@
                                 <th>Total Points</th>
                                 <th>Referrals</th>
                                 <th>Expiry Date</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -411,9 +415,12 @@
                                         N/A
                                     {% endif %}
                                 </td>
+                                <td>
+                                    <button class="au-btn-ghost sm" onclick='openReferralsModal({{ a.referred_users | tojson | safe }}, "{{ a.full_name }}")' style="padding: 4px 10px;">View Users</button>
+                                </td>
                             </tr>
                             {% else %}
-                            <tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No ambassadors enrolled yet.</td></tr>
+                            <tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No ambassadors enrolled yet.</td></tr>
                             {% endfor %}
                        </table>
             </div>
@@ -514,6 +521,12 @@
             <p class="dash-sub">Filter cross-referenced user and enrollment data before exporting.</p>
 
             <div class="au-panel au-form" style="margin-bottom: 20px;">
+                <div style="display:flex;gap:15px;flex-wrap:wrap;align-items:end;margin-bottom:15px;">
+                    <div style="flex:2;min-width:250px;">
+                        <label>Global Search</label>
+                        <input type="text" id="adv-filter-search" class="au-input" placeholder="Search by name, email, phone, college, course..." onkeyup="filterAdvancedTable()">
+                    </div>
+                </div>
                 <div style="display:flex;gap:15px;flex-wrap:wrap;align-items:end;">
                         <div style="flex:1;min-width:150px;">
                             <label>State</label>
@@ -576,6 +589,7 @@
                                 <th>City</th>
                                 <th>Gender</th>
                                 <th>College</th>
+                                <th>Course</th>
                                 <th>Program</th>
                                 <th>Level</th>
                             </tr>
@@ -587,15 +601,18 @@
                                 data-city="{{ u.city | lower }}" 
                                 data-gender="{{ u.gender | lower }}" 
                                 data-college="{{ u.college | lower }}" 
+                                data-course="{{ u.course | lower }}" 
                                 data-program="{{ u.program | lower }}" 
-                                data-track="{{ u.track | lower }}">
-                                <td>{{ u.name }}</td>
+                                data-track="{{ u.track | lower }}"
+                                data-search="{{ u.name | lower }} {{ u.email | lower }} {{ u.phone | lower }} {{ u.college | lower }} {{ u.course | lower }}">
+                                <td>{{ u.name }}<br><small style="color:var(--text-muted)">{{ u.phone }}</small></td>
                                 <td>{{ u.email }}</td>
                                 <td>{{ u.role | title }}</td>
                                 <td>{{ u.state }}</td>
                                 <td>{{ u.city }}</td>
                                 <td>{{ u.gender }}</td>
                                 <td>{{ u.college }}</td>
+                                <td>{{ u.course }}</td>
                                 <td>{{ u.program }}</td>
                                 <td>{{ u.track | title }}</td>
                             </tr>
@@ -639,6 +656,7 @@
     }
 
     function filterAdvancedTable() {
+        const fSearch = document.getElementById('adv-filter-search').value.toLowerCase();
         const fState = document.getElementById('adv-filter-state').value.toLowerCase();
         const fCity = document.getElementById('adv-filter-city').value.toLowerCase();
         const fGender = document.getElementById('adv-filter-gender').value.toLowerCase();
@@ -648,6 +666,7 @@
 
         const rows = document.querySelectorAll('#adv-tbody .adv-row');
         rows.forEach(r => {
+            const search = r.getAttribute('data-search') || '';
             const state = r.getAttribute('data-state') || '';
             const city = r.getAttribute('data-city') || '';
             const gender = r.getAttribute('data-gender') || '';
@@ -656,6 +675,7 @@
             const track = r.getAttribute('data-track') || '';
 
             let show = true;
+            if (fSearch && !search.includes(fSearch)) show = false;
             if (fState && !state.includes(fState)) show = false;
             if (fCity && !city.includes(fCity)) show = false;
             if (fGender && gender !== fGender) show = false;
@@ -845,6 +865,75 @@
             });
         });
     })();
+    </script>
+
+    <!-- ===================== REFERRALS MODAL ===================== -->
+    <div class="au-modal" id="referralsModal">
+        <div class="au-modal-content" style="max-width: 800px;">
+            <button class="au-modal-close" onclick="closeModal('referralsModal')">✕</button>
+            <h2 style="font-family:'Montserrat',sans-serif; margin-bottom:8px; color:var(--text-main);" id="referralsModalTitle">Referred Users</h2>
+            <p style="color:var(--text-muted); font-size:0.9em; margin-bottom:20px;">List of all users who successfully enrolled using this promo code.</p>
+            
+            <div style="margin-bottom:15px; display:flex; justify-content:flex-end;">
+                <button class="au-btn-ghost sm" onclick="downloadReferralsCSV()" style="color:var(--primary); border-color:var(--primary-glow);">📝 Download CSV</button>
+            </div>
+            
+            <div class="au-panel" style="padding:0; overflow-x:auto;">
+                <table class="au-table" id="referralsTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>College</th>
+                            <th>Enrollment Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="referrals-tbody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentReferralsData = [];
+        let currentReferralName = "";
+
+        function openReferralsModal(users, ambassadorName) {
+            currentReferralsData = users || [];
+            currentReferralName = ambassadorName || "Promo Code";
+            
+            document.getElementById('referralsModalTitle').innerText = "Referrals: " + currentReferralName;
+            
+            const tbody = document.getElementById('referrals-tbody');
+            tbody.innerHTML = '';
+            
+            if (currentReferralsData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No users found.</td></tr>';
+            } else {
+                currentReferralsData.forEach(u => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${u.name}</td>
+                        <td>${u.email}</td>
+                        <td>${u.college}</td>
+                        <td>${u.date}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+            
+            openModal('referralsModal');
+        }
+
+        function downloadReferralsCSV() {
+            if (!currentReferralsData || currentReferralsData.length === 0) return alert("No data to export.");
+            const table = document.getElementById('referralsTable');
+            const fileName = "Referrals_" + currentReferralName.replace(/\s+/g, "_") + "_" + new Date().toISOString().split('T')[0] + ".csv";
+            const wb = XLSX.utils.table_to_book(table, {sheet: "Data"});
+            XLSX.writeFile(wb, fileName);
+        }
     </script>
 </body>
 </html>

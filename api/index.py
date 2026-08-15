@@ -1304,18 +1304,44 @@ def dashboard_admin():
 
     # Calculate coupon statistics
     coupons = [u for u in users if u['role'] == 'coupon']
-    all_payments = supabase.table('payments').select('amount, applied_promo').eq('status', 'paid').execute().data
+    all_payments = supabase.table('payments').select('amount, applied_promo, user_id, created_at').eq('status', 'paid').execute().data
     
     for c in coupons:
         c_payments = [p for p in all_payments if p.get('applied_promo') == c['promo_code']]
         c['usage_count'] = len(c_payments)
         c['revenue_generated'] = sum([p['amount']/100 for p in c_payments])
         
+        referred = []
+        for p in c_payments:
+            user_match = next((u for u in users if u['id'] == p.get('user_id')), None)
+            if user_match:
+                s_details = parse_shipping_address(user_match.get('shipping_address', ''))
+                referred.append({
+                    "name": user_match.get('full_name') or 'Unknown',
+                    "email": user_match.get('email') or 'Unknown',
+                    "date": p.get('created_at', '').split('T')[0] if p.get('created_at') else '',
+                    "college": s_details.get('college_name') or 'Unknown'
+                })
+        c['referred_users'] = referred
+        
     # Calculate ambassador statistics
     all_ambassadors = [u for u in users if str(u.get('role', '')).lower() in ['ambassador', 'intern + ambassador']]
     for a in all_ambassadors:
         a_payments = [p for p in all_payments if p.get('applied_promo') == a['promo_code']]
         a['referral_count'] = len(a_payments)
+        
+        referred = []
+        for p in a_payments:
+            user_match = next((u for u in users if u['id'] == p.get('user_id')), None)
+            if user_match:
+                s_details = parse_shipping_address(user_match.get('shipping_address', ''))
+                referred.append({
+                    "name": user_match.get('full_name') or 'Unknown',
+                    "email": user_match.get('email') or 'Unknown',
+                    "date": p.get('created_at', '').split('T')[0] if p.get('created_at') else '',
+                    "college": s_details.get('college_name') or 'Unknown'
+                })
+        a['referred_users'] = referred
         
     # -----------------------------------------------------------------
     # GRAPHICAL ANALYTICS DATA (Chart.js-ready, JSON-serializable)
@@ -1357,7 +1383,9 @@ def dashboard_admin():
             "state": s_details.get('state') or '',
             "city": s_details.get('city') or '',
             "gender": s_details.get('gender') or '',
-            "college": s_details.get('college_name') or ''
+            "college": s_details.get('college_name') or '',
+            "course": s_details.get('course_name') or '',
+            "phone": s_details.get('phone') or ''
         }
         
         if not u_enrolls:
