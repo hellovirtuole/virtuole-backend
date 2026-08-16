@@ -5,6 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mentor Portal | Virtuole</title>
     {% include 'theme.html' %}
+    <style>
+        @keyframes pulseBadge {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(1.05); }
+        }
+        .animate-pulse { animation: pulseBadge 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        
+        .empty-state-panel {
+            text-align: center; color: var(--text-muted); grid-column: 1 / -1;
+            padding: 40px 20px; border: 2px dashed var(--card-border);
+            border-radius: var(--au-radius); background: rgba(255,255,255,0.015);
+            transition: all 0.4s var(--au-ease); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 12px;
+        }
+        .empty-state-panel:hover {
+            background: rgba(255,255,255,0.04);
+            border-color: rgba(59,130,246,0.4);
+            box-shadow: 0 0 30px -10px rgba(59,130,246,0.3);
+            transform: translateY(-2px);
+        }
+        .empty-icon { font-size: 2.2em; filter: drop-shadow(0 4px 12px rgba(45,212,191,0.4)); opacity: 0.8; }
+        
+        .interactive-link {
+            display: inline-flex; align-items: center; gap: 8px;
+            color: var(--primary); text-decoration: none; font-size: 0.9em;
+            font-weight: 500; transition: transform 0.3s var(--au-ease), color 0.3s ease;
+            position: relative; width: fit-content;
+        }
+        .interactive-link::after {
+            content: ''; position: absolute; bottom: -2px; left: 0; width: 0%; height: 1.5px;
+            background: var(--primary); transition: width 0.3s var(--au-ease);
+        }
+        .interactive-link:hover { transform: translateX(4px); color: var(--primary-hover); }
+        .interactive-link:hover::after { width: 100%; }
+        
+        .interactive-card {
+            border: 1px solid var(--card-border);
+            transition: transform 0.4s var(--au-ease), box-shadow 0.4s var(--au-ease), border-color 0.4s ease;
+        }
+        .interactive-card:hover {
+            transform: translateY(-8px) scale(1.01);
+            box-shadow: var(--au-shadow-glow);
+            border-color: rgba(59,130,246,0.4);
+        }
+    </style>
 </head>
 <body class="dash-body">
     <div class="aurora-bg"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
@@ -71,17 +116,27 @@
                 <div class="au-card reveal" style="padding:26px;display:flex;flex-direction:column;border-color:rgba(229,62,62,0.4);">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
                         <h4 class="au-panel-title" style="margin:0;font-size:1.05em;">Enrollment ID: {{ sub.enrollment_id }}</h4>
-                        <span class="au-badge" style="flex-shrink:0;background:rgba(229,62,62,0.1);color:#fc8181;border-color:rgba(229,62,62,0.3);">Overdue Priority</span>
+                        <span class="au-badge animate-pulse" style="flex-shrink:0;background:rgba(229,62,62,0.1);color:#fc8181;border-color:rgba(229,62,62,0.3);box-shadow: 0 0 15px -2px rgba(229,62,62,0.3);">Overdue Priority</span>
                     </div>
                     <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:14px 0 16px;">Review the source code and the technical defense document to determine algorithmic efficiency and edge-case handling.</p>
-                    <div style="margin-bottom:22px;display:flex;flex-direction:column;gap:6px;">
-                        <a href="{{ sub.code_link }}" target="_blank" style="color:var(--primary);text-decoration:none;font-size:.9em;">🔗 View Code Repository</a>
-                        <a href="{{ sub.defense_link }}" target="_blank" style="color:var(--primary);text-decoration:none;font-size:.9em;">🔗 View Defense Write-up</a>
+                    <div style="margin-bottom:22px;display:flex;flex-direction:column;gap:10px;">
+                        <a href="{{ sub.code_link }}" target="_blank" class="interactive-link">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                            View Code Repository
+                        </a>
+                        <a href="{{ sub.defense_link }}" target="_blank" class="interactive-link">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                            View Defense Write-up
+                        </a>
                     </div>
                     <button class="au-btn sm" style="margin-top:auto;width:100%;" onclick="openGradeModal('{{ sub.id }}', '{{ sub.enrollment_id }}')">Evaluate &amp; Score</button>
                 </div>
                 {% else %}
-                <div class="au-panel" style="text-align:center;color:var(--text-muted);grid-column:1 / -1;">No overdue submissions awaiting evaluation.</div>
+                <div class="empty-state-panel">
+                    <span class="empty-icon">☕</span>
+                    <span style="font-weight:600;font-size:1.05em;color:var(--text-main);">All Caught Up!</span>
+                    <span>No overdue submissions awaiting evaluation.</span>
+                </div>
                 {% endfor %}
             </div>
 
@@ -91,17 +146,27 @@
                 <div class="au-card reveal" style="padding:26px;display:flex;flex-direction:column;">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
                         <h4 class="au-panel-title" style="margin:0;font-size:1.05em;">Enrollment ID: {{ sub.enrollment_id }}</h4>
-                        <span class="au-badge warn" style="flex-shrink:0;">Awaiting Grading</span>
+                        <span class="au-badge warn animate-pulse" style="flex-shrink:0;box-shadow: 0 0 15px -2px rgba(251,191,36,0.3);">Awaiting Grading</span>
                     </div>
                     <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:14px 0 16px;">Review the source code and the technical defense document to determine algorithmic efficiency and edge-case handling.</p>
-                    <div style="margin-bottom:22px;display:flex;flex-direction:column;gap:6px;">
-                        <a href="{{ sub.code_link }}" target="_blank" style="color:var(--primary);text-decoration:none;font-size:.9em;">🔗 View Code Repository</a>
-                        <a href="{{ sub.defense_link }}" target="_blank" style="color:var(--primary);text-decoration:none;font-size:.9em;">🔗 View Defense Write-up</a>
+                    <div style="margin-bottom:22px;display:flex;flex-direction:column;gap:10px;">
+                        <a href="{{ sub.code_link }}" target="_blank" class="interactive-link">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                            View Code Repository
+                        </a>
+                        <a href="{{ sub.defense_link }}" target="_blank" class="interactive-link">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                            View Defense Write-up
+                        </a>
                     </div>
                     <button class="au-btn sm" style="margin-top:auto;width:100%;" onclick="openGradeModal('{{ sub.id }}', '{{ sub.enrollment_id }}')">Evaluate &amp; Score</button>
                 </div>
                 {% else %}
-                <div class="au-panel" style="text-align:center;color:var(--text-muted);grid-column:1 / -1;">No early submissions awaiting evaluation.</div>
+                <div class="empty-state-panel">
+                    <span class="empty-icon">☕</span>
+                    <span style="font-weight:600;font-size:1.05em;color:var(--text-main);">Inbox Zero</span>
+                    <span>No early submissions awaiting evaluation.</span>
+                </div>
                 {% endfor %}
             </div>
         </div>
