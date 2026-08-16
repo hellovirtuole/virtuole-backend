@@ -64,6 +64,25 @@ def download_cert_intern(enrollment_id):
         
     return render_template('docs/certificate.html', name=e['users']['full_name'], date=date_str, program_title=e['programs']['title'], track_level=e['track_level'].title(), enroll_id=enrollment_id, score=score)
 
+@public_bp.route('/download_lor_intern/<enrollment_id>')
+def download_lor_intern(enrollment_id):
+    enroll_data = supabase.table('enrollments').select('*, programs(*), users(full_name)').eq('enrollment_id', enrollment_id).execute().data
+    if not enroll_data: return "Invalid Credential", 404
+    e = enroll_data[0]
+
+    sub = supabase.table('submissions').select('*').eq('enrollment_id', enrollment_id).execute().data
+    if sub and sub[0].get('score'):
+        score = sub[0]['score']
+        date_str = sub[0].get('evaluated_at', e['created_at']).split('T')[0]
+    else:
+        score = e.get('final_score')
+        date_str = e.get('updated_at', e['created_at']).split('T')[0]
+
+    if not score or int(score) < 100:
+        return "Only students with a 100% Elite Score are eligible for a Letter of Recommendation.", 403
+
+    return render_template('docs/lor.html', name=e['users']['full_name'], date=date_str, program_title=e['programs']['title'], track_level=e['track_level'].title(), enroll_id=enrollment_id, project_details=e['programs']['short_description'])
+
 @public_bp.route('/download_offer/<enrollment_id>')
 def download_offer(enrollment_id):
     if str(session.get('role', '')).lower() not in ['intern', 'intern + ambassador']: return redirect('/login')

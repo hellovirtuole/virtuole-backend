@@ -98,7 +98,7 @@
                         <a href="/credential/{{ cert.enrollment_id }}" target="_blank" class="au-btn outline sm">Live Profile ↗</a>
                         <a href="/download_cert_intern/{{ cert.enrollment_id }}" target="_blank" class="au-btn success sm">Download Certificate</a>
                         {% if cert.score == 100 %}
-                        <a href="{{ cert.lor_url }}" target="_blank" class="au-btn sm" style="--au-b1:#fbbf24;--au-b2:#f59e0b;color:#111827;">Download LoR</a>
+                        <a href="/download_lor_intern/{{ cert.enrollment_id }}" target="_blank" class="au-btn sm" style="--au-b1:#fbbf24;--au-b2:#f59e0b;color:#111827;">Download LoR</a>
                         {% endif %}
                     </div>
                 </div>
