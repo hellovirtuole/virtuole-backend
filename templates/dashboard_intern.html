@@ -144,7 +144,23 @@
             <p class="dash-sub">Manage your personal details.</p>
 
             <div class="au-panel au-form" style="max-width:800px; margin-top:20px;">
-                <form id="profileForm" action="/update-profile-intern" method="POST" onsubmit="event.preventDefault(); var fd = new FormData(this); fetch('/update-profile-intern', {method:'POST', body:fd}).then(r => r.text()).then(t => { document.open(); document.write(t); document.close(); }).catch(e => alert('Fetch error: ' + e));">
+                <form id="profileForm" action="/update-profile-intern" method="POST" onsubmit="
+                    event.preventDefault();
+                    var btn = this.querySelector('button[type=submit]');
+                    btn.disabled = true; btn.innerText = 'Saving...';
+                    fetch('/update-profile-intern', {method:'POST', body: new FormData(this)})
+                    .then(function(r){ return r.json(); })
+                    .then(function(data){
+                        if(data.status === 'ok'){
+                            btn.innerText = '✔ Saved!'; btn.style.background = '#2ecc71';
+                            setTimeout(function(){ window.location.href='/dashboard-intern?active_tab=profile'; }, 800);
+                        } else {
+                            alert('Save failed: ' + (data.message || 'Unknown error'));
+                            btn.disabled = false; btn.innerText = 'Save Profile Updates';
+                        }
+                    })
+                    .catch(function(e){ alert('Network error: ' + e); btn.disabled = false; btn.innerText = 'Save Profile Updates'; });
+                ">
                     <h3 style="margin-bottom: 20px; color: var(--text-main); font-family: 'Montserrat', sans-serif;">Personal Details</h3>
                     
                     <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom: 15px;">

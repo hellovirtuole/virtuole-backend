@@ -247,59 +247,45 @@ def parse_shipping_address(addr_str):
         return {"name": "", "addr1": addr_str, "addr2": "", "city": "", "state": "", "pin": "", "phone": ""}
 
 
-@intern_bp.route('/test-profile-route')
-def test_profile_route():
-    return f"<h1>Route is ALIVE! Deployed version: 2026-08-16T11:53</h1><p>Session role: {session.get('role', 'NONE')}</p><p>Session user_id: {session.get('user_id', 'NONE')}</p>", 200
-
 @intern_bp.route('/update-profile-intern', methods=['GET', 'POST'])
 @intern_bp.route('/api/update-profile-intern', methods=['GET', 'POST'])
 def update_profile_intern():
-    # If someone hits this via GET, show a debug message
     if request.method == 'GET':
-        return f"<h1>Profile route reached via GET</h1><p>This route exists and is reachable. Use POST to save.</p>", 200
+        return redirect(url_for('dashboard.dashboard_intern', active_tab='profile'))
+
     role_check = str(session.get('role', '')).lower()
     if role_check not in ['intern', 'intern + ambassador']:
-        return f"<h1>DEBUG: Role check failed</h1><pre>Role in session: '{role_check}'</pre><a href='/login'>Go to Login</a>", 403
-
-    full_name = request.form.get('full_name', '').strip()
-    gender = request.form.get('gender', '').strip()
-    phone = request.form.get('phone', '').strip()
-    city = request.form.get('city', '').strip()
-    state = request.form.get('state', '').strip()
-    college_name = request.form.get('college_name', '').strip()
-    course_name = request.form.get('course_name', '').strip()
-    session_year = request.form.get('session_year', '').strip()
-
-    profile_data = {
-        "gender": gender,
-        "phone": phone,
-        "city": city,
-        "state": state,
-        "college_name": college_name,
-        "course_name": course_name,
-        "session_year": session_year,
-    }
-
-    update_payload = {
-        "profile_details": profile_data,
-        "shipping_address": json.dumps(profile_data),
-    }
-    if full_name:
-        update_payload["full_name"] = full_name
+        return redirect('/login')
 
     try:
-        result = supabase.table('users').update(update_payload).eq('id', session['user_id']).execute()
+        full_name = request.form.get('full_name', '').strip()
+        profile_data = {
+            "gender": request.form.get('gender', '').strip(),
+            "phone": request.form.get('phone', '').strip(),
+            "city": request.form.get('city', '').strip(),
+            "state": request.form.get('state', '').strip(),
+            "college_name": request.form.get('college_name', '').strip(),
+            "course_name": request.form.get('course_name', '').strip(),
+            "session_year": request.form.get('session_year', '').strip(),
+        }
+
+        update_payload = {
+            "profile_details": profile_data,
+            "shipping_address": json.dumps(profile_data),
+        }
+        if full_name:
+            update_payload["full_name"] = full_name
+
+        supabase.table('users').update(update_payload).eq('id', session['user_id']).execute()
+
         if full_name:
             session['name'] = full_name
 
-        return f"""<h1 style='color:green'>&#10004; Profile Saved Successfully!</h1>
-        <p><b>User ID:</b> {session.get('user_id')}</p>
-        <p><b>Data saved:</b></p><pre>{json.dumps(profile_data, indent=2)}</pre>
-        <p><b>Supabase response count:</b> {len(result.data) if result.data else 0}</p>
-        <br><a href='/dashboard-intern?active_tab=profile'>Go back to Dashboard</a>""", 200
+        return jsonify({"status": "ok"}), 200
 
     except Exception as e:
         import traceback
-        return f"<h1 style='color:red'>&#10008; Profile Save FAILED</h1><pre>{traceback.format_exc()}</pre><a href='/dashboard-intern?active_tab=profile'>Go back</a>", 500
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 
 
