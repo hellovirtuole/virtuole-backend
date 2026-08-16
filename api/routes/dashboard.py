@@ -35,16 +35,12 @@ def dashboard_intern():
         u_data = supabase.table('users').select('*').eq('id', u_id).execute().data
         user_profile = u_data[0] if u_data else {}
     
-        # Attempt to parse profile_details JSON, fallback to empty dict
-        profile_details_raw = user_profile.get('profile_details', '')
-        if not profile_details_raw:
-            profile_details = {}
-        elif isinstance(profile_details_raw, dict):
-            profile_details = profile_details_raw
-        else:
+        # profile_details is a jsonb column — Supabase returns it as a dict directly
+        profile_details = user_profile.get('profile_details') or {}
+        if not isinstance(profile_details, dict):
+            # Safety fallback: if it's somehow a string, try to parse it
             try:
-                import json
-                profile_details = json.loads(profile_details_raw)
+                profile_details = json.loads(profile_details)
             except Exception:
                 profile_details = {}
     

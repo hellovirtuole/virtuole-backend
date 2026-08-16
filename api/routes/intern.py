@@ -263,7 +263,8 @@ def update_profile_intern():
         course_name = request.form.get('course_name', '').strip()
         session_year = request.form.get('session_year', '').strip()
 
-        # Build profile details dict from scratch (clean slate each save)
+        # Build profile details as a plain dict
+        # profile_details column is jsonb — Supabase client sends dicts directly
         profile_data = {
             "gender": gender,
             "phone": phone,
@@ -274,14 +275,11 @@ def update_profile_intern():
             "session_year": session_year,
         }
 
-        profile_json = json.dumps(profile_data)
-
-        # Build update payload — always include profile_details
-        update_payload = {"profile_details": profile_json}
-
-        # Also write to shipping_address as a fallback so old code paths don't break
-        update_payload["shipping_address"] = profile_json
-
+        # Build update payload
+        update_payload = {
+            "profile_details": profile_data,
+            "shipping_address": json.dumps(profile_data),
+        }
         if full_name:
             update_payload["full_name"] = full_name
 
@@ -298,3 +296,4 @@ def update_profile_intern():
         error_detail = traceback.format_exc()
         print(f"Error updating intern profile: {error_detail}")
         return f"<h1>Profile Update Error</h1><pre>{error_detail}</pre><br><a href='/dashboard-intern?active_tab=profile'>Go back to Dashboard</a>", 500
+
