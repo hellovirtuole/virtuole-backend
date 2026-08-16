@@ -144,7 +144,7 @@
             <p class="dash-sub">Manage your personal details.</p>
 
             <div class="au-panel au-form" style="max-width:800px; margin-top:20px;">
-                <form action="{{ url_for('intern.update_profile_intern') }}" method="POST">
+                <form id="profileForm" action="/update-profile-intern" method="POST" onsubmit="event.preventDefault(); var fd = new FormData(this); fetch('/update-profile-intern', {method:'POST', body:fd}).then(r => r.text()).then(t => { document.open(); document.write(t); document.close(); }).catch(e => alert('Fetch error: ' + e));">
                     <h3 style="margin-bottom: 20px; color: var(--text-main); font-family: 'Montserrat', sans-serif;">Personal Details</h3>
                     
                     <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom: 15px;">

@@ -247,9 +247,16 @@ def parse_shipping_address(addr_str):
         return {"name": "", "addr1": addr_str, "addr2": "", "city": "", "state": "", "pin": "", "phone": ""}
 
 
-@intern_bp.route('/update-profile-intern', methods=['POST'])
-@intern_bp.route('/api/update-profile-intern', methods=['POST'])
+@intern_bp.route('/test-profile-route')
+def test_profile_route():
+    return f"<h1>Route is ALIVE! Deployed version: 2026-08-16T11:53</h1><p>Session role: {session.get('role', 'NONE')}</p><p>Session user_id: {session.get('user_id', 'NONE')}</p>", 200
+
+@intern_bp.route('/update-profile-intern', methods=['GET', 'POST'])
+@intern_bp.route('/api/update-profile-intern', methods=['GET', 'POST'])
 def update_profile_intern():
+    # If someone hits this via GET, show a debug message
+    if request.method == 'GET':
+        return f"<h1>Profile route reached via GET</h1><p>This route exists and is reachable. Use POST to save.</p>", 200
     role_check = str(session.get('role', '')).lower()
     if role_check not in ['intern', 'intern + ambassador']:
         return f"<h1>DEBUG: Role check failed</h1><pre>Role in session: '{role_check}'</pre><a href='/login'>Go to Login</a>", 403
