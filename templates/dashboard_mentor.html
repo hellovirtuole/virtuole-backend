@@ -168,6 +168,7 @@
                             <th>Enrollment Tracking ID</th>
                             <th>Final Assigned Score</th>
                             <th>Credential Status</th>
+                            <th>Submission Links</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -187,9 +188,19 @@
                                     <span class="au-badge bad">❌ Failed / Resubmit</span>
                                 {% endif %}
                             </td>
+                            <td>
+                                <div style="display:flex;flex-direction:column;gap:4px;">
+                                    {% if sub.code_link %}
+                                    <a href="{{ sub.code_link }}" target="_blank" style="color:var(--primary);text-decoration:none;font-size:0.85em;">🔗 Code</a>
+                                    {% endif %}
+                                    {% if sub.defense_link %}
+                                    <a href="{{ sub.defense_link }}" target="_blank" style="color:var(--primary);text-decoration:none;font-size:0.85em;">🔗 Defense</a>
+                                    {% endif %}
+                                </div>
+                            </td>
                         </tr>
                         {% else %}
-                        <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:30px;">No grading history found in your ledger.</td></tr>
+                        <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:30px;">No grading history found in your ledger.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
