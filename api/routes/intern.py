@@ -247,53 +247,54 @@ def parse_shipping_address(addr_str):
         return {"name": "", "addr1": addr_str, "addr2": "", "city": "", "state": "", "pin": "", "phone": ""}
 
 
+@intern_bp.route('/update-profile-intern', methods=['POST'])
 @intern_bp.route('/api/update-profile-intern', methods=['POST'])
 def update_profile_intern():
-    if str(session.get('role', '')).lower() not in ['intern', 'intern + ambassador']: 
+    if str(session.get('role', '')).lower() not in ['intern', 'intern + ambassador']:
         return redirect('/login')
-    
+
     try:
-        full_name = request.form.get('full_name')
-        
-        # Load existing profile details to preserve any other keys if they exist
-        u_data = supabase.table('users').select('profile_details').eq('id', session['user_id']).execute().data
-        
-        raw_profile = u_data[0].get('profile_details', '') if u_data else ''
-        if not raw_profile:
-            existing_profile = {}
-        elif isinstance(raw_profile, dict):
-            existing_profile = raw_profile
-        else:
-            try:
-                import json
-                existing_profile = json.loads(raw_profile)
-                if not isinstance(existing_profile, dict):
-                    existing_profile = {}
-            except Exception:
-                existing_profile = {}
-        
-        # Update academic/personal details
-        existing_profile['gender'] = request.form.get('gender', '')
-        existing_profile['phone'] = request.form.get('phone', '')
-        existing_profile['city'] = request.form.get('city', '')
-        existing_profile['state'] = request.form.get('state', '')
-        existing_profile['college_name'] = request.form.get('college_name', '')
-        existing_profile['course_name'] = request.form.get('course_name', '')
-        existing_profile['session_year'] = request.form.get('session_year', '')
-        
-        update_payload = {"profile_details": json.dumps(existing_profile)}
+        full_name = request.form.get('full_name', '').strip()
+        gender = request.form.get('gender', '').strip()
+        phone = request.form.get('phone', '').strip()
+        city = request.form.get('city', '').strip()
+        state = request.form.get('state', '').strip()
+        college_name = request.form.get('college_name', '').strip()
+        course_name = request.form.get('course_name', '').strip()
+        session_year = request.form.get('session_year', '').strip()
+
+        # Build profile details dict from scratch (clean slate each save)
+        profile_data = {
+            "gender": gender,
+            "phone": phone,
+            "city": city,
+            "state": state,
+            "college_name": college_name,
+            "course_name": course_name,
+            "session_year": session_year,
+        }
+
+        profile_json = json.dumps(profile_data)
+
+        # Build update payload — always include profile_details
+        update_payload = {"profile_details": profile_json}
+
+        # Also write to shipping_address as a fallback so old code paths don't break
+        update_payload["shipping_address"] = profile_json
+
         if full_name:
             update_payload["full_name"] = full_name
-            
+
         supabase.table('users').update(update_payload).eq('id', session['user_id']).execute()
-        
-        # Update session name just in case
+
+        # Keep session name in sync
         if full_name:
             session['name'] = full_name
-            
+
+        return redirect(url_for('dashboard.dashboard_intern', active_tab='profile'))
+
     except Exception as e:
-        print(f"Error updating intern profile: {e}")
-        # Even on error, send them back to the profile tab (maybe we should flash a message, but for now this prevents breaking)
-        pass
-        
-    return redirect(url_for('dashboard.dashboard_intern', active_tab='profile'))
+        import traceback
+        error_detail = traceback.format_exc()
+        print(f"Error updating intern profile: {error_detail}")
+        return f"<h1>Profile Update Error</h1><pre>{error_detail}</pre><br><a href='/dashboard-intern?active_tab=profile'>Go back to Dashboard</a>", 500
