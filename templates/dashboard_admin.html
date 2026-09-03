@@ -1427,7 +1427,19 @@
                 document.getElementById('ep_custom_price').value = p.custom_price || 0;
                 document.getElementById('ep_custom_specs').value = p.custom_specs || '';
                 
-                currentEditTracks = p.tracks || [];
+                let parsedTracks = p.tracks;
+                if (typeof parsedTracks === 'string') {
+                    try { parsedTracks = safelyParseJSON(parsedTracks); } catch(e) { parsedTracks = []; }
+                }
+                
+                if (!parsedTracks || parsedTracks.length === 0) {
+                    parsedTracks = [];
+                    if (p.price_beginner) parsedTracks.push({months: 1, price: p.price_beginner, specs: p.specs_beginner || ''});
+                    if (p.price_intermediate) parsedTracks.push({months: 2, price: p.price_intermediate, specs: p.specs_intermediate || ''});
+                    if (p.price_expert) parsedTracks.push({months: 3, price: p.price_expert, specs: p.specs_expert || ''});
+                }
+                
+                currentEditTracks = parsedTracks;
                 document.getElementById('ep_num_tracks').value = currentEditTracks.length;
                 generateEditTrackInputs(true);
                 
