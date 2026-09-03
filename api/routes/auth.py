@@ -22,11 +22,16 @@ def fix_gdrive_url(url):
 @auth_bp.route('/', methods=['GET', 'POST'])
 def home():
     programs = []
+    offered_programs_grouped = {}
     if supabase:
         programs = supabase.table('programs').select('*').eq('is_active', True).execute().data
         for p in programs:
             p['image_url'] = fix_gdrive_url(p.get('image_url'))
-    return render_template('index.html', offered_programs=programs)
+            cat = p.get('category') or 'General'
+            if cat not in offered_programs_grouped:
+                offered_programs_grouped[cat] = []
+            offered_programs_grouped[cat].append(p)
+    return render_template('index.html', offered_programs=offered_programs_grouped)
 
 @auth_bp.route('/register', methods=['POST'])
 @auth_bp.route('/api/register', methods=['POST'])
