@@ -157,7 +157,7 @@ def handle_text_message(chat_id, text):
     send_message(chat_id, response, current_markup)
 
 
-@telegram_bp.route('/api/telegram/webhook', methods=['POST'])
+@telegram_bp.route('/telegram-webhook', methods=['POST'])
 def webhook():
     try:
         update = request.get_json()
@@ -187,10 +187,10 @@ def webhook():
     return "OK", 200
 
 
-@telegram_bp.route('/api/telegram/set-webhook', methods=['GET'])
+@telegram_bp.route('/telegram-set-webhook', methods=['GET'])
 def set_webhook():
     host = request.host_url.rstrip('/')
-    webhook_url = f"{host}/api/telegram/webhook"
+    webhook_url = f"{host}/telegram-webhook"
     
     try:
         res = requests.get(f"{TELEGRAM_API_URL}/setWebhook?url={webhook_url}")
