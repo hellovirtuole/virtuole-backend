@@ -73,7 +73,7 @@
                     <div style="padding:26px; display:flex; flex-direction:column; flex-grow:1;">
                         <h4 class="au-panel-title">{{ program.title }}</h4>
                         <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{ program.short_description }}</p>
-                        <button class="au-btn-ghost sm" style="margin-top:auto;width:100%;" onclick="openEnrollModal('{{ program.id }}', '{{ program.title }}', {{ program.price_beginner }}, {{ program.price_intermediate }}, {{ program.price_expert }})">View Details &amp; Enroll</button>
+                        <button class="au-btn sm" style="margin-top:auto;width:100%; background: var(--primary); background-image: none; color: #fff; border: none;" onclick="openEnrollModal('{{ program.id }}', '{{ program.title }}', {{ program.price_beginner }}, {{ program.price_intermediate }}, {{ program.price_expert }})">Enroll Now</button>
                     </div>
                 </div>
                 {% endfor %}
