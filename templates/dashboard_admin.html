@@ -315,7 +315,10 @@
                     </div>
                     <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{ program.short_description }}</p>
                     <div style="margin-top:auto; display:flex; gap:10px;">
-                        <button type="button" class="au-btn edit-program-btn" style="flex:1;" data-program="{{ program | tojson | forceescape }}">Edit</button>
+                        <script type="application/json" id="prog_data_{{ program.id }}">
+                            {{ program | tojson | safe }}
+                        </script>
+                        <button type="button" class="au-btn edit-program-btn" style="flex:1;" onclick="openEditProgramModalWithData('{{ program.id }}')">Edit</button>
                         <form action="/admin/delete-program" method="POST" style="flex:1; margin:0;" onsubmit="return confirm('Pull this program offline?');">
                             <input type="hidden" name="program_id" value="{{ program.id }}">
                             <button type="submit" class="au-btn danger" style="width:100%;">Take Offline</button>
@@ -353,7 +356,10 @@
                     <p style="font-size:.82em;font-family:monospace;color:#b794f4;background:rgba(139,92,246,.12);padding:6px 12px;border-radius:8px;display:inline-block;align-self:flex-start;">Points: +{{ task.point_value }}</p>
                     <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{ task.description }}</p>
                     <div style="margin-top:auto; display:flex; gap:10px;">
-                        <button type="button" class="au-btn edit-task-btn" style="flex:1;" data-task="{{ task | tojson | forceescape }}">Edit</button>
+                        <script type="application/json" id="task_data_{{ task.id }}">
+                            {{ task | tojson | safe }}
+                        </script>
+                        <button type="button" class="au-btn edit-task-btn" style="flex:1;" onclick="openEditTaskModalWithData('{{ task.id }}')">Edit</button>
                         <form action="/admin/delete-task" method="POST" style="flex:1; margin:0;" onsubmit="return confirm('Remove this task from the Ambassador board?');">
                             <input type="hidden" name="task_id" value="{{ task.id }}">
                             <button type="submit" class="au-btn danger" style="width:100%;">Deactivate Task</button>
@@ -1378,46 +1384,36 @@
         // --- Edit Program Logic ---
         let currentEditTracks = [];
         
-        document.querySelectorAll('.edit-program-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const p = JSON.parse(this.dataset.program);
-                openEditProgramModal(
-                    p.id, 
-                    p.title, 
-                    p.short_description, 
-                    p.image_url, 
-                    p.category, 
-                    p.badge_text || '', 
-                    p.tracks || [], 
-                    p.allow_custom_timeline || false, 
-                    p.custom_min_months || 1, 
-                    p.max_custom_months || 12, 
-                    p.custom_price || 0, 
-                    p.custom_specs || ''
-                );
-            });
-        });
-        
-        function openEditProgramModal(id, title, desc, img, cat, badge, tracks, customOn, minM, maxM, customP, customS) {
-            document.getElementById('ep_program_id').value = id;
-            document.getElementById('ep_title').value = title;
-            document.getElementById('ep_short_description').value = desc;
-            document.getElementById('ep_image_url').value = img;
-            document.getElementById('ep_category').value = cat;
-            document.getElementById('ep_badge_text').value = badge;
-            
-            document.getElementById('ep_allow_custom_timeline').checked = customOn;
-            document.getElementById('ep-custom-timeline-settings').style.display = customOn ? 'flex' : 'none';
-            document.getElementById('ep_custom_min_months').value = minM;
-            document.getElementById('ep_max_custom_months').value = maxM;
-            document.getElementById('ep_custom_price').value = customP;
-            document.getElementById('ep_custom_specs').value = customS;
-            
-            currentEditTracks = tracks;
-            document.getElementById('ep_num_tracks').value = tracks.length;
-            generateEditTrackInputs(true);
-            
-            openModal('editProgramModal');
+        function openEditProgramModalWithData(progId) {
+            try {
+                const dataElement = document.getElementById('prog_data_' + progId);
+                if(!dataElement) { console.error('No data found for program', progId); return; }
+                const p = JSON.parse(dataElement.textContent);
+                
+                document.getElementById('ep_program_id').value = p.id;
+                document.getElementById('ep_title').value = p.title || '';
+                document.getElementById('ep_short_description').value = p.short_description || '';
+                document.getElementById('ep_image_url').value = p.image_url || '';
+                document.getElementById('ep_category').value = p.category || '';
+                document.getElementById('ep_badge_text').value = p.badge_text || '';
+                
+                const customOn = p.allow_custom_timeline || false;
+                document.getElementById('ep_allow_custom_timeline').checked = customOn;
+                document.getElementById('ep-custom-timeline-settings').style.display = customOn ? 'flex' : 'none';
+                document.getElementById('ep_custom_min_months').value = p.custom_min_months || 1;
+                document.getElementById('ep_max_custom_months').value = p.max_custom_months || 12;
+                document.getElementById('ep_custom_price').value = p.custom_price || 0;
+                document.getElementById('ep_custom_specs').value = p.custom_specs || '';
+                
+                currentEditTracks = p.tracks || [];
+                document.getElementById('ep_num_tracks').value = currentEditTracks.length;
+                generateEditTrackInputs(true);
+                
+                openModal('editProgramModal');
+            } catch(e) {
+                console.error("Error opening edit program modal:", e);
+                alert("Error loading program data.");
+            }
         }
         
         function generateEditTrackInputs(populate = false) {
@@ -1472,21 +1468,24 @@
             }
         }
 
-        document.querySelectorAll('.edit-task-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const t = JSON.parse(this.dataset.task);
-                openEditTaskModal(t.id, t.title, t.description, t.point_value, t.max_completions, t.badge_text || '');
-            });
-        });
-
-        function openEditTaskModal(id, title, desc, point, maxC, badge) {
-            document.getElementById('et_task_id').value = id;
-            document.getElementById('et_title').value = title;
-            document.getElementById('et_description').value = desc;
-            document.getElementById('et_point_value').value = point;
-            document.getElementById('et_max_completions').value = maxC;
-            document.getElementById('et_badge_text').value = badge;
-            openModal('editTaskModal');
+        function openEditTaskModalWithData(taskId) {
+            try {
+                const dataElement = document.getElementById('task_data_' + taskId);
+                if(!dataElement) { console.error('No data found for task', taskId); return; }
+                const t = JSON.parse(dataElement.textContent);
+                
+                document.getElementById('et_task_id').value = t.id;
+                document.getElementById('et_title').value = t.title || '';
+                document.getElementById('et_description').value = t.description || '';
+                document.getElementById('et_point_value').value = t.point_value || 0;
+                document.getElementById('et_max_completions').value = t.max_completions || 1;
+                document.getElementById('et_badge_text').value = t.badge_text || '';
+                
+                openModal('editTaskModal');
+            } catch(e) {
+                console.error("Error opening edit task modal:", e);
+                alert("Error loading task data.");
+            }
         }
 
         function downloadLetterPDF() {
