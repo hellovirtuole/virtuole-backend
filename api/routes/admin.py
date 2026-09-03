@@ -18,7 +18,13 @@ def add_program():
         "specs_intermediate": request.form.get('specs_intermediate'), "specs_expert": request.form.get('specs_expert'),
         "price_beginner": int(request.form.get('price_beginner')), "price_intermediate": int(request.form.get('price_intermediate')),
         "price_expert": int(request.form.get('price_expert')), "is_active": True,
-        "image_url": request.form.get('image_url', '')
+        "image_url": request.form.get('image_url', ''),
+        "offer_1m": request.form.get('offer_1m') == 'on',
+        "offer_2m": request.form.get('offer_2m') == 'on',
+        "offer_3m": request.form.get('offer_3m') == 'on',
+        "allow_custom_timeline": request.form.get('allow_custom_timeline') == 'on',
+        "max_custom_months": int(request.form.get('max_custom_months', 6) or 6),
+        "category": request.form.get('category', 'General')
     }).execute()
     return redirect(url_for('dashboard.dashboard_admin', tab='programs'))
 

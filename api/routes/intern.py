@@ -220,6 +220,9 @@ def api_enroll():
     if str(session.get('role', '')).lower() not in ['intern', 'intern + ambassador']: return redirect('/login')
     program_id = request.form.get('program_id')
     track_level = request.form.get('track_level')
+    if track_level == 'custom':
+        custom_months = request.form.get('custom_months', 1)
+        track_level = f"custom_{custom_months}"
     enrollment_id = f"VT-E-{random.randint(100000, 999999)}"
     
     existing = supabase.table('enrollments').select('id').eq('user_id', session['user_id']).eq('program_id', program_id).eq('track_level', track_level).in_('status', ['active', 'submitted']).execute().data
@@ -234,11 +237,16 @@ def api_enroll():
     prog = supabase.table('programs').select('*').eq('id', program_id).execute().data[0]
     
     track = track_level.lower()
-    duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
-    end_date = (datetime.utcnow() + timedelta(days=duration_days)).strftime("%B %d, %Y")
+    if track.startswith('custom_'):
+        months = int(track.split('_')[1])
+        duration_days = months * 30
+        track_display = f"{months} Months (Custom)"
+    else:
+        duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
+        track_display_map = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}
+        track_display = track_display_map.get(track, track_level.title())
     
-    track_display_map = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}
-    track_display = track_display_map.get(track, track_level.title())
+    end_date = (datetime.utcnow() + timedelta(days=duration_days)).strftime("%B %d, %Y")
     
     html_offer = render_template('docs/offer_letter.html', name=session['name'], date=datetime.utcnow().strftime("%B %d, %Y"), program_title=prog['title'], track_level=track_display, enroll_id=enrollment_id, project_details=prog['short_description'], duration_days=duration_days, end_date=end_date)
     

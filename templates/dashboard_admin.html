@@ -243,6 +243,20 @@
                         <label>Cover Image URL (G-Drive or Direct Link)</label>
                         <input type="url" name="image_url" placeholder="https://drive.google.com/..." required>
                     </div>
+                    <div class="au-form-group" style="margin:0;grid-column:1 / -1;">
+                        <label>Category (Section)</label>
+                        <input type="text" name="category" placeholder="e.g. Frontend Development" value="General" required>
+                    </div>
+                    <div class="au-form-group" style="margin:0;grid-column:1 / -1;">
+                        <label>Offered Durations & Custom Timeline</label>
+                        <div style="display:flex; gap:20px; align-items:center; flex-wrap: wrap;">
+                            <label><input type="checkbox" name="offer_1m" checked> 1 Month</label>
+                            <label><input type="checkbox" name="offer_2m" checked> 2 Months</label>
+                            <label><input type="checkbox" name="offer_3m" checked> 3 Months</label>
+                            <label><input type="checkbox" name="allow_custom_timeline"> Enable Custom Timeline</label>
+                            <input type="number" name="max_custom_months" placeholder="Max Months (e.g. 6)" value="6" style="max-width: 150px;" class="au-input">
+                        </div>
+                    </div>
                     <div class="au-form-group" style="margin:0;"><label>1 Month Specs (Drive/PDF Link)</label><input type="url" name="specs_beginner" placeholder="https://..." required></div>
                     <div class="au-form-group" style="margin:0;"><label>2 Months Specs (Drive/PDF Link)</label><input type="url" name="specs_intermediate" placeholder="https://..." required></div>
                     <div class="au-form-group" style="margin:0;"><label>3 Months Specs (Drive/PDF Link)</label><input type="url" name="specs_expert" placeholder="https://..." required></div>
@@ -258,10 +272,16 @@
                 {% for program in offered_programs %}
                 <div class="au-card" style="padding:26px;display:flex;flex-direction:column;">
                     <h4 class="au-panel-title">{{ program.title }}</h4>
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <span class="au-badge ok">{{ program.category | default('General') }}</span>
+                        {% if program.allow_custom_timeline %}
+                        <span class="au-badge warn">Custom Timeline</span>
+                        {% endif %}
+                    </div>
                     <div style="font-size:.85em;font-weight:500;margin:6px 0 12px;display:flex;flex-direction:column;gap:4px;">
-                        <a href="{{ program.specs_beginner }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 1M Specs ↗</a>
-                        <a href="{{ program.specs_intermediate }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 2M Specs ↗</a>
-                        <a href="{{ program.specs_expert }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 3M Specs ↗</a>
+                        {% if program.offer_1m != False %}<a href="{{ program.specs_beginner }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 1M Specs ↗</a>{% endif %}
+                        {% if program.offer_2m != False %}<a href="{{ program.specs_intermediate }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 2M Specs ↗</a>{% endif %}
+                        {% if program.offer_3m != False %}<a href="{{ program.specs_expert }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 3M Specs ↗</a>{% endif %}
                     </div>
                     <p style="font-size:.82em;font-family:monospace;color:var(--text-muted);background:rgba(148,163,184,.08);padding:8px 12px;border-radius:8px;">1M: ₹{{ program.price_beginner }} | 2M: ₹{{ program.price_intermediate }} | 3M: ₹{{ program.price_expert }}</p>
                     <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{ program.short_description }}</p>

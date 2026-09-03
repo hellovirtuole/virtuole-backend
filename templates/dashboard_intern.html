@@ -63,9 +63,10 @@
             <h1 class="dash-greeting">Explore Architecture Internships</h1>
             <p class="dash-sub">Discover and enroll in new MSME architectures.</p>
 
-            <div class="dash-section-title" style="margin-top:8px;">Offered Programs</div>
+            {% for category, programs in offered_programs.items() %}
+            <div class="dash-section-title" style="margin-top:24px; margin-bottom:12px; font-size: 1.15em; color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">{{ category }}</div>
             <div class="au-grid">
-                {% for program in offered_programs %}
+                {% for program in programs %}
                 <div class="au-card reveal" style="padding:0;overflow:hidden;display:flex;flex-direction:column;">
                     {% if program.image_url %}
                     <img src="{{ program.image_url }}" alt="{{ program.title }}" style="width: 100%; height: 160px; object-fit: cover; display: block; border-bottom: 1px solid rgba(255,255,255,0.05);">
@@ -73,11 +74,12 @@
                     <div style="padding:26px; display:flex; flex-direction:column; flex-grow:1;">
                         <h4 class="au-panel-title">{{ program.title }}</h4>
                         <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{ program.short_description }}</p>
-                        <button class="au-btn sm" style="margin-top:auto;width:100%; background: var(--primary); background-image: none; color: #fff; border: none;" onclick="openEnrollModal('{{ program.id }}', '{{ program.title }}', {{ program.price_beginner }}, {{ program.price_intermediate }}, {{ program.price_expert }})">Enroll Now</button>
+                        <button class="au-btn sm" style="margin-top:auto;width:100%; background: var(--primary); background-image: none; color: #fff; border: none;" onclick="openEnrollModal('{{ program.id }}', '{{ program.title }}', {{ program.price_beginner }}, {{ program.price_intermediate }}, {{ program.price_expert }}, {{ 'true' if program.offer_1m != False else 'false' }}, {{ 'true' if program.offer_2m != False else 'false' }}, {{ 'true' if program.offer_3m != False else 'false' }}, {{ 'true' if program.allow_custom_timeline else 'false' }}, {{ program.max_custom_months or 6 }})">Enroll Now</button>
                     </div>
                 </div>
                 {% endfor %}
             </div>
+            {% endfor %}
         </div>
 
         <!-- ===================== MY CREDENTIALS ===================== -->
@@ -240,9 +242,14 @@
                 <div class="au-form-group">
                     <label>Select Duration</label>
                     <div style="display: flex; gap: 10px; margin-bottom: 8px;">
-                        <button type="button" class="au-btn-ghost track-btn" style="flex: 1; padding: 10px;" onclick="selectTrack('beginner', this)">1 Month</button>
-                        <button type="button" class="au-btn-ghost track-btn" style="flex: 1; padding: 10px;" onclick="selectTrack('intermediate', this)">2 Months</button>
-                        <button type="button" class="au-btn-ghost track-btn" style="flex: 1; padding: 10px;" onclick="selectTrack('expert', this)">3 Months</button>
+                        <button type="button" id="btn-1m" class="au-btn-ghost track-btn" style="flex: 1; padding: 10px;" onclick="selectTrack('beginner', this)">1 Month</button>
+                        <button type="button" id="btn-2m" class="au-btn-ghost track-btn" style="flex: 1; padding: 10px;" onclick="selectTrack('intermediate', this)">2 Months</button>
+                        <button type="button" id="btn-3m" class="au-btn-ghost track-btn" style="flex: 1; padding: 10px;" onclick="selectTrack('expert', this)">3 Months</button>
+                        <button type="button" id="btn-custom" class="au-btn-ghost track-btn" style="flex: 1; padding: 10px; display: none;" onclick="selectTrack('custom', this)">Custom</button>
+                    </div>
+                    <div id="custom-duration-container" style="display: none; margin-bottom: 8px;">
+                        <label>Enter Custom Duration (Months)</label>
+                        <input type="number" name="custom_months" id="custom_months_input" min="1" oninput="updateCustomTrackDetails(this.value)">
                     </div>
                     <div id="track-details" style="font-size: 0.9em; color: var(--text-muted); margin-bottom: 10px;">Select a duration to see details.</div>
                     <input type="hidden" name="track_level" id="hidden-track-level" required>
@@ -294,7 +301,7 @@
     /* Modal helpers (switchView + theme handled by dashboard_nav.html) */
     function closeModal(modalId) { document.getElementById(modalId).classList.remove('open'); }
 
-    function openEnrollModal(programId, programTitle, priceBeg, priceInt, priceExp) {
+    function openEnrollModal(programId, programTitle, priceBeg, priceInt, priceExp, off1, off2, off3, allowCustom, maxCustom) {
         document.getElementById('enroll-program-name').value = programId;
         document.querySelector('#enrollModal h3').innerText = 'Enroll: ' + programTitle;
         
@@ -303,8 +310,16 @@
             intermediate: priceInt,
             expert: priceExp
         };
+        window.maxCustom = maxCustom || 6;
+        
+        document.getElementById('btn-1m').style.display = off1 ? 'block' : 'none';
+        document.getElementById('btn-2m').style.display = off2 ? 'block' : 'none';
+        document.getElementById('btn-3m').style.display = off3 ? 'block' : 'none';
+        document.getElementById('btn-custom').style.display = allowCustom ? 'block' : 'none';
         
         document.getElementById('hidden-track-level').value = '';
+        document.getElementById('custom_months_input').value = '';
+        document.getElementById('custom-duration-container').style.display = 'none';
         document.getElementById('track-details').innerText = 'Select a duration to see details.';
         document.querySelectorAll('.track-btn').forEach(btn => {
             btn.className = 'au-btn-ghost track-btn';
@@ -326,9 +341,30 @@
         btnElement.style.flex = '1';
         btnElement.style.padding = '10px';
         
-        let price = window.currentPrices[track];
-        let durationText = track === 'beginner' ? '1 Month' : track === 'intermediate' ? '2 Months' : '3 Months';
-        document.getElementById('track-details').innerText = `${durationText} Duration (₹${price} upon submission)`;
+        if (track === 'custom') {
+            document.getElementById('custom-duration-container').style.display = 'block';
+            document.getElementById('custom_months_input').max = window.maxCustom;
+            updateCustomTrackDetails(document.getElementById('custom_months_input').value);
+        } else {
+            document.getElementById('custom-duration-container').style.display = 'none';
+            let price = window.currentPrices[track];
+            let durationText = track === 'beginner' ? '1 Month' : track === 'intermediate' ? '2 Months' : '3 Months';
+            document.getElementById('track-details').innerText = `${durationText} Duration (₹${price} upon submission)`;
+        }
+    }
+    
+    function updateCustomTrackDetails(months) {
+        if (!months) {
+            document.getElementById('track-details').innerText = `Please enter a duration (Max ${window.maxCustom} Months).`;
+            return;
+        }
+        let parsed = parseInt(months);
+        if (parsed > window.maxCustom) {
+            document.getElementById('track-details').innerText = `Duration exceeds maximum of ${window.maxCustom} Months.`;
+            return;
+        }
+        let price = window.currentPrices['expert']; // default for custom is expert price
+        document.getElementById('track-details').innerText = `${parsed} Months Custom Duration (₹${price} upon submission)`;
     }
 
     let currentBasePrice = 0;

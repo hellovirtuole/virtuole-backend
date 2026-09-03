@@ -69,7 +69,10 @@ def dashboard_intern():
                 duration_days = 1
             else:
                 track = e.get('track_level', '').lower()
-                duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
+                if track.startswith('custom_'):
+                    duration_days = int(track.split('_')[1]) * 30
+                else:
+                    duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
             
             end_dt = start_dt + timedelta(days=duration_days)
         
@@ -91,35 +94,57 @@ def dashboard_intern():
             remaining_days = max(0, (end_dt - now).days)
             remaining_hours = max(0, int((end_dt - now).total_seconds() / 3600))
         
+            track = e.get('track_level', '').lower()
+            if track.startswith('custom_'):
+                track_display = f"{track.split('_')[1]} Months (Custom)"
+                specs_link = e['programs'].get('specs_expert', '#')
+                amount_due = e['programs'].get('price_expert', 0)
+            else:
+                track_display = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}.get(track, e.get('track_level', '').title())
+                specs_link = e['programs'].get(f"specs_{track}", '#')
+                amount_due = e['programs'].get(f"price_{track}", 0)
+
             active_projects.append({
                 'program_title': e['programs']['title'], 
                 'description': e['programs']['short_description'], 
-                'track_level': {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}.get(e.get('track_level', '').lower(), e.get('track_level', '').title()), 
+                'track_level': track_display, 
                 'enrollment_id': e['enrollment_id'], 
-                'specs_link': e['programs'].get(f"specs_{e['track_level']}", '#'), 
-                'amount_due': e['programs'].get(f"price_{e['track_level']}", 0),
+                'specs_link': specs_link, 
+                'amount_due': amount_due,
                 'status': e['status'],
                 'remaining_days': remaining_days,
                 'remaining_hours': remaining_hours,
                 'duration_days': duration_days
             })
         offered = supabase.table('programs').select('*').eq('is_active', True).execute().data
+        offered_programs_grouped = {}
+        for p in offered:
+            cat = p.get('category') or 'General'
+            if cat not in offered_programs_grouped:
+                offered_programs_grouped[cat] = []
+            offered_programs_grouped[cat].append(p)
     
         completed_projects = []
         graded_enrolls = supabase.table('enrollments').select('*, programs(title)').eq('user_id', u_id).in_('status', ['graded', 'submitted', 'certified', 'completed', 'graduated']).execute().data
         for e in graded_enrolls:
+            track = e.get('track_level', '').lower()
+            if track.startswith('custom_'):
+                track_display = f"{track.split('_')[1]} Months (Custom)"
+            else:
+                track_display = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}.get(track, e.get('track_level', '').title())
+
             sub = supabase.table('submissions').select('*').eq('enrollment_id', e['enrollment_id']).execute().data
             if sub:
                 s = sub[0]
-                completed_projects.append({'score': s.get('score'), 'program_title': e['programs']['title'], 'track_level': {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}.get(e.get('track_level', '').lower(), e.get('track_level', '').title()), 'enrollment_id': e['enrollment_id'], 'evaluated_date': s.get('evaluated_at', '').split('T')[0] if s.get('evaluated_at') else 'Pending', 'certificate_url': s.get('certificate_url'), 'lor_url': s.get('lor_url')})
+                completed_projects.append({'score': s.get('score'), 'program_title': e['programs']['title'], 'track_level': track_display, 'enrollment_id': e['enrollment_id'], 'evaluated_date': s.get('evaluated_at', '').split('T')[0] if s.get('evaluated_at') else 'Pending', 'certificate_url': s.get('certificate_url'), 'lor_url': s.get('lor_url')})
             else:
-                completed_projects.append({'score': e.get('final_score', 100), 'program_title': e['programs']['title'], 'track_level': {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}.get(e.get('track_level', '').lower(), e.get('track_level', '').title()), 'enrollment_id': e['enrollment_id'], 'evaluated_date': e.get('updated_at', '').split('T')[0] if e.get('updated_at') else 'Pending', 'certificate_url': None, 'lor_url': None})
+                completed_projects.append({'score': e.get('final_score', 100), 'program_title': e['programs']['title'], 'track_level': track_display, 'enrollment_id': e['enrollment_id'], 'evaluated_date': e.get('updated_at', '').split('T')[0] if e.get('updated_at') else 'Pending', 'certificate_url': None, 'lor_url': None})
 
         # Determine the default active tab: Explore if no active programs, otherwise Workspace.
         requested_tab = request.args.get('active_tab')
         default_tab = requested_tab if requested_tab else ('workspace' if active_projects else 'explore')
 
-        return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered, completed_projects=completed_projects, ambassador_active=ambassador_active, active_tab=default_tab, user_profile=user_profile, profile_details=profile_details)
+        return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered_programs_grouped, completed_projects=completed_projects, ambassador_active=ambassador_active, active_tab=default_tab, user_profile=user_profile, profile_details=profile_details)
     except Exception as e:
         import traceback
         return f"<h1>Internal Server Error inside dashboard_intern</h1><pre>{traceback.format_exc()}</pre>", 500
