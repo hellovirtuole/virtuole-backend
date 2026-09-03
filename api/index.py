@@ -68,6 +68,7 @@ from api.routes.admin import admin_bp
 from api.routes.ambassador import ambassador_bp
 from api.routes.dashboard import dashboard_bp
 from api.routes.public import public_bp
+from api.routes.telegram import telegram_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(intern_bp)
@@ -76,6 +77,7 @@ app.register_blueprint(admin_bp)
 app.register_blueprint(ambassador_bp)
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(public_bp)
+app.register_blueprint(telegram_bp)
 
 from api.config import limiter
 limiter.init_app(app)
