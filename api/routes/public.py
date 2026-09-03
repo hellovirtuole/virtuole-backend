@@ -100,6 +100,10 @@ def download_offer(enrollment_id):
         months = int(track.split('_')[1])
         duration_days = months * 30
         track_display = f"{months} Months (Custom)"
+    elif track.isdigit():
+        months = int(track)
+        duration_days = months * 30
+        track_display = f"{months} Months"
     else:
         duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
         track_display_map = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}

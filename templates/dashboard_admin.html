@@ -247,22 +247,38 @@
                         <label>Category (Section)</label>
                         <input type="text" name="category" placeholder="e.g. Frontend Development" value="General" required>
                     </div>
-                    <div class="au-form-group" style="margin:0;grid-column:1 / -1;">
-                        <label>Offered Durations & Custom Timeline</label>
-                        <div style="display:flex; gap:20px; align-items:center; flex-wrap: wrap;">
-                            <label><input type="checkbox" name="offer_1m" checked> 1 Month</label>
-                            <label><input type="checkbox" name="offer_2m" checked> 2 Months</label>
-                            <label><input type="checkbox" name="offer_3m" checked> 3 Months</label>
-                            <label><input type="checkbox" name="allow_custom_timeline"> Enable Custom Timeline</label>
-                            <input type="number" name="max_custom_months" placeholder="Max Months (e.g. 6)" value="6" style="max-width: 150px;" class="au-input">
+                    <!-- Dynamic Tracks Configuration -->
+                    <div class="au-form-group" style="margin:0;grid-column:1 / -1; background: rgba(56, 178, 172, 0.05); padding: 15px; border-radius: 8px; border: 1px dashed var(--primary);">
+                        <label>Number of Duration Options (Tracks)</label>
+                        <input type="number" id="num_tracks_input" min="1" max="20" value="3" oninput="generateTrackInputs()" required>
+                        <div id="dynamic-tracks-container" style="display:flex; flex-direction:column; gap:15px; margin-top:15px;"></div>
+                    </div>
+
+                    <!-- Custom Timeline Configuration -->
+                    <div class="au-form-group" style="margin:0;grid-column:1 / -1; background: rgba(0,0,0,0.1); padding: 15px; border-radius: 8px;">
+                        <label style="display: flex; gap: 8px; align-items: center; margin-bottom: 0;">
+                            <input type="checkbox" name="allow_custom_timeline" id="allow_custom_timeline" onchange="document.getElementById('custom-timeline-settings').style.display = this.checked ? 'flex' : 'none';"> 
+                            <strong>Enable Custom User Selection Range</strong>
+                        </label>
+                        <div id="custom-timeline-settings" style="display: none; flex-wrap: wrap; gap: 15px; margin-top: 15px;">
+                            <div style="flex: 1; min-width: 120px;">
+                                <label style="font-size: 0.85em;">Min Months</label>
+                                <input type="number" name="custom_min_months" value="1">
+                            </div>
+                            <div style="flex: 1; min-width: 120px;">
+                                <label style="font-size: 0.85em;">Max Months</label>
+                                <input type="number" name="max_custom_months" value="12">
+                            </div>
+                            <div style="flex: 1; min-width: 120px;">
+                                <label style="font-size: 0.85em;">Price (₹)</label>
+                                <input type="number" name="custom_price" value="599">
+                            </div>
+                            <div style="flex: 1; min-width: 250px;">
+                                <label style="font-size: 0.85em;">Specs URL</label>
+                                <input type="url" name="custom_specs" placeholder="https://...">
+                            </div>
                         </div>
                     </div>
-                    <div class="au-form-group" style="margin:0;"><label>1 Month Specs (Drive/PDF Link)</label><input type="url" name="specs_beginner" placeholder="https://..." required></div>
-                    <div class="au-form-group" style="margin:0;"><label>2 Months Specs (Drive/PDF Link)</label><input type="url" name="specs_intermediate" placeholder="https://..." required></div>
-                    <div class="au-form-group" style="margin:0;"><label>3 Months Specs (Drive/PDF Link)</label><input type="url" name="specs_expert" placeholder="https://..." required></div>
-                    <div class="au-form-group" style="margin:0;"><label>1 Month Price (₹)</label><input type="number" name="price_beginner" value="199" required></div>
-                    <div class="au-form-group" style="margin:0;"><label>2 Months Price (₹)</label><input type="number" name="price_intermediate" value="249" required></div>
-                    <div class="au-form-group" style="margin:0;"><label>3 Months Price (₹)</label><input type="number" name="price_expert" value="499" required></div>
                     <button type="submit" class="au-btn" style="grid-column:1 / -1;">Deploy Program</button>
                 </form>
             </div>
@@ -279,11 +295,20 @@
                         {% endif %}
                     </div>
                     <div style="font-size:.85em;font-weight:500;margin:6px 0 12px;display:flex;flex-direction:column;gap:4px;">
-                        {% if program.offer_1m != False %}<a href="{{ program.specs_beginner }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 1M Specs ↗</a>{% endif %}
-                        {% if program.offer_2m != False %}<a href="{{ program.specs_intermediate }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 2M Specs ↗</a>{% endif %}
-                        {% if program.offer_3m != False %}<a href="{{ program.specs_expert }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 3M Specs ↗</a>{% endif %}
+                        {% if program.tracks %}
+                            {% for track in program.tracks %}
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <a href="{{ track.specs }}" target="_blank" style="color:var(--primary);text-decoration:none;">View {{ track.months }}M Specs ↗</a>
+                                <span style="font-size:0.9em; color:var(--text-muted);">₹{{ track.price }}</span>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Fallback for old programs without dynamic tracks -->
+                            {% if program.offer_1m != False %}<a href="{{ program.specs_beginner }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 1M Specs ↗ (₹{{ program.price_beginner }})</a>{% endif %}
+                            {% if program.offer_2m != False %}<a href="{{ program.specs_intermediate }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 2M Specs ↗ (₹{{ program.price_intermediate }})</a>{% endif %}
+                            {% if program.offer_3m != False %}<a href="{{ program.specs_expert }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 3M Specs ↗ (₹{{ program.price_expert }})</a>{% endif %}
+                        {% endif %}
                     </div>
-                    <p style="font-size:.82em;font-family:monospace;color:var(--text-muted);background:rgba(148,163,184,.08);padding:8px 12px;border-radius:8px;">1M: ₹{{ program.price_beginner }} | 2M: ₹{{ program.price_intermediate }} | 3M: ₹{{ program.price_expert }}</p>
                     <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{ program.short_description }}</p>
                     <form action="/admin/delete-program" method="POST" style="margin-top:auto;" onsubmit="return confirm('Pull this program offline?');">
                         <input type="hidden" name="program_id" value="{{ program.id }}">
@@ -1228,7 +1253,36 @@
             const dateInput = document.getElementById('let-date');
             if(dateInput) dateInput.value = today;
             if(typeof updateLetterPreview === 'function') updateLetterPreview();
+            if(typeof generateTrackInputs === 'function' && document.getElementById('num_tracks_input')) generateTrackInputs();
         });
+
+        // --- Dynamic Tracks Logic ---
+        function generateTrackInputs() {
+            const num = parseInt(document.getElementById('num_tracks_input').value) || 0;
+            const container = document.getElementById('dynamic-tracks-container');
+            container.innerHTML = '';
+            for(let i=1; i<=num; i++) {
+                container.innerHTML += `
+                    <div style="background: rgba(255,255,255,0.02); padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;">
+                        <h5 style="margin:0 0 10px 0; color:var(--primary);">Track Option ${i}</h5>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                            <div style="flex:1; min-width:100px;">
+                                <label style="font-size:0.85em;">Duration (Months)</label>
+                                <input type="number" name="track_months[]" required>
+                            </div>
+                            <div style="flex:1; min-width:100px;">
+                                <label style="font-size:0.85em;">Price (₹)</label>
+                                <input type="number" name="track_price[]" required>
+                            </div>
+                            <div style="flex:2; min-width:200px;">
+                                <label style="font-size:0.85em;">Specs URL</label>
+                                <input type="url" name="track_specs[]" placeholder="https://..." required>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
 
         function downloadLetterPDF() {
             const element = document.getElementById('letter-preview-paper');

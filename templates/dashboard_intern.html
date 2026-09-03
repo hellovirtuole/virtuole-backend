@@ -74,7 +74,7 @@
                     <div style="padding:26px; display:flex; flex-direction:column; flex-grow:1;">
                         <h4 class="au-panel-title">{{ program.title }}</h4>
                         <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{ program.short_description }}</p>
-                        <button class="au-btn sm" style="margin-top:auto;width:100%; background: var(--primary); background-image: none; color: #fff; border: none;" onclick="openEnrollModal('{{ program.id }}', '{{ program.title }}', {{ program.price_beginner }}, {{ program.price_intermediate }}, {{ program.price_expert }}, {{ 'true' if program.offer_1m != False else 'false' }}, {{ 'true' if program.offer_2m != False else 'false' }}, {{ 'true' if program.offer_3m != False else 'false' }}, {{ 'true' if program.allow_custom_timeline else 'false' }}, {{ program.max_custom_months or 6 }})">Enroll Now</button>
+                        <button class="au-btn sm" style="margin-top:auto;width:100%; background: var(--primary); background-image: none; color: #fff; border: none;" onclick='openEnrollModal({{ program.id | tojson }}, {{ program.title | tojson }}, {{ program.tracks | tojson }}, {{ program.allow_custom_timeline | default(false) | tojson }}, {{ program.custom_min_months | default(1) }}, {{ program.max_custom_months | default(12) }}, {{ program.custom_price | default(0) }})'>Enroll Now</button>
                     </div>
                 </div>
                 {% endfor %}
@@ -241,11 +241,8 @@
                 <p style="font-size: 0.8em; color: var(--au-gold); margin-top: -10px; margin-bottom: 15px;">(Academic details are synced from your Profile)</p>
                 <div class="au-form-group">
                     <label>Select Duration</label>
-                    <div style="display: flex; gap: 10px; margin-bottom: 8px;">
-                        <button type="button" id="btn-1m" class="au-btn-ghost track-btn" style="flex: 1; padding: 10px;" onclick="selectTrack('beginner', this)">1 Month</button>
-                        <button type="button" id="btn-2m" class="au-btn-ghost track-btn" style="flex: 1; padding: 10px;" onclick="selectTrack('intermediate', this)">2 Months</button>
-                        <button type="button" id="btn-3m" class="au-btn-ghost track-btn" style="flex: 1; padding: 10px;" onclick="selectTrack('expert', this)">3 Months</button>
-                        <button type="button" id="btn-custom" class="au-btn-ghost track-btn" style="flex: 1; padding: 10px; display: none;" onclick="selectTrack('custom', this)">Custom</button>
+                    <div id="dynamic-tracks-btn-container" style="display: flex; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;">
+                        <!-- JS will inject buttons here -->
                     </div>
                     <div id="custom-duration-container" style="display: none; margin-bottom: 8px;">
                         <label>Enter Custom Duration (Months)</label>
@@ -301,70 +298,75 @@
     /* Modal helpers (switchView + theme handled by dashboard_nav.html) */
     function closeModal(modalId) { document.getElementById(modalId).classList.remove('open'); }
 
-    function openEnrollModal(programId, programTitle, priceBeg, priceInt, priceExp, off1, off2, off3, allowCustom, maxCustom) {
+    function openEnrollModal(programId, programTitle, tracks, allowCustom, minCustom, maxCustom, customPrice) {
         document.getElementById('enroll-program-name').value = programId;
         document.querySelector('#enrollModal h3').innerText = 'Enroll: ' + programTitle;
         
-        window.currentPrices = {
-            beginner: priceBeg,
-            intermediate: priceInt,
-            expert: priceExp
-        };
-        window.maxCustom = maxCustom || 6;
+        window.currentTracks = tracks || [];
+        window.customConfig = { allow: allowCustom, min: minCustom, max: maxCustom, price: customPrice };
         
-        document.getElementById('btn-1m').style.display = off1 ? 'block' : 'none';
-        document.getElementById('btn-2m').style.display = off2 ? 'block' : 'none';
-        document.getElementById('btn-3m').style.display = off3 ? 'block' : 'none';
-        document.getElementById('btn-custom').style.display = allowCustom ? 'block' : 'none';
+        const container = document.getElementById('dynamic-tracks-btn-container');
+        container.innerHTML = '';
+        
+        window.currentTracks.forEach(t => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'au-btn-ghost track-btn';
+            btn.style.flex = '1';
+            btn.style.padding = '10px';
+            btn.innerText = t.months + ' Months';
+            btn.onclick = function() { selectTrack(t.months.toString(), this, t.price); };
+            container.appendChild(btn);
+        });
+
+        if (allowCustom) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'au-btn-ghost track-btn';
+            btn.style.flex = '1';
+            btn.style.padding = '10px';
+            btn.innerText = 'Custom';
+            btn.onclick = function() { selectTrack('custom', this, customPrice); };
+            container.appendChild(btn);
+        }
         
         document.getElementById('hidden-track-level').value = '';
         document.getElementById('custom_months_input').value = '';
         document.getElementById('custom-duration-container').style.display = 'none';
         document.getElementById('track-details').innerText = 'Select a duration to see details.';
-        document.querySelectorAll('.track-btn').forEach(btn => {
-            btn.className = 'au-btn-ghost track-btn';
-            btn.style.flex = '1';
-            btn.style.padding = '10px';
-        });
         
         document.getElementById('enrollModal').classList.add('open');
     }
 
-    function selectTrack(track, btnElement) {
-        document.getElementById('hidden-track-level').value = track;
+    function selectTrack(trackId, btnElement, price) {
+        document.getElementById('hidden-track-level').value = trackId;
         document.querySelectorAll('.track-btn').forEach(btn => {
             btn.className = 'au-btn-ghost track-btn';
-            btn.style.flex = '1';
-            btn.style.padding = '10px';
         });
         btnElement.className = 'au-btn track-btn';
-        btnElement.style.flex = '1';
-        btnElement.style.padding = '10px';
         
-        if (track === 'custom') {
+        if (trackId === 'custom') {
             document.getElementById('custom-duration-container').style.display = 'block';
-            document.getElementById('custom_months_input').max = window.maxCustom;
+            document.getElementById('custom_months_input').min = window.customConfig.min;
+            document.getElementById('custom_months_input').max = window.customConfig.max;
             updateCustomTrackDetails(document.getElementById('custom_months_input').value);
         } else {
             document.getElementById('custom-duration-container').style.display = 'none';
-            let price = window.currentPrices[track];
-            let durationText = track === 'beginner' ? '1 Month' : track === 'intermediate' ? '2 Months' : '3 Months';
-            document.getElementById('track-details').innerText = `${durationText} Duration (₹${price} upon submission)`;
+            document.getElementById('track-details').innerText = `${trackId} Months Duration (₹${price} upon submission)`;
         }
     }
     
     function updateCustomTrackDetails(months) {
         if (!months) {
-            document.getElementById('track-details').innerText = `Please enter a duration (Max ${window.maxCustom} Months).`;
+            document.getElementById('track-details').innerText = `Please enter a duration (Range: ${window.customConfig.min}-${window.customConfig.max} Months).`;
             return;
         }
         let parsed = parseInt(months);
-        if (parsed > window.maxCustom) {
-            document.getElementById('track-details').innerText = `Duration exceeds maximum of ${window.maxCustom} Months.`;
+        if (parsed > window.customConfig.max || parsed < window.customConfig.min) {
+            document.getElementById('track-details').innerText = `Duration must be between ${window.customConfig.min} and ${window.customConfig.max} Months.`;
             return;
         }
-        let price = window.currentPrices['expert']; // default for custom is expert price
-        document.getElementById('track-details').innerText = `${parsed} Months Custom Duration (₹${price} upon submission)`;
+        document.getElementById('track-details').innerText = `${parsed} Months Custom Duration (₹${window.customConfig.price} upon submission)`;
     }
 
     let currentBasePrice = 0;

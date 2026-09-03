@@ -71,6 +71,8 @@ def dashboard_intern():
                 track = e.get('track_level', '').lower()
                 if track.startswith('custom_'):
                     duration_days = int(track.split('_')[1]) * 30
+                elif track.isdigit():
+                    duration_days = int(track) * 30
                 else:
                     duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
             
@@ -97,8 +99,19 @@ def dashboard_intern():
             track = e.get('track_level', '').lower()
             if track.startswith('custom_'):
                 track_display = f"{track.split('_')[1]} Months (Custom)"
-                specs_link = e['programs'].get('specs_expert', '#')
-                amount_due = e['programs'].get('price_expert', 0)
+                specs_link = e['programs'].get('custom_specs', '#')
+                amount_due = e['programs'].get('custom_price', 0)
+            elif track.isdigit():
+                track_display = f"{track} Months"
+                # Find matching track in JSON
+                tracks_json = e['programs'].get('tracks') or []
+                matched = next((t for t in tracks_json if str(t.get('months')) == track), None)
+                if matched:
+                    specs_link = matched.get('specs', '#')
+                    amount_due = matched.get('price', 0)
+                else:
+                    specs_link = '#'
+                    amount_due = 0
             else:
                 track_display = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}.get(track, e.get('track_level', '').title())
                 specs_link = e['programs'].get(f"specs_{track}", '#')
@@ -119,6 +132,13 @@ def dashboard_intern():
         offered = supabase.table('programs').select('*').eq('is_active', True).execute().data
         offered_programs_grouped = {}
         for p in offered:
+            if not p.get('tracks'):
+                fallback = []
+                if p.get('offer_1m'): fallback.append({'months': 1, 'price': p.get('price_beginner', 0), 'specs': p.get('specs_beginner', '')})
+                if p.get('offer_2m'): fallback.append({'months': 2, 'price': p.get('price_intermediate', 0), 'specs': p.get('specs_intermediate', '')})
+                if p.get('offer_3m'): fallback.append({'months': 3, 'price': p.get('price_expert', 0), 'specs': p.get('specs_expert', '')})
+                p['tracks'] = fallback
+
             cat = p.get('category') or 'General'
             if cat not in offered_programs_grouped:
                 offered_programs_grouped[cat] = []
@@ -130,6 +150,8 @@ def dashboard_intern():
             track = e.get('track_level', '').lower()
             if track.startswith('custom_'):
                 track_display = f"{track.split('_')[1]} Months (Custom)"
+            elif track.isdigit():
+                track_display = f"{track} Months"
             else:
                 track_display = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}.get(track, e.get('track_level', '').title())
 

@@ -13,18 +13,32 @@ admin_bp = Blueprint('admin', __name__)
 @admin_bp.route('/api/admin/add-program', methods=['POST'])
 def add_program():
     if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
+    t_months = request.form.getlist('track_months[]')
+    t_prices = request.form.getlist('track_price[]')
+    t_specs = request.form.getlist('track_specs[]')
+    
+    tracks = []
+    for m, p, s in zip(t_months, t_prices, t_specs):
+        if m and p and s:
+            tracks.append({"months": int(m), "price": int(p), "specs": s})
+
+    # For legacy fallback so it doesn't crash old code expecting integers
+    fallback_price = int(t_prices[0]) if t_prices else 0
+    fallback_specs = t_specs[0] if t_specs else ''
+            
     supabase.table('programs').insert({
-        "title": request.form.get('title'), "short_description": request.form.get('short_description'), "specs_beginner": request.form.get('specs_beginner'),
-        "specs_intermediate": request.form.get('specs_intermediate'), "specs_expert": request.form.get('specs_expert'),
-        "price_beginner": int(request.form.get('price_beginner')), "price_intermediate": int(request.form.get('price_intermediate')),
-        "price_expert": int(request.form.get('price_expert')), "is_active": True,
-        "image_url": request.form.get('image_url', ''),
-        "offer_1m": request.form.get('offer_1m') == 'on',
-        "offer_2m": request.form.get('offer_2m') == 'on',
-        "offer_3m": request.form.get('offer_3m') == 'on',
+        "title": request.form.get('title'), "short_description": request.form.get('short_description'), 
+        "specs_beginner": fallback_specs, "specs_intermediate": fallback_specs, "specs_expert": fallback_specs,
+        "price_beginner": fallback_price, "price_intermediate": fallback_price, "price_expert": fallback_price,
+        "is_active": True, "image_url": request.form.get('image_url', ''),
+        "offer_1m": False, "offer_2m": False, "offer_3m": False,
         "allow_custom_timeline": request.form.get('allow_custom_timeline') == 'on',
-        "max_custom_months": int(request.form.get('max_custom_months', 6) or 6),
-        "category": request.form.get('category', 'General')
+        "custom_min_months": int(request.form.get('custom_min_months', 1) or 1),
+        "max_custom_months": int(request.form.get('max_custom_months', 12) or 12),
+        "custom_price": int(request.form.get('custom_price', 0) or 0),
+        "custom_specs": request.form.get('custom_specs', ''),
+        "category": request.form.get('category', 'General'),
+        "tracks": tracks
     }).execute()
     return redirect(url_for('dashboard.dashboard_admin', tab='programs'))
 
