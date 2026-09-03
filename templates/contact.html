@@ -39,9 +39,10 @@
             </div>
         </div>
 
-        <div class="cta-row reveal">
-            <a href="mailto:support@virtuole.in" class="au-btn">✉️ Email Our Support Team</a>
-            <a href="/" class="au-btn-ghost">← Back to Home</a>
+        <div class="cta-row reveal" style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <a href="mailto:support@virtuole.in" class="au-btn">✉️ Open Email App</a>
+            <button onclick="navigator.clipboard.writeText('support@virtuole.in'); this.innerText='✅ Copied!'; setTimeout(()=>this.innerText='📋 Copy Email Address', 2000)" class="au-btn" style="background: var(--surface-light); color: var(--text-main); border: 1px solid rgba(255,255,255,0.1);">📋 Copy Email Address</button>
+            <a href="/" class="au-btn-ghost" style="width: 100%; max-width: 200px;">← Back to Home</a>
         </div>
     </main>
 
