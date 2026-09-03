@@ -69,7 +69,12 @@
                 {% for task in available_tasks %}
                 <div class="au-card reveal" style="padding:26px;display:flex;flex-direction:column;">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
-                        <h4 class="au-panel-title" style="margin:0;">{{ task.title }}</h4>
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            {% if task.badge_text %}
+                            <div style="background:linear-gradient(135deg, #ec4899 0%, #d946ef 100%); color:#fff; font-size:0.75em; font-weight:800; padding:4px 10px; border-radius:12px; align-self:flex-start;">{{ task.badge_text }}</div>
+                            {% endif %}
+                            <h4 class="au-panel-title" style="margin:0;">{{ task.title }}</h4>
+                        </div>
                         <span class="au-badge" style="flex-shrink:0;background:rgba(139,92,246,.14);color:#b794f4;border-color:rgba(139,92,246,.3);">+{{ task.point_value }} PTS</span>
                     </div>
                     {% set claims_count = task_claims.get(task.id, 0) %}

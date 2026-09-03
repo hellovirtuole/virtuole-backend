@@ -247,6 +247,10 @@
                         <label>Category (Section)</label>
                         <input type="text" name="category" placeholder="e.g. Frontend Development" value="General" required>
                     </div>
+                    <div class="au-form-group" style="margin:0;grid-column:1 / -1;">
+                        <label>Custom Badge Text (Optional, supports emojis)</label>
+                        <input type="text" name="badge_text" placeholder="e.g. Most Popular 🔥, Recently Added 🆕">
+                    </div>
                     <!-- Dynamic Tracks Configuration -->
                     <div class="au-form-group" style="margin:0;grid-column:1 / -1; background: rgba(56, 178, 172, 0.05); padding: 15px; border-radius: 8px; border: 1px dashed var(--primary);">
                         <label>Number of Duration Options (Tracks)</label>
@@ -310,10 +314,13 @@
                         {% endif %}
                     </div>
                     <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{ program.short_description }}</p>
-                    <form action="/admin/delete-program" method="POST" style="margin-top:auto;" onsubmit="return confirm('Pull this program offline?');">
-                        <input type="hidden" name="program_id" value="{{ program.id }}">
-                        <button type="submit" class="au-btn danger" style="width:100%;">Take Offline</button>
-                    </form>
+                    <div style="margin-top:auto; display:flex; gap:10px;">
+                        <button type="button" class="au-btn" style="flex:1;" onclick='openEditProgramModal({{ program.id | tojson }}, {{ program.title | tojson }}, {{ program.short_description | tojson }}, {{ program.image_url | tojson }}, {{ program.category | tojson }}, {{ program.badge_text | default("") | tojson }}, {{ program.tracks | default([]) | tojson }}, {{ program.allow_custom_timeline | default(false) | tojson }}, {{ program.custom_min_months | default(1) }}, {{ program.max_custom_months | default(12) }}, {{ program.custom_price | default(0) }}, {{ program.custom_specs | default("") | tojson }})'>Edit</button>
+                        <form action="/admin/delete-program" method="POST" style="flex:1; margin:0;" onsubmit="return confirm('Pull this program offline?');">
+                            <input type="hidden" name="program_id" value="{{ program.id }}">
+                            <button type="submit" class="au-btn danger" style="width:100%;">Take Offline</button>
+                        </form>
+                    </div>
                 </div>
                 {% else %}
                 <div class="au-panel" style="text-align:center;color:var(--text-muted);grid-column:1 / -1;">No active programs.</div>
@@ -333,7 +340,8 @@
                     <div class="au-form-group"><label>Task Instructions &amp; Guidelines</label><textarea name="description" rows="3" placeholder="Explain exactly what the Ambassador needs to do and provide..." required></textarea></div>
                     <div class="au-form-group" style="max-width:220px;"><label>Merit Point Value</label><input type="number" name="point_value" placeholder="e.g., 50" required></div>
                     <div class="au-form-group" style="max-width:220px;"><label>Max Completions Per Ambassador</label><input type="number" name="max_completions" placeholder="e.g., 1" value="1" min="1" required></div>
-                    <button type="submit" class="au-btn violet">Publish Task to Network</button>
+                    <div class="au-form-group" style="grid-column: 1 / -1;"><label>Custom Badge Text (Optional)</label><input type="text" name="badge_text" placeholder="e.g. High Priority 🚨"></div>
+                    <button type="submit" class="au-btn violet" style="grid-column: 1 / -1;">Publish Task to Network</button>
                 </form>
             </div>
 
@@ -344,10 +352,13 @@
                     <h4 class="au-panel-title">{{ task.title }}</h4>
                     <p style="font-size:.82em;font-family:monospace;color:#b794f4;background:rgba(139,92,246,.12);padding:6px 12px;border-radius:8px;display:inline-block;align-self:flex-start;">Points: +{{ task.point_value }}</p>
                     <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{ task.description }}</p>
-                    <form action="/admin/delete-task" method="POST" style="margin-top:auto;" onsubmit="return confirm('Remove this task from the Ambassador board?');">
-                        <input type="hidden" name="task_id" value="{{ task.id }}">
-                        <button type="submit" class="au-btn danger" style="width:100%;">Deactivate Task</button>
-                    </form>
+                    <div style="margin-top:auto; display:flex; gap:10px;">
+                        <button type="button" class="au-btn" style="flex:1;" onclick='openEditTaskModal({{ task.id | tojson }}, {{ task.title | tojson }}, {{ task.description | tojson }}, {{ task.point_value }}, {{ task.max_completions }}, {{ task.badge_text | default("") | tojson }})'>Edit</button>
+                        <form action="/admin/delete-task" method="POST" style="flex:1; margin:0;" onsubmit="return confirm('Remove this task from the Ambassador board?');">
+                            <input type="hidden" name="task_id" value="{{ task.id }}">
+                            <button type="submit" class="au-btn danger" style="width:100%;">Deactivate Task</button>
+                        </form>
+                    </div>
                 </div>
                 {% else %}
                 <div class="au-panel" style="text-align:center;color:var(--text-muted);grid-column:1 / -1;">No active tasks. Create one above to engage Ambassadors.</div>
@@ -1190,6 +1201,86 @@
         </div>
     </div>
 
+    <!-- ===================== EDIT PROGRAM MODAL ===================== -->
+    <div class="au-modal" id="editProgramModal">
+        <div class="au-modal-card au-form" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+            <button class="au-modal-close" onclick="closeModal('editProgramModal')">&times;</button>
+            <h3>Edit Program</h3>
+            <form action="/admin/edit-program" method="POST" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;align-items:end;margin-top:18px;">
+                <input type="hidden" name="program_id" id="ep_program_id">
+                <div class="au-form-group" style="margin:0;grid-column:1 / -1;">
+                    <label>Program Title</label>
+                    <input type="text" name="title" id="ep_title" required>
+                </div>
+                <div class="au-form-group" style="margin:0;grid-column:1 / -1;">
+                    <label>Short Description (Used in LoR/Offer Letter)</label>
+                    <textarea name="short_description" id="ep_short_description" rows="2" required></textarea>
+                </div>
+                <div class="au-form-group" style="margin:0;grid-column:1 / -1;">
+                    <label>Cover Image URL (G-Drive or Direct Link)</label>
+                    <input type="url" name="image_url" id="ep_image_url" required>
+                </div>
+                <div class="au-form-group" style="margin:0;grid-column:1 / -1;">
+                    <label>Category (Section)</label>
+                    <input type="text" name="category" id="ep_category" required>
+                </div>
+                <div class="au-form-group" style="margin:0;grid-column:1 / -1;">
+                    <label>Custom Badge Text (Optional, supports emojis)</label>
+                    <input type="text" name="badge_text" id="ep_badge_text">
+                </div>
+                
+                <div class="au-form-group" style="margin:0;grid-column:1 / -1; background: rgba(56, 178, 172, 0.05); padding: 15px; border-radius: 8px; border: 1px dashed var(--primary);">
+                    <label>Number of Duration Options (Tracks)</label>
+                    <input type="number" id="ep_num_tracks" min="1" max="20" oninput="generateEditTrackInputs()" required>
+                    <div id="ep-dynamic-tracks-container" style="display:flex; flex-direction:column; gap:15px; margin-top:15px;"></div>
+                </div>
+
+                <div class="au-form-group" style="margin:0;grid-column:1 / -1; background: rgba(0,0,0,0.1); padding: 15px; border-radius: 8px;">
+                    <label style="display: flex; gap: 8px; align-items: center; margin-bottom: 0;">
+                        <input type="checkbox" name="allow_custom_timeline" id="ep_allow_custom_timeline" onchange="document.getElementById('ep-custom-timeline-settings').style.display = this.checked ? 'flex' : 'none';"> 
+                        <strong>Enable Custom User Selection Range</strong>
+                    </label>
+                    <div id="ep-custom-timeline-settings" style="display: none; flex-wrap: wrap; gap: 15px; margin-top: 15px;">
+                        <div style="flex: 1; min-width: 120px;">
+                            <label style="font-size: 0.85em;">Min Months</label>
+                            <input type="number" name="custom_min_months" id="ep_custom_min_months">
+                        </div>
+                        <div style="flex: 1; min-width: 120px;">
+                            <label style="font-size: 0.85em;">Max Months</label>
+                            <input type="number" name="max_custom_months" id="ep_max_custom_months">
+                        </div>
+                        <div style="flex: 1; min-width: 120px;">
+                            <label style="font-size: 0.85em;">Price (₹)</label>
+                            <input type="number" name="custom_price" id="ep_custom_price">
+                        </div>
+                        <div style="flex: 1; min-width: 250px;">
+                            <label style="font-size: 0.85em;">Specs URL</label>
+                            <input type="url" name="custom_specs" id="ep_custom_specs">
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="au-btn" style="grid-column:1 / -1;">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===================== EDIT TASK MODAL ===================== -->
+    <div class="au-modal" id="editTaskModal">
+        <div class="au-modal-card au-form">
+            <button class="au-modal-close" onclick="closeModal('editTaskModal')">&times;</button>
+            <h3>Edit Ambassador Task</h3>
+            <form action="/admin/edit-task" method="POST" style="margin-top:18px;">
+                <input type="hidden" name="task_id" id="et_task_id">
+                <div class="au-form-group"><label>Task Title</label><input type="text" name="title" id="et_title" required></div>
+                <div class="au-form-group"><label>Task Instructions &amp; Guidelines</label><textarea name="description" id="et_description" rows="3" required></textarea></div>
+                <div class="au-form-group"><label>Merit Point Value</label><input type="number" name="point_value" id="et_point_value" required></div>
+                <div class="au-form-group"><label>Max Completions Per Ambassador</label><input type="number" name="max_completions" id="et_max_completions" min="1" required></div>
+                <div class="au-form-group"><label>Custom Badge Text (Optional)</label><input type="text" name="badge_text" id="et_badge_text"></div>
+                <button type="submit" class="au-btn violet">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
     <script>
         let currentReferralsData = [];
         let currentReferralName = "";
@@ -1276,12 +1367,81 @@
                             </div>
                             <div style="flex:2; min-width:200px;">
                                 <label style="font-size:0.85em;">Specs URL</label>
-                                <input type="url" name="track_specs[]" placeholder="https://..." required>
+                                <input type="url" name="track_specs[]" required>
                             </div>
                         </div>
                     </div>
                 `;
             }
+        }
+
+        // --- Edit Program Logic ---
+        let currentEditTracks = [];
+        
+        function openEditProgramModal(id, title, desc, img, cat, badge, tracks, customOn, minM, maxM, customP, customS) {
+            document.getElementById('ep_program_id').value = id;
+            document.getElementById('ep_title').value = title;
+            document.getElementById('ep_short_description').value = desc;
+            document.getElementById('ep_image_url').value = img;
+            document.getElementById('ep_category').value = cat;
+            document.getElementById('ep_badge_text').value = badge;
+            
+            document.getElementById('ep_allow_custom_timeline').checked = customOn;
+            document.getElementById('ep-custom-timeline-settings').style.display = customOn ? 'flex' : 'none';
+            document.getElementById('ep_custom_min_months').value = minM;
+            document.getElementById('ep_max_custom_months').value = maxM;
+            document.getElementById('ep_custom_price').value = customP;
+            document.getElementById('ep_custom_specs').value = customS;
+            
+            currentEditTracks = tracks;
+            document.getElementById('ep_num_tracks').value = tracks.length;
+            generateEditTrackInputs(true);
+            
+            openModal('editProgramModal');
+        }
+        
+        function generateEditTrackInputs(populate = false) {
+            const num = parseInt(document.getElementById('ep_num_tracks').value) || 0;
+            const container = document.getElementById('ep-dynamic-tracks-container');
+            container.innerHTML = '';
+            for(let i=0; i<num; i++) {
+                let m = '', p = '', s = '';
+                if(populate && currentEditTracks[i]) {
+                    m = currentEditTracks[i].months || '';
+                    p = currentEditTracks[i].price || '';
+                    s = currentEditTracks[i].specs || '';
+                }
+                
+                container.innerHTML += `
+                    <div style="background: rgba(255,255,255,0.02); padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;">
+                        <h5 style="margin:0 0 10px 0; color:var(--primary);">Track Option ${i+1}</h5>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                            <div style="flex:1; min-width:100px;">
+                                <label style="font-size:0.85em;">Duration (Months)</label>
+                                <input type="number" name="track_months[]" value="${m}" required>
+                            </div>
+                            <div style="flex:1; min-width:100px;">
+                                <label style="font-size:0.85em;">Price (₹)</label>
+                                <input type="number" name="track_price[]" value="${p}" required>
+                            </div>
+                            <div style="flex:2; min-width:200px;">
+                                <label style="font-size:0.85em;">Specs URL</label>
+                                <input type="url" name="track_specs[]" value="${s}" required>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function openEditTaskModal(id, title, desc, point, maxC, badge) {
+            document.getElementById('et_task_id').value = id;
+            document.getElementById('et_title').value = title;
+            document.getElementById('et_description').value = desc;
+            document.getElementById('et_point_value').value = point;
+            document.getElementById('et_max_completions').value = maxC;
+            document.getElementById('et_badge_text').value = badge;
+            openModal('editTaskModal');
         }
 
         function downloadLetterPDF() {

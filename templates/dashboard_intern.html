@@ -71,7 +71,10 @@
                     {% if program.image_url %}
                     <img src="{{ program.image_url }}" alt="{{ program.title }}" style="width: 100%; height: 160px; object-fit: cover; display: block; border-bottom: 1px solid rgba(255,255,255,0.05);">
                     {% endif %}
-                    <div style="padding:26px; display:flex; flex-direction:column; flex-grow:1;">
+                    <div style="padding:26px; display:flex; flex-direction:column; flex-grow:1; position:relative;">
+                        {% if program.badge_text %}
+                        <div style="position:absolute; top:-12px; right:20px; background:linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color:#000; font-size:0.75em; font-weight:800; padding:4px 12px; border-radius:12px; box-shadow:0 4px 12px rgba(245,158,11,0.3); z-index:1;">{{ program.badge_text }}</div>
+                        {% endif %}
                         <h4 class="au-panel-title">{{ program.title }}</h4>
                         <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{ program.short_description }}</p>
                         <button class="au-btn sm" style="margin-top:auto;width:100%; background: var(--primary); background-image: none; color: #fff; border: none;" onclick='openEnrollModal({{ program.id | tojson }}, {{ program.title | tojson }}, {{ program.tracks | tojson }}, {{ program.allow_custom_timeline | default(false) | tojson }}, {{ program.custom_min_months | default(1) }}, {{ program.max_custom_months | default(12) }}, {{ program.custom_price | default(0) }})'>Enroll Now</button>

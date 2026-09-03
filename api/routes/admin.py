@@ -38,8 +38,37 @@ def add_program():
         "custom_price": int(request.form.get('custom_price', 0) or 0),
         "custom_specs": request.form.get('custom_specs', ''),
         "category": request.form.get('category', 'General'),
+        "badge_text": request.form.get('badge_text', ''),
         "tracks": tracks
     }).execute()
+    return redirect(url_for('dashboard.dashboard_admin', tab='programs'))
+
+@admin_bp.route('/admin/edit-program', methods=['POST'])
+@admin_bp.route('/api/admin/edit-program', methods=['POST'])
+def edit_program():
+    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
+    program_id = request.form.get('program_id')
+    t_months = request.form.getlist('track_months[]')
+    t_prices = request.form.getlist('track_price[]')
+    t_specs = request.form.getlist('track_specs[]')
+    
+    tracks = []
+    for m, p, s in zip(t_months, t_prices, t_specs):
+        if m and p and s:
+            tracks.append({"months": int(m), "price": int(p), "specs": s})
+            
+    supabase.table('programs').update({
+        "title": request.form.get('title'), "short_description": request.form.get('short_description'), 
+        "image_url": request.form.get('image_url', ''),
+        "allow_custom_timeline": request.form.get('allow_custom_timeline') == 'on',
+        "custom_min_months": int(request.form.get('custom_min_months', 1) or 1),
+        "max_custom_months": int(request.form.get('max_custom_months', 12) or 12),
+        "custom_price": int(request.form.get('custom_price', 0) or 0),
+        "custom_specs": request.form.get('custom_specs', ''),
+        "category": request.form.get('category', 'General'),
+        "badge_text": request.form.get('badge_text', ''),
+        "tracks": tracks
+    }).eq('id', program_id).execute()
     return redirect(url_for('dashboard.dashboard_admin', tab='programs'))
 
 @admin_bp.route('/admin/delete-program', methods=['POST'])
@@ -55,9 +84,30 @@ def delete_program():
 def add_task():
     if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
     max_completions = int(request.form.get('max_completions', 1) or 1)
-    supabase.table('ambassador_tasks').insert({"title": request.form.get('title'), "description": request.form.get('description'), "point_value": int(request.form.get('point_value')), "is_active": True, "max_completions": max_completions}).execute()
+    supabase.table('ambassador_tasks').insert({
+        "title": request.form.get('title'), 
+        "description": request.form.get('description'), 
+        "point_value": int(request.form.get('point_value')), 
+        "is_active": True, 
+        "max_completions": max_completions,
+        "badge_text": request.form.get('badge_text', '')
+    }).execute()
     return redirect(url_for('dashboard.dashboard_admin', tab='tasks'))
 
+@admin_bp.route('/admin/edit-task', methods=['POST'])
+@admin_bp.route('/api/admin/edit-task', methods=['POST'])
+def edit_task():
+    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
+    task_id = request.form.get('task_id')
+    max_completions = int(request.form.get('max_completions', 1) or 1)
+    supabase.table('ambassador_tasks').update({
+        "title": request.form.get('title'),
+        "description": request.form.get('description'),
+        "point_value": int(request.form.get('point_value')),
+        "max_completions": max_completions,
+        "badge_text": request.form.get('badge_text', '')
+    }).eq('id', task_id).execute()
+    return redirect(url_for('dashboard.dashboard_admin', tab='tasks'))
 @admin_bp.route('/admin/delete-task', methods=['POST'])
 @admin_bp.route('/api/admin/delete-task', methods=['POST'])
 def delete_task():
