@@ -315,7 +315,7 @@
                     </div>
                     <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{ program.short_description }}</p>
                     <div style="margin-top:auto; display:flex; gap:10px;">
-                        <button type="button" class="au-btn" style="flex:1;" onclick='openEditProgramModal({{ program.id | tojson }}, {{ program.title | tojson }}, {{ program.short_description | tojson }}, {{ program.image_url | tojson }}, {{ program.category | tojson }}, {{ program.badge_text | default("") | tojson }}, {{ program.tracks | default([]) | tojson }}, {{ program.allow_custom_timeline | default(false) | tojson }}, {{ program.custom_min_months | default(1) }}, {{ program.max_custom_months | default(12) }}, {{ program.custom_price | default(0) }}, {{ program.custom_specs | default("") | tojson }})'>Edit</button>
+                        <button type="button" class="au-btn edit-program-btn" style="flex:1;" data-program="{{ program | tojson | forceescape }}">Edit</button>
                         <form action="/admin/delete-program" method="POST" style="flex:1; margin:0;" onsubmit="return confirm('Pull this program offline?');">
                             <input type="hidden" name="program_id" value="{{ program.id }}">
                             <button type="submit" class="au-btn danger" style="width:100%;">Take Offline</button>
@@ -353,7 +353,7 @@
                     <p style="font-size:.82em;font-family:monospace;color:#b794f4;background:rgba(139,92,246,.12);padding:6px 12px;border-radius:8px;display:inline-block;align-self:flex-start;">Points: +{{ task.point_value }}</p>
                     <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{ task.description }}</p>
                     <div style="margin-top:auto; display:flex; gap:10px;">
-                        <button type="button" class="au-btn" style="flex:1;" onclick='openEditTaskModal({{ task.id | tojson }}, {{ task.title | tojson }}, {{ task.description | tojson }}, {{ task.point_value }}, {{ task.max_completions }}, {{ task.badge_text | default("") | tojson }})'>Edit</button>
+                        <button type="button" class="au-btn edit-task-btn" style="flex:1;" data-task="{{ task | tojson | forceescape }}">Edit</button>
                         <form action="/admin/delete-task" method="POST" style="flex:1; margin:0;" onsubmit="return confirm('Remove this task from the Ambassador board?');">
                             <input type="hidden" name="task_id" value="{{ task.id }}">
                             <button type="submit" class="au-btn danger" style="width:100%;">Deactivate Task</button>
@@ -1378,6 +1378,26 @@
         // --- Edit Program Logic ---
         let currentEditTracks = [];
         
+        document.querySelectorAll('.edit-program-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const p = JSON.parse(this.dataset.program);
+                openEditProgramModal(
+                    p.id, 
+                    p.title, 
+                    p.short_description, 
+                    p.image_url, 
+                    p.category, 
+                    p.badge_text || '', 
+                    p.tracks || [], 
+                    p.allow_custom_timeline || false, 
+                    p.custom_min_months || 1, 
+                    p.max_custom_months || 12, 
+                    p.custom_price || 0, 
+                    p.custom_specs || ''
+                );
+            });
+        });
+        
         function openEditProgramModal(id, title, desc, img, cat, badge, tracks, customOn, minM, maxM, customP, customS) {
             document.getElementById('ep_program_id').value = id;
             document.getElementById('ep_title').value = title;
@@ -1403,13 +1423,31 @@
         function generateEditTrackInputs(populate = false) {
             const num = parseInt(document.getElementById('ep_num_tracks').value) || 0;
             const container = document.getElementById('ep-dynamic-tracks-container');
+            
+            // Save existing values if not explicitly populating from initial data
+            let savedTracks = [];
+            if (!populate) {
+                const existingMonths = container.querySelectorAll('input[name="track_months[]"]');
+                const existingPrices = container.querySelectorAll('input[name="track_price[]"]');
+                const existingSpecs = container.querySelectorAll('input[name="track_specs[]"]');
+                for (let i = 0; i < existingMonths.length; i++) {
+                    savedTracks.push({
+                        months: existingMonths[i].value,
+                        price: existingPrices[i].value,
+                        specs: existingSpecs[i].value
+                    });
+                }
+            } else {
+                savedTracks = currentEditTracks;
+            }
+
             container.innerHTML = '';
             for(let i=0; i<num; i++) {
                 let m = '', p = '', s = '';
-                if(populate && currentEditTracks[i]) {
-                    m = currentEditTracks[i].months || '';
-                    p = currentEditTracks[i].price || '';
-                    s = currentEditTracks[i].specs || '';
+                if(savedTracks[i]) {
+                    m = savedTracks[i].months || '';
+                    p = savedTracks[i].price || '';
+                    s = savedTracks[i].specs || '';
                 }
                 
                 container.innerHTML += `
@@ -1433,6 +1471,13 @@
                 `;
             }
         }
+
+        document.querySelectorAll('.edit-task-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const t = JSON.parse(this.dataset.task);
+                openEditTaskModal(t.id, t.title, t.description, t.point_value, t.max_completions, t.badge_text || '');
+            });
+        });
 
         function openEditTaskModal(id, title, desc, point, maxC, badge) {
             document.getElementById('et_task_id').value = id;
