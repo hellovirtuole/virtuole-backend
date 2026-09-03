@@ -1383,12 +1383,23 @@
 
         // --- Edit Program Logic ---
         let currentEditTracks = [];
+
+        function safelyParseJSON(jsonStr) {
+            try {
+                return JSON.parse(jsonStr);
+            } catch(e) {
+                // Fallback for HTML entities if Jinja escaped the JSON
+                const txt = document.createElement('textarea');
+                txt.innerHTML = jsonStr;
+                return JSON.parse(txt.value);
+            }
+        }
         
         function openEditProgramModalWithData(progId) {
             try {
                 const dataElement = document.getElementById('prog_data_' + progId);
                 if(!dataElement) { console.error('No data found for program', progId); return; }
-                const p = JSON.parse(dataElement.textContent);
+                const p = safelyParseJSON(dataElement.textContent);
                 
                 document.getElementById('ep_program_id').value = p.id;
                 document.getElementById('ep_title').value = p.title || '';
@@ -1412,7 +1423,8 @@
                 openModal('editProgramModal');
             } catch(e) {
                 console.error("Error opening edit program modal:", e);
-                alert("Error loading program data.");
+                const data = document.getElementById('prog_data_' + progId)?.textContent || '';
+                alert("Error loading program data: " + e.message + "\nData snippet: " + data.substring(0, 100));
             }
         }
         
@@ -1472,7 +1484,7 @@
             try {
                 const dataElement = document.getElementById('task_data_' + taskId);
                 if(!dataElement) { console.error('No data found for task', taskId); return; }
-                const t = JSON.parse(dataElement.textContent);
+                const t = safelyParseJSON(dataElement.textContent);
                 
                 document.getElementById('et_task_id').value = t.id;
                 document.getElementById('et_title').value = t.title || '';
@@ -1484,7 +1496,8 @@
                 openModal('editTaskModal');
             } catch(e) {
                 console.error("Error opening edit task modal:", e);
-                alert("Error loading task data.");
+                const data = document.getElementById('task_data_' + taskId)?.textContent || '';
+                alert("Error loading task data: " + e.message + "\nData snippet: " + data.substring(0, 100));
             }
         }
 
