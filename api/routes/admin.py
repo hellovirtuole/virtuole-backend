@@ -14,7 +14,7 @@ def fix_gdrive_url(url):
     if "drive.google.com/file/d/" in url:
         try:
             file_id = url.split("/d/")[1].split("/")[0]
-            return f"https://drive.google.com/uc?export=view&id={file_id}"
+            return f"https://lh3.googleusercontent.com/d/{file_id}"
         except:
             return url
     return url
