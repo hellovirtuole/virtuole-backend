@@ -68,7 +68,8 @@ def dashboard_intern():
             if e['status'] == 'resubmit':
                 duration_days = 1
             else:
-                duration_days = 90 if e.get('track_level', '').lower() == 'expert' else 30
+                track = e.get('track_level', '').lower()
+                duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
             
             end_dt = start_dt + timedelta(days=duration_days)
         
@@ -93,7 +94,7 @@ def dashboard_intern():
             active_projects.append({
                 'program_title': e['programs']['title'], 
                 'description': e['programs']['short_description'], 
-                'track_level': e['track_level'], 
+                'track_level': {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}.get(e.get('track_level', '').lower(), e.get('track_level', '').title()), 
                 'enrollment_id': e['enrollment_id'], 
                 'specs_link': e['programs'].get(f"specs_{e['track_level']}", '#'), 
                 'amount_due': e['programs'].get(f"price_{e['track_level']}", 0),
@@ -110,9 +111,9 @@ def dashboard_intern():
             sub = supabase.table('submissions').select('*').eq('enrollment_id', e['enrollment_id']).execute().data
             if sub:
                 s = sub[0]
-                completed_projects.append({'score': s.get('score'), 'program_title': e['programs']['title'], 'track_level': e['track_level'], 'enrollment_id': e['enrollment_id'], 'evaluated_date': s.get('evaluated_at', '').split('T')[0] if s.get('evaluated_at') else 'Pending', 'certificate_url': s.get('certificate_url'), 'lor_url': s.get('lor_url')})
+                completed_projects.append({'score': s.get('score'), 'program_title': e['programs']['title'], 'track_level': {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}.get(e.get('track_level', '').lower(), e.get('track_level', '').title()), 'enrollment_id': e['enrollment_id'], 'evaluated_date': s.get('evaluated_at', '').split('T')[0] if s.get('evaluated_at') else 'Pending', 'certificate_url': s.get('certificate_url'), 'lor_url': s.get('lor_url')})
             else:
-                completed_projects.append({'score': e.get('final_score', 100), 'program_title': e['programs']['title'], 'track_level': e['track_level'], 'enrollment_id': e['enrollment_id'], 'evaluated_date': e.get('updated_at', '').split('T')[0] if e.get('updated_at') else 'Pending', 'certificate_url': None, 'lor_url': None})
+                completed_projects.append({'score': e.get('final_score', 100), 'program_title': e['programs']['title'], 'track_level': {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}.get(e.get('track_level', '').lower(), e.get('track_level', '').title()), 'enrollment_id': e['enrollment_id'], 'evaluated_date': e.get('updated_at', '').split('T')[0] if e.get('updated_at') else 'Pending', 'certificate_url': None, 'lor_url': None})
 
         # Determine the default active tab: Explore if no active programs, otherwise Workspace.
         requested_tab = request.args.get('active_tab')
@@ -144,7 +145,8 @@ def dashboard_mentor():
             start_dt = now
             
         start_dt = start_dt.replace(tzinfo=None)
-        duration_days = 90 if e.get('track_level', '').lower() == 'expert' else 30
+        track = e.get('track_level', '').lower()
+        duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
         end_dt = start_dt + timedelta(days=duration_days)
         
         if now > end_dt:

@@ -243,12 +243,12 @@
                         <label>Cover Image URL (G-Drive or Direct Link)</label>
                         <input type="url" name="image_url" placeholder="https://drive.google.com/..." required>
                     </div>
-                    <div class="au-form-group" style="margin:0;"><label>Beginner Specs (Drive/PDF Link)</label><input type="url" name="specs_beginner" placeholder="https://..." required></div>
-                    <div class="au-form-group" style="margin:0;"><label>Intermediate Specs (Drive/PDF Link)</label><input type="url" name="specs_intermediate" placeholder="https://..." required></div>
-                    <div class="au-form-group" style="margin:0;"><label>Expert Specs (Drive/PDF Link)</label><input type="url" name="specs_expert" placeholder="https://..." required></div>
-                    <div class="au-form-group" style="margin:0;"><label>Beginner Price (₹)</label><input type="number" name="price_beginner" value="199" required></div>
-                    <div class="au-form-group" style="margin:0;"><label>Intermediate Price (₹)</label><input type="number" name="price_intermediate" value="249" required></div>
-                    <div class="au-form-group" style="margin:0;"><label>Expert Price (₹)</label><input type="number" name="price_expert" value="499" required></div>
+                    <div class="au-form-group" style="margin:0;"><label>1 Month Specs (Drive/PDF Link)</label><input type="url" name="specs_beginner" placeholder="https://..." required></div>
+                    <div class="au-form-group" style="margin:0;"><label>2 Months Specs (Drive/PDF Link)</label><input type="url" name="specs_intermediate" placeholder="https://..." required></div>
+                    <div class="au-form-group" style="margin:0;"><label>3 Months Specs (Drive/PDF Link)</label><input type="url" name="specs_expert" placeholder="https://..." required></div>
+                    <div class="au-form-group" style="margin:0;"><label>1 Month Price (₹)</label><input type="number" name="price_beginner" value="199" required></div>
+                    <div class="au-form-group" style="margin:0;"><label>2 Months Price (₹)</label><input type="number" name="price_intermediate" value="249" required></div>
+                    <div class="au-form-group" style="margin:0;"><label>3 Months Price (₹)</label><input type="number" name="price_expert" value="499" required></div>
                     <button type="submit" class="au-btn" style="grid-column:1 / -1;">Deploy Program</button>
                 </form>
             </div>
@@ -259,11 +259,11 @@
                 <div class="au-card" style="padding:26px;display:flex;flex-direction:column;">
                     <h4 class="au-panel-title">{{ program.title }}</h4>
                     <div style="font-size:.85em;font-weight:500;margin:6px 0 12px;display:flex;flex-direction:column;gap:4px;">
-                        <a href="{{ program.specs_beginner }}" target="_blank" style="color:var(--primary);text-decoration:none;">View Beg. Specs ↗</a>
-                        <a href="{{ program.specs_intermediate }}" target="_blank" style="color:var(--primary);text-decoration:none;">View Int. Specs ↗</a>
-                        <a href="{{ program.specs_expert }}" target="_blank" style="color:var(--primary);text-decoration:none;">View Exp. Specs ↗</a>
+                        <a href="{{ program.specs_beginner }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 1M Specs ↗</a>
+                        <a href="{{ program.specs_intermediate }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 2M Specs ↗</a>
+                        <a href="{{ program.specs_expert }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 3M Specs ↗</a>
                     </div>
-                    <p style="font-size:.82em;font-family:monospace;color:var(--text-muted);background:rgba(148,163,184,.08);padding:8px 12px;border-radius:8px;">B: ₹{{ program.price_beginner }} | I: ₹{{ program.price_intermediate }} | E: ₹{{ program.price_expert }}</p>
+                    <p style="font-size:.82em;font-family:monospace;color:var(--text-muted);background:rgba(148,163,184,.08);padding:8px 12px;border-radius:8px;">1M: ₹{{ program.price_beginner }} | 2M: ₹{{ program.price_intermediate }} | 3M: ₹{{ program.price_expert }}</p>
                     <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{ program.short_description }}</p>
                     <form action="/admin/delete-program" method="POST" style="margin-top:auto;" onsubmit="return confirm('Pull this program offline?');">
                         <input type="hidden" name="program_id" value="{{ program.id }}">
@@ -447,9 +447,9 @@
                         <label style="display:block; margin-bottom:8px; font-size:0.9em; color:var(--text-muted);">Allowed Level</label>
                         <select name="allowed_level" class="au-input">
                             <option value="">Any Level</option>
-                            <option value="beginner">Beginner</option>
-                            <option value="intermediate">Intermediate</option>
-                            <option value="expert">Expert</option>
+                            <option value="beginner">1 Month</option>
+                            <option value="intermediate">2 Months</option>
+                            <option value="expert">3 Months</option>
                         </select>
                     </div>
                     <div style="flex:1; min-width: 150px;">

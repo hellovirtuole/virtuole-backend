@@ -237,9 +237,16 @@
                 <div class="au-form-group"><label>Academic Course</label><input type="text" name="course_name" value="{{ profile_details.get('course_name', '') }}" readonly style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.1);"></div>
                 <div class="au-form-group"><label>Academic Session / Year</label><input type="text" name="session_year" value="{{ profile_details.get('session_year', '') }}" readonly style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.1);"></div>
                 <p style="font-size: 0.8em; color: var(--au-gold); margin-top: -10px; margin-bottom: 15px;">(Academic details are synced from your Profile)</p>
-                
-                <div class="au-form-group"><label>Select Complexity Track</label><select name="track_level" id="dynamic-track-select" required></select></div>
-                
+                <div class="au-form-group">
+                    <label>Select Duration</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+                        <button type="button" class="au-btn-ghost track-btn" style="flex: 1; padding: 10px;" onclick="selectTrack('beginner', this)">1 Month</button>
+                        <button type="button" class="au-btn-ghost track-btn" style="flex: 1; padding: 10px;" onclick="selectTrack('intermediate', this)">2 Months</button>
+                        <button type="button" class="au-btn-ghost track-btn" style="flex: 1; padding: 10px;" onclick="selectTrack('expert', this)">3 Months</button>
+                    </div>
+                    <div id="track-details" style="font-size: 0.9em; color: var(--text-muted); margin-bottom: 10px;">Select a duration to see details.</div>
+                    <input type="hidden" name="track_level" id="hidden-track-level" required>
+                </div>
                 <div class="au-form-group" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px;">
                     <input type="checkbox" id="enroll_terms" name="terms_agree" required style="width: auto; margin-top: 2px;">
                     <label for="enroll_terms" style="font-size: 0.85em; text-transform: none; line-height: 1.4; color: var(--text-muted);">I accept all Terms and Conditions, rules, and platform policies.</label>
@@ -290,12 +297,38 @@
     function openEnrollModal(programId, programTitle, priceBeg, priceInt, priceExp) {
         document.getElementById('enroll-program-name').value = programId;
         document.querySelector('#enrollModal h3').innerText = 'Enroll: ' + programTitle;
-        document.getElementById('dynamic-track-select').innerHTML = `
-            <option value="" disabled selected>Choose your level...</option>
-            <option value="beginner">Beginner Track (₹${priceBeg} upon submission)</option>
-            <option value="intermediate">Intermediate Track (₹${priceInt} upon submission)</option>
-            <option value="expert">Expert Track (₹${priceExp} upon submission)</option>`;
+        
+        window.currentPrices = {
+            beginner: priceBeg,
+            intermediate: priceInt,
+            expert: priceExp
+        };
+        
+        document.getElementById('hidden-track-level').value = '';
+        document.getElementById('track-details').innerText = 'Select a duration to see details.';
+        document.querySelectorAll('.track-btn').forEach(btn => {
+            btn.className = 'au-btn-ghost track-btn';
+            btn.style.flex = '1';
+            btn.style.padding = '10px';
+        });
+        
         document.getElementById('enrollModal').classList.add('open');
+    }
+
+    function selectTrack(track, btnElement) {
+        document.getElementById('hidden-track-level').value = track;
+        document.querySelectorAll('.track-btn').forEach(btn => {
+            btn.className = 'au-btn-ghost track-btn';
+            btn.style.flex = '1';
+            btn.style.padding = '10px';
+        });
+        btnElement.className = 'au-btn track-btn';
+        btnElement.style.flex = '1';
+        btnElement.style.padding = '10px';
+        
+        let price = window.currentPrices[track];
+        let durationText = track === 'beginner' ? '1 Month' : track === 'intermediate' ? '2 Months' : '3 Months';
+        document.getElementById('track-details').innerText = `${durationText} Duration (₹${price} upon submission)`;
     }
 
     let currentBasePrice = 0;

@@ -2,7 +2,7 @@
 from flask import Blueprint, request, jsonify, render_template, session, redirect, url_for, send_from_directory
 from api.config import supabase, limiter
 from api.utils.email import send_system_email, send_ambassador_email
-import random, string, uuid, json
+import random, string, uuid, json, os, base64, hashlib, requests
 from datetime import datetime, timedelta
 
 intern_bp = Blueprint('intern', __name__)
@@ -14,7 +14,7 @@ intern_bp = Blueprint('intern', __name__)
 def validate_promo():
     data = request.get_json()
     promo_code = data.get('promo_code', '').upper()
-    ambassador = supabase.table('users').select('id').eq('promo_code', promo_code).eq('role', 'ambassador').execute().data
+    ambassador = supabase.table('users').select('id').eq('promo_code', promo_code).in_('role', ['ambassador', 'intern + ambassador']).execute().data
     coupon = supabase.table('users').select('id, total_points, ambassador_expiry, coupon_usage_limit, coupon_user_limit, coupon_allowed_level').eq('promo_code', promo_code).eq('role', 'coupon').execute().data
     
     if ambassador:
@@ -78,7 +78,7 @@ def create_phonepe_payment():
     final_price = base_price
     applied_promo = None
     if promo_code:
-        is_ambassador = supabase.table('users').select('id').eq('promo_code', promo_code).eq('role', 'ambassador').execute().data
+        is_ambassador = supabase.table('users').select('id').eq('promo_code', promo_code).in_('role', ['ambassador', 'intern + ambassador']).execute().data
         is_coupon = supabase.table('users').select('id, total_points, ambassador_expiry').eq('promo_code', promo_code).eq('role', 'coupon').execute().data
         
         if is_ambassador:
@@ -108,6 +108,26 @@ def create_phonepe_payment():
         # 100% discount applied! Skip PhonePe integration.
         supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": data.get('code_link'), "defense_link": data.get('defense_link')}).execute()
         supabase.table('payments').insert({"user_id": session['user_id'], "transaction_id": transaction_id, "amount": 0, "status": "paid", "applied_promo": applied_promo}).execute()
+        
+        invoice_html = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #2b3481;">Payment Receipt</h2>
+            <p>Dear {session.get('name', 'Intern')},</p>
+            <p>Your payment for the internship program has been successfully processed.</p>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                <tr style="border-bottom: 1px solid #ddd;">
+                    <td style="padding: 10px 0;"><strong>Transaction ID:</strong></td>
+                    <td style="padding: 10px 0; text-align: right;">{transaction_id}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #ddd;">
+                    <td style="padding: 10px 0;"><strong>Amount Paid:</strong></td>
+                    <td style="padding: 10px 0; text-align: right;">INR 0.00 (100% Discount)</td>
+                </tr>
+            </table>
+            <p style="margin-top: 20px;">Thank you for choosing Virtuole. We are excited to have you on board!</p>
+        </div>
+        """
+        send_system_email(session['email'], "Payment Invoice - Virtuole", invoice_html, is_html=True)
         
         if is_ajax:
             return jsonify({"payment_url": "/dashboard-intern"})
@@ -160,6 +180,35 @@ def phonepe_webhook():
     if decoded_response['code'] == 'PAYMENT_SUCCESS':
         transaction_id = decoded_response['data']['merchantTransactionId']
         supabase.table('payments').update({"status": "paid"}).eq('transaction_id', transaction_id).execute()
+        
+        payment_data = supabase.table('payments').select('user_id, amount').eq('transaction_id', transaction_id).execute().data
+        if payment_data:
+            user_id = payment_data[0]['user_id']
+            amount = payment_data[0]['amount'] / 100
+            user_data = supabase.table('users').select('email, full_name').eq('id', user_id).execute().data
+            if user_data:
+                email = user_data[0]['email']
+                full_name = user_data[0]['full_name']
+                invoice_html = f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #2b3481;">Payment Receipt</h2>
+                    <p>Dear {full_name},</p>
+                    <p>Your payment for the internship program has been successfully processed.</p>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 10px 0;"><strong>Transaction ID:</strong></td>
+                            <td style="padding: 10px 0; text-align: right;">{transaction_id}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 10px 0;"><strong>Amount Paid:</strong></td>
+                            <td style="padding: 10px 0; text-align: right;">INR {amount:.2f}</td>
+                        </tr>
+                    </table>
+                    <p style="margin-top: 20px;">Thank you for choosing Virtuole. We are excited to have you on board!</p>
+                </div>
+                """
+                send_system_email(email, "Payment Invoice - Virtuole", invoice_html, is_html=True)
+                
     return jsonify({"status": "received"}), 200
 
 
@@ -184,10 +233,14 @@ def api_enroll():
     
     prog = supabase.table('programs').select('*').eq('id', program_id).execute().data[0]
     
-    duration_days = 90 if track_level.lower() == 'expert' else 30
+    track = track_level.lower()
+    duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
     end_date = (datetime.utcnow() + timedelta(days=duration_days)).strftime("%B %d, %Y")
     
-    html_offer = render_template('docs/offer_letter.html', name=session['name'], date=datetime.utcnow().strftime("%B %d, %Y"), program_title=prog['title'], track_level=track_level.title(), enroll_id=enrollment_id, project_details=prog['short_description'], duration_days=duration_days, end_date=end_date)
+    track_display_map = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}
+    track_display = track_display_map.get(track, track_level.title())
+    
+    html_offer = render_template('docs/offer_letter.html', name=session['name'], date=datetime.utcnow().strftime("%B %d, %Y"), program_title=prog['title'], track_level=track_display, enroll_id=enrollment_id, project_details=prog['short_description'], duration_days=duration_days, end_date=end_date)
     
     send_system_email(session['email'], "Official Internship Offer Letter - Virtuole", html_offer, is_html=True)
     return redirect(url_for('dashboard.dashboard_intern'))
@@ -215,7 +268,8 @@ def api_submit_project():
     if e['status'] == 'resubmit':
         duration_days = 1
     else:
-        duration_days = 90 if e.get('track_level', '').lower() == 'expert' else 30
+        track = e.get('track_level', '').lower()
+        duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
         
     end_dt = start_dt + timedelta(days=duration_days)
     
