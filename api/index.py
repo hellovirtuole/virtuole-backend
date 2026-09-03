@@ -46,10 +46,29 @@ app.config['SESSION_COOKIE_SECURE'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = __import__('datetime').timedelta(days=30)
 CORS(app)
 
+from flask import send_from_directory, Response
+
 @app.route('/favicon.ico')
 @app.route('/favicon.png')
 def favicon():
-    return '', 204
+    return send_from_directory('templates', 'logo.png', mimetype='image/png')
+
+@app.route('/robots.txt')
+def robots():
+    content = "User-agent: *\nAllow: /\nSitemap: https://www.virtuole.in/sitemap.xml"
+    return Response(content, mimetype="text/plain")
+
+@app.route('/sitemap.xml')
+def sitemap():
+    content = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.virtuole.in/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://www.virtuole.in/apply-ambassador</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://www.virtuole.in/login</loc><priority>0.8</priority></url>
+  <url><loc>https://www.virtuole.in/register</loc><priority>0.8</priority></url>
+  <url><loc>https://www.virtuole.in/contact</loc><priority>0.5</priority></url>
+</urlset>"""
+    return Response(content, mimetype="application/xml")
 
 @app.after_request
 def add_header(response):
