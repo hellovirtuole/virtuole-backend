@@ -9,11 +9,23 @@ auth_bp = Blueprint('auth', __name__)
 
 
 
+def fix_gdrive_url(url):
+    if not url: return url
+    if "drive.google.com/file/d/" in url:
+        try:
+            file_id = url.split("/d/")[1].split("/")[0]
+            return f"https://drive.google.com/uc?export=view&id={file_id}"
+        except:
+            return url
+    return url
+
 @auth_bp.route('/', methods=['GET', 'POST'])
 def home():
     programs = []
     if supabase:
         programs = supabase.table('programs').select('*').eq('is_active', True).execute().data
+        for p in programs:
+            p['image_url'] = fix_gdrive_url(p.get('image_url'))
     return render_template('index.html', offered_programs=programs)
 
 @auth_bp.route('/register', methods=['POST'])

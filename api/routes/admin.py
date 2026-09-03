@@ -9,6 +9,16 @@ admin_bp = Blueprint('admin', __name__)
 
 
 
+def fix_gdrive_url(url):
+    if not url: return url
+    if "drive.google.com/file/d/" in url:
+        try:
+            file_id = url.split("/d/")[1].split("/")[0]
+            return f"https://drive.google.com/uc?export=view&id={file_id}"
+        except:
+            return url
+    return url
+
 @admin_bp.route('/admin/add-program', methods=['POST'])
 @admin_bp.route('/api/admin/add-program', methods=['POST'])
 def add_program():
@@ -30,7 +40,7 @@ def add_program():
         "title": request.form.get('title'), "short_description": request.form.get('short_description'), 
         "specs_beginner": fallback_specs, "specs_intermediate": fallback_specs, "specs_expert": fallback_specs,
         "price_beginner": fallback_price, "price_intermediate": fallback_price, "price_expert": fallback_price,
-        "is_active": True, "image_url": request.form.get('image_url', ''),
+        "is_active": True, "image_url": fix_gdrive_url(request.form.get('image_url', '')),
         "offer_1m": False, "offer_2m": False, "offer_3m": False,
         "allow_custom_timeline": request.form.get('allow_custom_timeline') == 'on',
         "custom_min_months": int(request.form.get('custom_min_months', 1) or 1),
@@ -59,7 +69,7 @@ def edit_program():
             
     supabase.table('programs').update({
         "title": request.form.get('title'), "short_description": request.form.get('short_description'), 
-        "image_url": request.form.get('image_url', ''),
+        "image_url": fix_gdrive_url(request.form.get('image_url', '')),
         "allow_custom_timeline": request.form.get('allow_custom_timeline') == 'on',
         "custom_min_months": int(request.form.get('custom_min_months', 1) or 1),
         "max_custom_months": int(request.form.get('max_custom_months', 12) or 12),

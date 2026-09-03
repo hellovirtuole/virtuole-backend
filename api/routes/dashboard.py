@@ -8,7 +8,15 @@ from api.routes.ambassador import parse_shipping_address
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
-
+def fix_gdrive_url(url):
+    if not url: return url
+    if "drive.google.com/file/d/" in url:
+        try:
+            file_id = url.split("/d/")[1].split("/")[0]
+            return f"https://drive.google.com/uc?export=view&id={file_id}"
+        except:
+            return url
+    return url
 
 @dashboard_bp.route('/dashboard-intern')
 def dashboard_intern():
@@ -132,6 +140,7 @@ def dashboard_intern():
         offered = supabase.table('programs').select('*').eq('is_active', True).execute().data
         offered_programs_grouped = {}
         for p in offered:
+            p['image_url'] = fix_gdrive_url(p.get('image_url'))
             if not p.get('tracks'):
                 fallback = []
                 if p.get('offer_1m'): fallback.append({'months': 1, 'price': p.get('price_beginner', 0), 'specs': p.get('specs_beginner', '')})
@@ -273,6 +282,9 @@ def dashboard_admin():
         pend_grading = len(supabase.table('submissions').select('id').is_('score', 'null').execute().data)
 
     progs = supabase.table('programs').select('*').execute().data
+    for p in progs:
+        p['image_url'] = fix_gdrive_url(p.get('image_url'))
+        
     tasks = supabase.table('ambassador_tasks').select('*').execute().data
     users = supabase.table('users').select('*').execute().data
 
