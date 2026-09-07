@@ -53,8 +53,7 @@ def get_main_menu():
     return {
         "keyboard": [
             [{"text": "🎓 Internship Programs"}, {"text": "📜 Certificates & Verification"}],
-            [{"text": "👥 Campus Ambassador Portal"}, {"text": "🤝 Enterprise/Company Hosting"}],
-            [{"text": "💬 Talk to a Human"}]
+            [{"text": "👥 Campus Ambassador Portal"}, {"text": "🏢 About Virtuole / Contact"}]
         ],
         "resize_keyboard": True
     }
@@ -62,8 +61,8 @@ def get_main_menu():
 def get_internship_submenu():
     return {
         "keyboard": [
-            [{"text": "💡 How do I apply?"}, {"text": "📅 What are the deadlines?"}],
-            [{"text": "⏳ What is the 30-day window?"}, {"text": "💸 Are there upfront fees?"}],
+            [{"text": "💡 How do I apply?"}, {"text": "💻 Available Domains"}],
+            [{"text": "⏳ Durations & Sprints"}, {"text": "💸 Fees & Structure"}],
             [{"text": "🔙 Back to Main Menu"}]
         ],
         "resize_keyboard": True
@@ -72,8 +71,9 @@ def get_internship_submenu():
 def get_certificate_submenu():
     return {
         "keyboard": [
-            [{"text": "🔍 How to verify a credential"}, {"text": "📑 What is the grading matrix?"}],
-            [{"text": "🥇 How do I get an Elite LOR?"}, {"text": "🔙 Back to Main Menu"}]
+            [{"text": "🔍 How to Verify?"}, {"text": "📑 Grading Matrix"}],
+            [{"text": "🥇 Elite LOR"}, {"text": "📜 MSME Certification"}],
+            [{"text": "🔙 Back to Main Menu"}]
         ],
         "resize_keyboard": True
     }
@@ -81,8 +81,17 @@ def get_certificate_submenu():
 def get_ambassador_submenu():
     return {
         "keyboard": [
-            [{"text": "🎁 What are the perks & swag?"}, {"text": "📈 How does ranking work?"}],
-            [{"text": "🔙 Back to Main Menu"}]
+            [{"text": "🤝 How to Join?"}, {"text": "🎁 Perks & Swag"}],
+            [{"text": "📈 Tiers & Ranking"}, {"text": "🔙 Back to Main Menu"}]
+        ],
+        "resize_keyboard": True
+    }
+
+def get_about_submenu():
+    return {
+        "keyboard": [
+            [{"text": "🏢 What is Virtuole?"}, {"text": "🤝 Enterprise Hosting"}],
+            [{"text": "💬 Talk to a Human"}, {"text": "🔙 Back to Main Menu"}]
         ],
         "resize_keyboard": True
     }
@@ -119,77 +128,97 @@ def handle_text_message(chat_id, text):
             welcome_text = "Welcome to Virtuole Support! ⚡\n\nArchitecting the next generation of engineers through rigorous virtual internships and elite MSME-backed credentials."
             send_message(chat_id, welcome_text, reply_markup=inline_markup)
             
-        response = "How can we help you build today? Choose an infrastructure layer from the menu below:" if "/start" in text_lower else "Returned to Main Matrix Menu. Select a technical layer:"
+        response = "How can we help you build today? Choose a sector from the menu below:" if "/start" in text_lower else "Returned to Main Menu. Select a sector:"
         current_markup = get_main_menu()
 
     elif "internship programs" in text_lower:
-        response = "📁 Opened Internship Matrix. Select an engineering question layer:"
+        response = "📁 **Internship Matrix:** Select a topic to learn more about our internship structure:"
         current_markup = get_internship_submenu()
 
     elif "certificates & verification" in text_lower:
-        response = "📁 Opened Credentials Lookup Database. Select an authentication question layer:"
+        response = "📁 **Credentials & Verification:** Select a topic to learn about MSME certification and validation:"
         current_markup = get_certificate_submenu()
 
     elif "campus ambassador portal" in text_lower:
-        response = "📁 Opened GTM Ambassador Node. Select a performance question layer:"
+        response = "📁 **GTM Ambassador Program:** Select a topic to learn about perks, tiers, and joining:"
+        current_markup = get_ambassador_submenu()
+
+    elif "about virtuole" in text_lower or "contact" in text_lower:
+        response = "📁 **About Virtuole & Contact:** Select an option below to learn more or contact support:"
+        current_markup = get_about_submenu()
+
+
+    # ----------------------------------------------------
+    # LAYER 2: INTERNSHIP MATRIX
+    # ----------------------------------------------------
+    elif "how do i apply" in text_lower:
+        response = "💡 **How to Apply:**\n\nEstablish your profile directly on the Virtuole Gateway portal at https://www.virtuole.in/login. Choose your desired domain track and duration to initialize your dashboard immediately. Your Offer Letter is generated instantly!"
+        current_markup = get_internship_submenu()
+
+    elif "available domains" in text_lower:
+        response = "💻 **Available Domains:**\n\nWe offer production-grade virtual internships in:\n- Frontend & Backend Development\n- Full Stack Engineering\n- Android App Development\n- AI / ML & Data Science\n- Python, Java, C++\n- UI/UX Design\n- Developer Relations (DevRel)"
+        current_markup = get_internship_submenu()
+
+    elif "durations & sprints" in text_lower:
+        response = "⏳ **Durations & Sprints:**\n\nYou can choose from 3 sprint levels:\n- **Beginner:** 1 Month\n- **Intermediate:** 2 Months\n- **Expert:** 3 Months\n\nOnce enrolled, you are granted exactly 30 days per sprint to execute your assigned system architecture specs asynchronously."
+        current_markup = get_internship_submenu()
+
+    elif "fees & structure" in text_lower:
+        response = "💸 **Fees & Structure:**\n\nVirtuole operates with **zero upfront registration fees**. You construct and build on the platform completely free. \n\nA nominal system evaluation and grading fee is only required at the finish line when submitting your finished code repository for Mentor Grading and MSME Certification."
+        current_markup = get_internship_submenu()
+
+    # ----------------------------------------------------
+    # LAYER 2: CERTIFICATES & VERIFICATION
+    # ----------------------------------------------------
+    elif "how to verify" in text_lower:
+        response = "🔍 **Verify a Credential:**\n\nAll credentials issued carry unique cryptographic tracking hashes. Employers can query and instantly confirm verification states live via our official system portal at https://www.virtuole.in/verify.html."
+        current_markup = get_certificate_submenu()
+
+    elif "grading matrix" in text_lower:
+        response = "📑 **Evaluation Grading Rules:**\n\nSubmissions are thoroughly audited by enterprise engineering mentors for system efficiency, clean file structures, and algorithmic complexity. You must cross an execution score threshold of 80% or higher to pass. Failed sprints get 24 hours to patch the source logic."
+        current_markup = get_certificate_submenu()
+
+    elif "elite lor" in text_lower:
+        response = "🥇 **Elite Founder's Recognition:**\n\nInterns who achieve a perfect 100% technical defense review across their architecture metrics will unlock the highly coveted, cryptographically signed Elite Founder's Letter of Recommendation (LOR)."
+        current_markup = get_certificate_submenu()
+
+    elif "msme certification" in text_lower:
+        response = "📜 **MSME Certification:**\n\nVirtuole is an official Government of India registered MSME. All certificates issued upon passing the Grading Matrix carry the MSME recognition, making your credentials highly credible for corporate placements."
+        current_markup = get_certificate_submenu()
+
+    # ----------------------------------------------------
+    # LAYER 2: AMBASSADOR NODE
+    # ----------------------------------------------------
+    elif "how to join" in text_lower:
+        response = "🤝 **Join the GTM Program:**\n\nApply to become a Campus Ambassador at https://www.virtuole.in/apply-ambassador. If selected, you will become the primary tech liaison for Virtuole at your university."
+        current_markup = get_ambassador_submenu()
+
+    elif "perks & swag" in text_lower:
+        response = "🎁 **Ambassador Toolkits & Perks:**\n\nApproved GTM Campus Ambassadors receive official Virtuole premium developer swag boxes (T-Shirts, Bottles, Stickers), guaranteed placement slots, and direct networking pathways with our core engineering team."
+        current_markup = get_ambassador_submenu()
+
+    elif "tiers & ranking" in text_lower:
+        response = "📈 **Tiers & Ranking:**\n\nAmbassadors earn points by referring students. You start at the **Advocate** layer and can advance up to **Lead** and **Evangelist** nodes. Higher tiers unlock Certificates, LORs, and exclusive Physical Swag Boxes!"
         current_markup = get_ambassador_submenu()
 
     # ----------------------------------------------------
-    # LAYER 2: INTERNSHIP MATRIX PROCESSING
+    # LAYER 2: ABOUT / CONTACT
     # ----------------------------------------------------
-    elif "how do i apply?" in text_lower or ("apply" in text_lower and "ambassador" not in text_lower):
-        response = "Establish your profile directly on the Virtuole Gateway portal at https://www.virtuole.in/login. Choose your desired domain track (Beginner, Intermediate, or Expert) to initialize your dashboard immediately."
-        current_markup = get_internship_submenu()
+    elif "what is virtuole" in text_lower:
+        response = "🏢 **About Virtuole:**\n\nVirtuole is an elite ed-tech platform architecting the next generation of engineers. We provide high-quality, project-based virtual internships that bridge the gap between theoretical academia and rigorous industry execution."
+        current_markup = get_about_submenu()
 
-    elif "what are the deadlines?" in text_lower or "deadline" in text_lower:
-        response = "📅 **Schedules & Tiers:**\n\nVirtuole runs strict 1-month and 2-month asynchronous sprints initializing on the 1st of every calendar month. Standard applications should be submitted at least 2 weeks before the month begins.\n\nEvent-based activations (Hackathons, Summer Sprints) follow specific timelines pushed to our announcement logs."
-        current_markup = get_internship_submenu()
-
-    elif "what is the 30-day window?" in text_lower or "30-day" in text_lower:
-        response = "⏳ **Sprint Parameters:**\n\nOnce enrolled, you are granted exactly 30 days to execute your assigned system architecture specs asynchronously. No active hand-holding or passive lectures—just pure engineering production metrics tracked on your live status dashboard."
-        current_markup = get_internship_submenu()
-
-    elif "are there upfront fees?" in text_lower or "fee" in text_lower:
-        response = "💸 **Financial Architecture:**\n\nVirtuole operates with zero upfront registration or environment allocation fees. You construct and build on the platform completely free. A nominal system evaluation and grading fee is only required at the finish line when submitting your finished code repository into the mentor grading matrix."
-        current_markup = get_internship_submenu()
-
-    # ----------------------------------------------------
-    # LAYER 2: CERTIFICATION NODE PROCESSING
-    # ----------------------------------------------------
-    elif "how to verify a credential" in text_lower or "verify" in text_lower:
-        response = "🔍 **System Lookup:**\n\nAll credentials issued carry unique cryptographic tracking hashes. Employers can query and instantly confirm verification states live via our official system portal at https://www.virtuole.in/verify.html."
-        current_markup = get_certificate_submenu()
-
-    elif "what is the grading matrix?" in text_lower or "matrix" in text_lower:
-        response = "📑 **Evaluation Grading Rules:**\n\nSubmissions are thoroughly audited by enterprise engineering mentors for system efficiency, clean file structures, and algorithmic complexity. You must cross an execution score threshold of 80% or higher to pass and log your certificate. Failed sprints get 24 hours to patch the source logic."
-        current_markup = get_certificate_submenu()
-
-    elif "how do i get an elite lor?" in text_lower or "lor" in text_lower:
-        response = "🥇 **Elite Founder's Recognition:**\n\nInterns who achieve a perfect 100% technical defense review across their architecture metrics will unlock the highly coveted, cryptographically signed Elite Founder's Letter of Recommendation alongside their standard MSME certificate."
-        current_markup = get_certificate_submenu()
-
-    # ----------------------------------------------------
-    # LAYER 2: AMBASSADOR NODE PROCESSING
-    # ----------------------------------------------------
-    elif "perks & swag" in text_lower or "swag" in text_lower:
-        response = "🎁 **Ambassador Toolkits:**\n\nApproved GTM Campus Ambassadors receive official Virtuole premium developer swag boxes, guaranteed placement slots, direct networking pathways, and automated multipliers toward leadership ranks."
-        current_markup = get_ambassador_submenu()
-
-    elif "ranking work" in text_lower or "ranking" in text_lower:
-        response = "📈 **Rank Multipliers:**\n\nAmbassadors start at the Advocate layer and advance up to Lead nodes through system growth optimization, campus technical alignment, and hosting localized onboarding gates."
-        current_markup = get_ambassador_submenu()
-
-    # ----------------------------------------------------
-    # GLOBAL CRITICAL OVERRIDES
-    # ----------------------------------------------------
-    elif "company looking to host" in text_lower or "company" in text_lower or "host" in text_lower:
+    elif "enterprise hosting" in text_lower:
         response = "🤝 **Enterprise Operations:**\n\nIf you represent a corporate entity looking to source audited engineering talent or securely host targeted sandboxed sprints, please route communications directly to our administrative hub at admin@virtuole.in."
-        current_markup = get_main_menu()
+        current_markup = get_about_submenu()
 
-    elif "human" in text_lower or "talk to a human" in text_lower:
-        response = "💬 Please drop your specific architectural or deployment edge cases directly into our public engineering terminal (t.me/virtuole_community). Our human operations unit actively reviews and answers queries there!"
-        current_markup = get_main_menu()
+    elif "talk to a human" in text_lower:
+        response = "💬 Please drop your specific architectural or deployment edge cases directly into our public engineering terminal: https://t.me/virtuole_community. Our human operations unit actively reviews and answers queries there!"
+        current_markup = get_about_submenu()
 
+    # ----------------------------------------------------
+    # AI FALLBACK
+    # ----------------------------------------------------
     else:
         if model:
             try:
