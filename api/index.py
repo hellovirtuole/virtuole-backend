@@ -53,6 +53,10 @@ from flask import send_from_directory, Response
 def favicon():
     return send_from_directory('templates', 'logo.png', mimetype='image/png')
 
+@app.route('/version')
+def version():
+    return "Commit: 3d52e7f"
+
 @app.route('/robots.txt')
 def robots():
     content = "User-agent: *\nAllow: /\nSitemap: https://www.virtuole.in/sitemap.xml"
