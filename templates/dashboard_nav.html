@@ -18,34 +18,44 @@
     </a>
 
     {% if dash_title == 'Admin' %}
-    <div id="notif-bell-btn" style="position:fixed; top:14px; right:15px; z-index:10000; cursor:pointer;" onclick="toggleNotifPanel()">
-        <div style="width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:rgba(99,102,241,0.15); border:1px solid rgba(99,102,241,0.4); font-size:1.1rem; position:relative; transition:all 0.2s;" onmouseover="this.style.background='rgba(99,102,241,0.3)'" onmouseout="this.style.background='rgba(99,102,241,0.15)'">
+    <!-- Notification Bell: fixed to bottom of sidebar, above logout -->
+    <div id="notif-bell-btn" onclick="toggleNotifPanel()" style="position:fixed; bottom:70px; left:0; width:168px; padding:10px 16px; display:flex; align-items:center; gap:10px; cursor:pointer; background:transparent; border-top:1px solid rgba(255,255,255,0.05); z-index:200; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
+        <div style="width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:8px; background:rgba(99,102,241,0.15); border:1px solid rgba(99,102,241,0.3); font-size:0.95rem; position:relative; flex-shrink:0;">
             🔔
             {% if sys_notifs and sys_notifs|length > 0 %}
-            <span style="position:absolute; top:-4px; right:-4px; background:#ef4444; color:white; font-size:0.55rem; font-weight:700; padding:2px 5px; border-radius:999px; line-height:1;">{{ sys_notifs|length }}</span>
+            <span style="position:absolute; top:-5px; right:-5px; background:#ef4444; color:white; font-size:0.55rem; font-weight:700; padding:1px 4px; border-radius:999px; line-height:1.4;">{{ sys_notifs|length }}</span>
             {% endif %}
         </div>
+        <span style="font-size:0.85em; font-weight:500; color:var(--text-muted);">Notifications</span>
     </div>
-    <!-- Notification dropdown -->
-    <div id="notif-panel" style="display:none; position:fixed; top:58px; right:15px; width:360px; max-height:460px; overflow-y:auto; z-index:9999; background:var(--nav-bg); border:1px solid rgba(255,255,255,0.1); border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,0.6);">
-        <div style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.07); font-weight:700; font-size:0.9em; color:var(--text-main); display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; background:var(--nav-bg); border-radius:12px 12px 0 0;">
+
+    <!-- Slide-in notification panel from left sidebar -->
+    <div id="notif-panel" style="display:none; position:fixed; bottom:0; left:168px; width:360px; max-height:70vh; overflow-y:auto; z-index:9999; background:var(--nav-bg); border:1px solid rgba(255,255,255,0.1); border-radius:0 12px 12px 0; box-shadow:8px 0 40px rgba(0,0,0,0.5);">
+        <div style="padding:16px 18px; border-bottom:1px solid rgba(255,255,255,0.07); font-weight:700; font-size:0.9em; color:var(--text-main); display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; background:var(--nav-bg); z-index:1;">
             <span>🔔 Notifications</span>
-            <span style="font-size:0.75em; color:var(--text-muted); font-weight:400;">Auto-delete after 30 days</span>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:0.72em; color:var(--text-muted); font-weight:400;">30-day auto-delete</span>
+                <span onclick="toggleNotifPanel()" style="cursor:pointer; color:var(--text-muted); font-size:1.1em; line-height:1;">✕</span>
+            </div>
         </div>
         {% for notif in sys_notifs %}
         <div style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.05); transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                 <span class="au-badge {% if notif.type == 'feedback' %}s-gold{% else %}s-blue{% endif %}" style="font-size:0.7em;">{{ notif.type | title }}</span>
                 <span style="font-size:0.75em; color:var(--text-muted);">{{ notif.created_at[:10] }}</span>
             </div>
             <div style="font-weight:600; font-size:0.88em; color:var(--text-main); margin-bottom:3px;">{{ notif.title }}</div>
-            <div style="font-size:0.82em; color:var(--text-muted);">{{ notif.description }}</div>
+            <div style="font-size:0.82em; color:var(--text-muted); margin-bottom:4px;">{{ notif.description }}</div>
             {% if notif.metadata and notif.metadata.email %}
-            <div style="font-size:0.78em; color:var(--text-muted); margin-top:3px; font-family:monospace;">{{ notif.metadata.email }}</div>
+            <div style="font-size:0.78em; color:var(--text-muted); font-family:monospace;">{{ notif.metadata.email }}</div>
             {% endif %}
         </div>
         {% else %}
-        <div style="padding:30px 18px; text-align:center; color:var(--text-muted); font-size:0.9em;">No notifications yet.</div>
+        <div style="padding:40px 18px; text-align:center; color:var(--text-muted); font-size:0.88em;">
+            <div style="font-size:2em; margin-bottom:10px;">🔔</div>
+            No notifications yet.<br>
+            <span style="font-size:0.85em;">They'll appear here when feedback or ambassador forms are submitted.</span>
+        </div>
         {% endfor %}
     </div>
     {% endif %}

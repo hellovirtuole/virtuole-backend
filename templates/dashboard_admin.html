@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -50,11 +50,11 @@
             <div class="au-stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
                 <div class="au-stat s-violet reveal">
                     <h4>Total Platform Revenue</h4>
-                    <p class="num grad">Γé╣{{ total_earnings | default("0.00") }}</p>
+                    <p class="num grad">&#8377;{{ total_earnings | default("0.00") }}</p>
                 </div>
                 <div class="au-stat s-gold reveal d1">
                     <h4>30-Day Projections</h4>
-                    <p class="num" style="color:var(--au-gold);">Γé╣{{ projected_revenue | default("0.00") }}</p>
+                    <p class="num" style="color:var(--au-gold);">&#8377;{{ projected_revenue | default("0.00") }}</p>
                     <div style="font-size:0.75em; color:var(--text-muted); margin-top:4px;">Based on 7-day average</div>
                 </div>
                 <div class="au-stat s-blue reveal d2">
@@ -105,15 +105,15 @@
             <div class="dash-section-title" style="margin-top: 40px;">Visual Insights &amp; Growth Review</div>
             <div class="au-charts-grid">
                 <div class="au-chart-card wide">
-                    <div class="au-chart-head"><h4>Cumulative Growth ΓÇö Users &amp; Revenue</h4><span class="au-chart-badge">30-day trend</span></div>
+                    <div class="au-chart-head"><h4>Cumulative Growth &mdash; Users &amp; Revenue</h4><span class="au-chart-badge">30-day trend</span></div>
                     <div class="au-chart-wrap"><canvas id="growthChart"></canvas></div>
                 </div>
                 <div class="au-chart-card wide">
-                    <div class="au-chart-head"><h4>Revenue ΓÇö Last 30 Days</h4><span class="au-chart-badge">Γé╣ paid</span></div>
+                    <div class="au-chart-head"><h4>Revenue &mdash; Last 30 Days</h4><span class="au-chart-badge">&#8377; paid</span></div>
                     <div class="au-chart-wrap"><canvas id="revenueChart"></canvas></div>
                 </div>
                 <div class="au-chart-card wide">
-                    <div class="au-chart-head"><h4>Enrollments ΓÇö Last 30 Days</h4><span class="au-chart-badge">new</span></div>
+                    <div class="au-chart-head"><h4>Enrollments &mdash; Last 30 Days</h4><span class="au-chart-badge">new</span></div>
                     <div class="au-chart-wrap"><canvas id="enrollChart"></canvas></div>
                 </div>
                 <div class="au-chart-card">
@@ -317,7 +317,7 @@
                                 <input type="number" name="max_custom_months" value="12">
                             </div>
                             <div style="flex: 1; min-width: 120px;">
-                                <label style="font-size: 0.85em;">Price (Γé╣)</label>
+                                <label style="font-size: 0.85em;">Price (&#8377;)</label>
                                 <input type="number" name="custom_price" value="599">
                             </div>
                             <div style="flex: 1; min-width: 250px;">
@@ -352,14 +352,14 @@
                             {% for track in program.tracks %}
                             <div style="display:flex; justify-content:space-between; align-items:center;">
                                 <a href="{{ track.specs }}" target="_blank" style="color:var(--primary);text-decoration:none;">View {{ track.months }}M Specs Γåù</a>
-                                <span style="font-size:0.9em; color:var(--text-muted);">Γé╣{{ track.price }}</span>
+                                <span style="font-size:0.9em; color:var(--text-muted);">&#8377;{{ track.price }}</span>
                             </div>
                             {% endfor %}
                         {% else %}
                             <!-- Fallback for old programs without dynamic tracks -->
-                            {% if program.offer_1m != False %}<a href="{{ program.specs_beginner }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 1M Specs Γåù (Γé╣{{ program.price_beginner }})</a>{% endif %}
-                            {% if program.offer_2m != False %}<a href="{{ program.specs_intermediate }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 2M Specs Γåù (Γé╣{{ program.price_intermediate }})</a>{% endif %}
-                            {% if program.offer_3m != False %}<a href="{{ program.specs_expert }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 3M Specs Γåù (Γé╣{{ program.price_expert }})</a>{% endif %}
+                            {% if program.offer_1m != False %}<a href="{{ program.specs_beginner }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 1M Specs Γåù (&#8377;{{ program.price_beginner }})</a>{% endif %}
+                            {% if program.offer_2m != False %}<a href="{{ program.specs_intermediate }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 2M Specs Γåù (&#8377;{{ program.price_intermediate }})</a>{% endif %}
+                            {% if program.offer_3m != False %}<a href="{{ program.specs_expert }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 3M Specs Γåù (&#8377;{{ program.price_expert }})</a>{% endif %}
                         {% endif %}
                     </div>
                     <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{ program.short_description }}</p>
@@ -617,7 +617,7 @@
                                 {% endif %}
                             </td>
                             <td>{{ c.usage_count }}</td>
-                            <td style="color:#10b981; font-weight:bold;">Γé╣{{ "%.2f"|format(c.revenue_generated) }}</td>
+                            <td style="color:#10b981; font-weight:bold;">&#8377;{{ "%.2f"|format(c.revenue_generated) }}</td>
                             <td>
                                 <form action="/admin/delete-coupon" method="POST" style="margin:0;" onsubmit="return confirm('Are you sure you want to take this coupon offline?');">
                                     <input type="hidden" name="promo_code" value="{{ c.promo_code }}">
@@ -1183,7 +1183,7 @@
         const charts = [];
         const GRID = () => ({ color: AU.gridColor() });
 
-        // 1. Cumulative growth ΓÇö dual axis (enrollments + revenue)
+        // 1. Cumulative growth &mdash; dual axis (enrollments + revenue)
         (function () {
             const c = document.getElementById('growthChart'); if (!c) return;
             if (!AU.hasData(A.growth_enroll) && !AU.hasData(A.growth_revenue)) return AU.empty(c);
@@ -1192,7 +1192,7 @@
                 type: 'line',
                 data: { labels: A.growth_labels, datasets: [
                     { label: 'Total Users', data: A.growth_enroll, borderColor: C.BLUE, backgroundColor: AU.fill(ctx, C.BLUE), fill: true, tension: .4, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, yAxisID: 'y' },
-                    { label: 'Total Revenue (Γé╣)', data: A.growth_revenue, borderColor: C.TEAL, backgroundColor: 'transparent', tension: .4, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, yAxisID: 'y1' }
+                    { label: 'Total Revenue (&#8377;)', data: A.growth_revenue, borderColor: C.TEAL, backgroundColor: 'transparent', tension: .4, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, yAxisID: 'y1' }
                 ] },
                 options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
                     plugins: { legend: { position: 'top' } },
@@ -1209,7 +1209,7 @@
             const ctx = c.getContext('2d');
             charts.push(new Chart(ctx, {
                 type: 'line',
-                data: { labels: A.revenue_labels, datasets: [{ label: 'Revenue (Γé╣)', data: A.revenue_values, borderColor: C.TEAL, backgroundColor: AU.fill(ctx, C.TEAL), fill: true, tension: .4, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5 }] },
+                data: { labels: A.revenue_labels, datasets: [{ label: 'Revenue (&#8377;)', data: A.revenue_values, borderColor: C.TEAL, backgroundColor: AU.fill(ctx, C.TEAL), fill: true, tension: .4, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5 }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } }, y: { grid: GRID(), beginAtZero: true } } }
             }));
         })();
@@ -1267,7 +1267,7 @@
             if (!AU.hasData(c_values)) return AU.empty(c);
             charts.push(new Chart(c.getContext('2d'), {
                 type: 'bar',
-                data: { labels: c_labels, datasets: [{ label: 'Revenue (Γé╣)', data: c_values, backgroundColor: AU.barGrad(c), borderRadius: 6, maxBarThickness: 50 }] },
+                data: { labels: c_labels, datasets: [{ label: 'Revenue (&#8377;)', data: c_values, backgroundColor: AU.barGrad(c), borderRadius: 6, maxBarThickness: 50 }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: GRID(), beginAtZero: true } } }
             }));
         })();
@@ -1363,7 +1363,7 @@
                             <input type="number" name="max_custom_months" id="ep_max_custom_months">
                         </div>
                         <div style="flex: 1; min-width: 120px;">
-                            <label style="font-size: 0.85em;">Price (Γé╣)</label>
+                            <label style="font-size: 0.85em;">Price (&#8377;)</label>
                             <input type="number" name="custom_price" id="ep_custom_price">
                         </div>
                         <div style="flex: 1; min-width: 250px;">
@@ -1486,7 +1486,7 @@
                                 <input type="number" name="track_months[]" required>
                             </div>
                             <div style="flex:1; min-width:100px;">
-                                <label style="font-size:0.85em;">Price (Γé╣)</label>
+                                <label style="font-size:0.85em;">Price (&#8377;)</label>
                                 <input type="number" name="track_price[]" required>
                             </div>
                             <div style="flex:2; min-width:200px;">
@@ -1597,7 +1597,7 @@
                                 <input type="number" name="track_months[]" value="${m}" required>
                             </div>
                             <div style="flex:1; min-width:100px;">
-                                <label style="font-size:0.85em;">Price (Γé╣)</label>
+                                <label style="font-size:0.85em;">Price (&#8377;)</label>
                                 <input type="number" name="track_price[]" value="${p}" required>
                             </div>
                             <div style="flex:2; min-width:200px;">
