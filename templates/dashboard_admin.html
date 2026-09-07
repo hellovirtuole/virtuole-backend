@@ -287,11 +287,16 @@
                 </form>
             </div>
 
-            <div class="dash-section-title">Active Live Programs</div>
+            <div class="dash-section-title">All Programs Registry</div>
             <div class="au-grid">
                 {% for program in offered_programs %}
-                <div class="au-card" style="padding:26px;display:flex;flex-direction:column;">
-                    <h4 class="au-panel-title">{{ program.title }}</h4>
+                <div class="au-card" style="padding:26px;display:flex;flex-direction:column; {% if not program.is_active %}opacity:0.75; filter:grayscale(50%); border: 1px solid rgba(248, 113, 113, 0.4);{% endif %}">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <h4 class="au-panel-title">{{ program.title }}</h4>
+                        {% if not program.is_active %}
+                            <span class="au-badge danger">Offline</span>
+                        {% endif %}
+                    </div>
                     <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                         <span class="au-badge ok">{{ program.category | default('General') }}</span>
                         {% if program.allow_custom_timeline %}
@@ -319,10 +324,17 @@
                             {{ program | tojson | safe }}
                         </script>
                         <button type="button" class="au-btn edit-program-btn" style="flex:1;" onclick="openEditProgramModalWithData('{{ program.id }}')">Edit</button>
+                        {% if program.is_active != False %}
                         <form action="/admin/delete-program" method="POST" style="flex:1; margin:0;" onsubmit="return confirm('Pull this program offline?');">
                             <input type="hidden" name="program_id" value="{{ program.id }}">
                             <button type="submit" class="au-btn danger" style="width:100%;">Take Offline</button>
                         </form>
+                        {% else %}
+                        <form action="/admin/reactivate-program" method="POST" style="flex:1; margin:0;" onsubmit="return confirm('Reactivate this program?');">
+                            <input type="hidden" name="program_id" value="{{ program.id }}">
+                            <button type="submit" class="au-btn success" style="width:100%;">Reactivate</button>
+                        </form>
+                        {% endif %}
                     </div>
                 </div>
                 {% else %}

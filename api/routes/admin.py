@@ -89,6 +89,13 @@ def delete_program():
     supabase.table('programs').update({"is_active": False}).eq('id', request.form.get('program_id')).execute()
     return redirect(url_for('dashboard.dashboard_admin', tab='programs'))
 
+@admin_bp.route('/admin/reactivate-program', methods=['POST'])
+@admin_bp.route('/api/admin/reactivate-program', methods=['POST'])
+def reactivate_program():
+    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
+    supabase.table('programs').update({"is_active": True}).eq('id', request.form.get('program_id')).execute()
+    return redirect(url_for('dashboard.dashboard_admin', tab='programs'))
+
 @admin_bp.route('/admin/add-task', methods=['POST'])
 @admin_bp.route('/api/admin/add-task', methods=['POST'])
 def add_task():
