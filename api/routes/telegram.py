@@ -2,11 +2,51 @@ import os
 import requests
 from flask import Blueprint, request, jsonify
 
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
+
 telegram_bp = Blueprint('telegram', __name__)
 
 # Fetch the token from environment variables
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8790012594:AAGdMLQALZZB9V1vRcHWFgTZhfmr15fbylk")
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
+
+# Initialize Gemini AI
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if GEMINI_API_KEY and genai:
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel('gemini-1.5-flash')
+else:
+    model = None
+
+VIRTUOLE_KNOWLEDGE_BASE = """
+You are the official Virtuole Support Agent (an AI assistant on Telegram). You speak professionally, enthusiastically, and helpfully. You can speak in English or Hinglish based on the user's language. Keep answers short (under 100 words) and suitable for Telegram. Use emojis like 🚀, 💻, 🎓.
+
+ABOUT VIRTUOLE:
+- Virtuole is an ed-tech platform offering premium, MSME-recognized virtual internships for students.
+- Founder & CEO: Vishal Kumar.
+- Website: https://www.virtuole.in
+
+HOW THE INTERNSHIP WORKS:
+1. Apply: Students sign up at virtuole.in/login and select a track (Frontend, Backend, Android, AIML, Data Science, Python, Java, C++, UIUX, DevRel, etc.). They choose a duration (1 Month Beginner, 2 Months Intermediate, 3 Months Expert).
+2. Cost: Zero upfront fees! The internship and dashboard are completely free.
+3. Offer Letter: Generated instantly upon enrollment.
+4. The Task: Students get 30 days to build real-world engineering projects asynchronously.
+5. Submission & Grading: When finished, students submit their GitHub repository link. A nominal evaluation/grading fee is required AT THE END to unlock the grading matrix and MSME certificate.
+6. Certificate & LOR: 80%+ score gets a verified MSME certificate. 100% Elite score gets a Founder's Letter of Recommendation (LOR). Failed submissions get 24 hours to patch the code and resubmit.
+
+CAMPUS AMBASSADOR PROGRAM (GTM):
+- Students can refer friends to earn points.
+- Perks: Official Virtuole premium developer swag boxes (T-shirts, bottles, etc.), guaranteed placements, and ranks (Advocate to Lead).
+- Tiers unlock at specific point milestones. High tiers get physical swag mailed to them.
+
+RULES FOR ANSWERING:
+- Always be encouraging.
+- If asked about a specific internship (e.g. "frontend me kya karna hoga"), explain that they will build a responsive, production-grade project using relevant technologies and push code to GitHub.
+- If asked about pricing, strictly say: "Zero upfront fees to build! You only pay a small grading/evaluation fee at the very end when you submit your code for MSME certification."
+"""
 
 # --- Layer-by-Layer Keyboard Generators ---
 def get_main_menu():
@@ -151,7 +191,17 @@ def handle_text_message(chat_id, text):
         current_markup = get_main_menu()
 
     else:
-        response = "Terminal input unmapped. Please execute your choice using the layer menu keys below or report anomalies to our community group."
+        if model:
+            try:
+                # Ask Gemini AI instead of failing
+                prompt = f"{VIRTUOLE_KNOWLEDGE_BASE}\n\nUser Question: {text}\n\nAgent Answer:"
+                ai_response = model.generate_content(prompt)
+                response = ai_response.text.strip()
+            except Exception as e:
+                print(f"Gemini AI Error: {e}")
+                response = "I am currently upgrading my AI processors! Please use the menu below or try again later. 🤖⚡"
+        else:
+            response = "I am currently undergoing AI training! In the meantime, please execute your choice using the layer menu keys below. (Dev note: Add GEMINI_API_KEY to Vercel to activate AI)"
         current_markup = get_main_menu()
         
     send_message(chat_id, response, current_markup)
