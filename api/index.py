@@ -124,8 +124,12 @@ def run_maintenance():
     try:
         now = datetime.utcnow()
         thirty_days_ago = (now - timedelta(days=30)).isoformat()
+        
+        # 1. Expire old active enrollments
         supabase.table('enrollments').update({"status": "expired"}).eq('status', 'active').lt('created_at', thirty_days_ago).execute()
-
+        
+        # 2. Auto-delete old system notifications
+        supabase.table('system_notifications').delete().lt('created_at', thirty_days_ago).execute()
         twenty_four_hours_ago = (now - timedelta(hours=24)).isoformat()
         expired_fails = supabase.table('enrollments').select('id', 'user_id').eq('status', 'failed').lt('created_at', twenty_four_hours_ago).execute()
         for row in expired_fails.data:

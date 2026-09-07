@@ -134,8 +134,31 @@ def submit_feedback():
     subject = request.form.get('subject')
     message = request.form.get('message')
     
-    # Logs the feedback to your Vercel console
-    print(f"NEW FEEDBACK: {name} | {email} | {subject} | {message}")
+    # 1. Store in Supabase Notifications
+    try:
+        supabase.table('system_notifications').insert({
+            "type": "feedback",
+            "title": f"New Feedback from {name}",
+            "description": subject,
+            "metadata": {"email": email}
+        }).execute()
+    except Exception as e:
+        print(f"Error saving notification: {e}")
+
+    # 2. Post to Google Sheets Webhook
+    webhook_url = os.environ.get('GOOGLE_SHEET_WEBHOOK')
+    if webhook_url:
+        import requests
+        try:
+            requests.post(webhook_url, json={
+                "form_type": "feedback",
+                "name": name,
+                "email": email,
+                "subject": subject,
+                "message": message
+            }, timeout=3)
+        except Exception as e:
+            print(f"Webhook failed: {e}")
     
     return render_template('feedback.html', message="Thank you! Your feedback has been successfully submitted.")
 
@@ -244,12 +267,31 @@ def apply_ambassador():
     if college:
         motivation = f"College: {college}\n\n{motivation}"
 
+    # 1. Store in Supabase Notifications
     try:
-        supabase.table('ambassador_applications').insert({
-            "name": name, "email": email, "motivation": motivation, "status": "pending"
+        supabase.table('system_notifications').insert({
+            "type": "ambassador",
+            "title": f"New Ambassador Application from {name}",
+            "description": f"College: {college or 'Not specified'}",
+            "metadata": {"email": email}
         }).execute()
     except Exception as e:
-        return render_template('applyambass.html', error=f"Submission failed: {e}")
+        print(f"Error saving notification: {e}")
+
+    # 2. Post to Google Sheets Webhook
+    webhook_url = os.environ.get('GOOGLE_SHEET_WEBHOOK')
+    if webhook_url:
+        import requests
+        try:
+            requests.post(webhook_url, json={
+                "form_type": "ambassador",
+                "name": name,
+                "email": email,
+                "college": college,
+                "motivation": motivation
+            }, timeout=3)
+        except Exception as e:
+            print(f"Webhook failed: {e}")
 
     return render_template('applyambass.html', submitted=True)
 
