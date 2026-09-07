@@ -41,6 +41,38 @@
     </div>
 
     <div class="dnav-right">
+        {% if dash_title == 'Admin' %}
+        <div class="notif-bell-container" style="position: relative; margin-right: 15px; cursor: pointer;" onclick="toggleNotifPanel()">
+            <div style="font-size: 1.2rem; color: var(--text-muted); position: relative;">
+                🔔
+                {% if sys_notifs and sys_notifs|length > 0 %}
+                <span style="position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; font-size: 0.6rem; font-weight: bold; padding: 2px 5px; border-radius: 10px;">{{ sys_notifs|length }}</span>
+                {% endif %}
+            </div>
+            
+            <div id="notif-panel" class="au-panel" style="display: none; position: absolute; top: 40px; right: 0; width: 350px; max-height: 400px; overflow-y: auto; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); padding: 0;">
+                <div style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-weight: 600; color: var(--text-main); position: sticky; top: 0; background: var(--nav-bg); z-index: 10;">System Notifications</div>
+                <div style="padding: 0;">
+                    {% for notif in sys_notifs %}
+                    <div style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+                            <span class="au-badge {% if notif.type == 'feedback' %}s-gold{% else %}s-blue{% endif %}" style="font-size: 0.7em; padding: 2px 6px;">
+                                {{ notif.type | title }}
+                            </span>
+                            <span style="font-size: 0.75em; color: var(--text-muted);">{{ notif.created_at[:10] }}</span>
+                        </div>
+                        <div style="font-weight: 600; color: var(--text-main); font-size: 0.9em; margin-bottom: 2px;">{{ notif.title }}</div>
+                        <div style="color: var(--text-muted); font-size: 0.85em;">{{ notif.description }}</div>
+                        <div style="color: var(--text-muted); font-size: 0.8em; margin-top: 4px; font-family: monospace;">{{ notif.metadata.email }}</div>
+                    </div>
+                    {% else %}
+                    <div style="padding: 30px 15px; text-align: center; color: var(--text-muted); font-size: 0.9em;">No recent notifications.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <label class="theme-switch-wrapper desktop-only">
             <div class="theme-switch"><input type="checkbox" class="nav-theme-toggle"><span class="slider"></span></div>
         </label>
@@ -57,6 +89,26 @@
 </nav>
 
 <script>
+    function toggleNotifPanel() {
+        const panel = document.getElementById('notif-panel');
+        if (panel) {
+            if (panel.style.display === 'none' || panel.style.display === '') {
+                panel.style.display = 'block';
+            } else {
+                panel.style.display = 'none';
+            }
+        }
+    }
+
+    // Close panel when clicking outside
+    document.addEventListener('click', function(event) {
+        const container = document.querySelector('.notif-bell-container');
+        const panel = document.getElementById('notif-panel');
+        if (container && panel && !container.contains(event.target)) {
+            panel.style.display = 'none';
+        }
+    });
+
     /* ---- Tab switching (replaces the old sidebar switchView) ---- */
     function switchView(viewId, el) {
         document.querySelectorAll('.view-section').forEach(function (s) { s.classList.remove('active'); });
