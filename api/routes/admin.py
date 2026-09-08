@@ -185,60 +185,76 @@ def update_role():
 @admin_bp.route('/admin/push-notification', methods=['POST'])
 @admin_bp.route('/api/admin/push-notification', methods=['POST'])
 def admin_push_notification():
-    if str(session.get('role', '')).lower() != 'admin':
-        return jsonify({"success": False, "error": "Unauthorized"}), 401
-
-    data = request.get_json()
-    target_groups = data.get('target_groups', ['all'])
-    notif_type = data.get('type', 'announcement')
-    title = data.get('title', '')
-    description = data.get('description', '')
-    image_url = data.get('image_url')
-
-    if not title or not description:
-        return jsonify({"success": False, "error": "Title and message are required."}), 400
-
     try:
+        if str(session.get('role', '')).lower() != 'admin':
+            return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+        data = request.get_json(force=True, silent=True)
+        if not data:
+            return jsonify({"success": False, "error": "Invalid JSON payload."}), 400
+
+        target_groups = data.get('target_groups', ['all'])
+        notif_type = data.get('type', 'announcement')
+        title = data.get('title', '')
+        description = data.get('description', '')
+        image_url = data.get('image_url')
+
+        if not title or not description:
+            return jsonify({"success": False, "error": "Title and message are required."}), 400
+
         # Determine which users to target
         if 'all' in target_groups:
-            users = supabase.table('users').select('id, role').neq('role', 'coupon').execute().data
+            users_res = supabase.table('users').select('id, role').neq('role', 'coupon').execute()
+            users = users_res.data if users_res else []
         else:
+            seen_ids = set()
             users = []
-            for group in target_groups:
-                group_lower = group.lower()
-                res = supabase.table('users').select('id, role').execute().data
-                for u in res:
-                    role = str(u.get('role', '')).lower()
-                    if group_lower in role and u not in users:
+            all_users_res = supabase.table('users').select('id, role').execute()
+            all_users = all_users_res.data if all_users_res else []
+            for u in all_users:
+                role = str(u.get('role', '')).lower()
+                for group in target_groups:
+                    if group.lower() in role and u['id'] not in seen_ids:
                         users.append(u)
+                        seen_ids.add(u['id'])
 
         # Send a notification to each targeted user
-        from api.utils.notifications import send_notification
         sent_count = 0
+        errors = []
         for user in users:
-            metadata = {
-                'target_groups': target_groups,
-                'sent_by': 'admin'
-            }
-            if image_url:
-                metadata['image_url'] = image_url
+            try:
+                metadata = {
+                    'target_groups': target_groups,
+                    'sent_by': 'admin'
+                }
+                if image_url:
+                    metadata['image_url'] = image_url
+                metadata['target_user_id'] = str(user['id'])
+                metadata['target_role'] = str(user.get('role', '')).lower()
 
-            send_notification(
-                target_role=str(user.get('role', '')).lower(),
-                target_user_id=str(user['id']),
-                notif_type=notif_type,
-                title=title,
-                description=description,
-                metadata=metadata
-            )
-            sent_count += 1
+                supabase.table('system_notifications').insert({
+                    "type": notif_type,
+                    "title": title,
+                    "description": description,
+                    "metadata": metadata
+                }).execute()
+                sent_count += 1
+            except Exception as inner_e:
+                errors.append(str(inner_e))
+                if sent_count == 0 and 'relation' in str(inner_e).lower():
+                    return jsonify({
+                        "success": False,
+                        "error": "The system_notifications table does not exist. Please create it in Supabase first."
+                    }), 500
 
-        return jsonify({
-            "success": True,
-            "message": f"Notification sent to {sent_count} user(s)."
-        })
+        msg = f"Notification sent to {sent_count} user(s)."
+        if errors:
+            msg += f" ({len(errors)} failed)"
+
+        return jsonify({"success": True, "message": msg})
 
     except Exception as e:
         import traceback
         print(f"Push notification error: {traceback.format_exc()}")
         return jsonify({"success": False, "error": str(e)}), 500
+
