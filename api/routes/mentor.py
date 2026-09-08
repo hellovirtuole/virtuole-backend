@@ -4,6 +4,7 @@ from api.config import supabase, limiter
 from api.utils.email import send_system_email, send_ambassador_email
 import random, string, uuid, json
 from datetime import datetime, timedelta
+from api.utils.notifications import send_notification
 
 mentor_bp = Blueprint('mentor', __name__)
 
@@ -32,6 +33,9 @@ def grade_submission():
         supabase.table('submissions').update(db_updates).eq('id', sub_id).execute()
         supabase.table('enrollments').update({"status": "graded"}).eq('enrollment_id', enrollment_id).execute()
         send_system_email(student['email'], "Certification Passed - Virtuole", body_msg)
+        
+        send_notification('intern', enroll_data['user_id'], 'certification', 'Certified', f"Congratulations! You passed {enroll_data['programs']['title']} with a score of {score}.")
+        send_notification('mentor', session['user_id'], 'certification', 'Intern Certified', f"You have certified {student['full_name']} for {enroll_data['programs']['title']}.")
     else:
         # Check if they are already in 'resubmit' status (this was their second try)
         if enroll_data.get('status') == 'resubmit':
@@ -57,6 +61,7 @@ def grade_submission():
             
             failure_email_body = f"Dear {student['full_name']},\n\nYour submission scored {score}%. Feedback: \"{feedback}\"\nYou have exactly 24 hours to resubmit your project in your dashboard."
             send_system_email(student['email'], "ACTION REQUIRED: Submission Failed", failure_email_body)
+            send_notification('intern', enroll_data['user_id'], 'resubmit', 'Resubmission Required', f"Your submission for {enroll_data['programs']['title']} scored {score}/100. Resubmit within 24h.")
             
     return redirect(url_for('dashboard.dashboard_mentor'))
 
@@ -74,8 +79,9 @@ def evaluate_task():
         curr_pts = supabase.table('users').select('total_points').eq('id', claim_data['ambassador_id']).execute().data[0]['total_points'] or 0
         supabase.table('users').update({"total_points": curr_pts + pts}).eq('id', claim_data['ambassador_id']).execute()
         send_ambassador_email(claim_data['users']['email'], "Task Approved!", f"Great job! +{pts} Points added.")
+        send_notification('ambassador', claim_data['ambassador_id'], 'points_added', 'Points Added', f"Your task proof was approved and you earned {pts} points.")
     elif action == 'reject':
         supabase.table('ambassador_claims').update({"status": "rejected"}).eq('id', claim_id).execute()
         send_ambassador_email(claim_data['users']['email'], "Task Proof Rejected", "Your task proof could not be verified.")
+        send_notification('ambassador', claim_data['ambassador_id'], 'task_rejected', 'Task Rejected', "Your task proof could not be verified.")
     return redirect(url_for('dashboard.dashboard_mentor'))
-

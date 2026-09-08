@@ -4,6 +4,7 @@ from api.config import supabase, limiter
 from api.utils.email import send_system_email, send_ambassador_email
 import random, string, uuid, json, os, base64, hashlib, requests
 from datetime import datetime, timedelta
+from api.utils.notifications import send_notification
 
 intern_bp = Blueprint('intern', __name__)
 
@@ -234,6 +235,8 @@ def api_enroll():
         "track_level": track_level, "status": "active"
     }).execute()
     
+    send_notification('intern', session['user_id'], 'enrollment', 'Enrollment Successful', f'You have successfully enrolled in the program (ID: {enrollment_id}).')
+    
     prog = supabase.table('programs').select('*').eq('id', program_id).execute().data[0]
     
     track = track_level.lower()
@@ -300,6 +303,7 @@ def api_submit_project():
     
     supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": request.form.get('code_link'), "defense_link": request.form.get('defense_link')}).execute()
     supabase.table('enrollments').update({"status": "submitted"}).eq('enrollment_id', enrollment_id).execute()
+    send_notification('intern', session['user_id'], 'submission', 'Project Submitted', f'Your project for {enrollment_id} has entered evaluation.')
     send_system_email(session['email'], "Submission Received", f"Your architecture for {enrollment_id} has entered evaluation.")
     return redirect(url_for('dashboard.dashboard_intern'))
 

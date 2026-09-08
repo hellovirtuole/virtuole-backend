@@ -17,7 +17,7 @@
         <div class="logo-text"><span class="virt">VIRTU</span><span class="uole">OLE</span></div>
     </a>
 
-    {% if dash_title == 'Admin' %}
+    <!-- Removed admin restriction -->
     <!-- Notification Bell: fixed to bottom of sidebar, above logout -->
     <div id="notif-bell-btn" onclick="toggleNotifPanel()" style="position:fixed; bottom:70px; left:0; width:168px; padding:10px 16px; display:flex; align-items:center; gap:10px; cursor:pointer; background:transparent; border-top:1px solid rgba(255,255,255,0.05); z-index:200; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
         <div style="width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:8px; background:rgba(99,102,241,0.15); border:1px solid rgba(99,102,241,0.3); font-size:0.95rem; position:relative; flex-shrink:0;">
@@ -58,7 +58,7 @@
         </div>
         {% endfor %}
     </div>
-    {% endif %}
+    <!-- Notification bell available to all -->
 
     <div class="dnav-center" id="dnav-center" style="overflow-y:auto;">
         {% for t in nav_tabs %}

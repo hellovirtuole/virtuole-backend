@@ -175,7 +175,10 @@ def dashboard_intern():
         requested_tab = request.args.get('active_tab')
         default_tab = requested_tab if requested_tab else ('workspace' if active_projects else 'explore')
 
-        return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered_programs_grouped, completed_projects=completed_projects, ambassador_active=ambassador_active, active_tab=default_tab, user_profile=user_profile, profile_details=profile_details)
+        res_notifs = supabase.table('system_notifications').select('*').contains('metadata', {'target_user_id': str(u_id)}).order('created_at', desc=True).limit(30).execute()
+        sys_notifs = res_notifs.data if res_notifs else []
+
+        return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered_programs_grouped, completed_projects=completed_projects, ambassador_active=ambassador_active, active_tab=default_tab, user_profile=user_profile, profile_details=profile_details, sys_notifs=sys_notifs)
     except Exception as e:
         import traceback
         return f"<h1>Internal Server Error inside dashboard_intern</h1><pre>{traceback.format_exc()}</pre>", 500
@@ -210,10 +213,14 @@ def dashboard_mentor():
         else:
             early_subs.append(sub)
 
+    u_id = session.get('user_id')
+    res_notifs = supabase.table('system_notifications').select('*').contains('metadata', {'target_user_id': str(u_id)}).order('created_at', desc=True).limit(30).execute()
+    sys_notifs = res_notifs.data if res_notifs else []
+
     return render_template('dashboard_mentor.html', user_name=session.get('name'), 
                            pending_submissions=pend_subs_raw, 
                            overdue_subs=overdue_subs, early_subs=early_subs,
-                           graded_submissions=graded_subs, pending_claims=pending_claims, analytics=analytics)
+                           graded_submissions=graded_subs, pending_claims=pending_claims, analytics=analytics, sys_notifs=sys_notifs)
 
 
 def build_mentor_analytics(pending_subs, graded_subs, pending_claims_count):
@@ -752,7 +759,10 @@ def dashboard_ambassador():
     
     requested_tab = request.args.get('active_tab')
     
-    return render_template('dashboard_ambassador.html', ambassador_name=session.get('name'), valid_until_date=u['ambassador_expiry'].split('T')[0] if u.get('ambassador_expiry') else 'N/A', total_points=pts, current_tier_name=tier_name, total_referrals=refs, promo_code=u.get('promo_code', 'Pending'), amb_id=u.get('public_id', 'Pending'), available_tasks=tasks, task_claims=task_claims, shipping_details=shipping_details, analytics=analytics, can_switch_intern=(user_role == 'intern + ambassador'), ambassador_tiers=ambassador_tiers, active_tab=requested_tab)
+    res_notifs = supabase.table('system_notifications').select('*').contains('metadata', {'target_user_id': str(session.get('user_id'))}).order('created_at', desc=True).limit(30).execute()
+    sys_notifs = res_notifs.data if res_notifs else []
+
+    return render_template('dashboard_ambassador.html', ambassador_name=session.get('name'), valid_until_date=u['ambassador_expiry'].split('T')[0] if u.get('ambassador_expiry') else 'N/A', total_points=pts, current_tier_name=tier_name, total_referrals=refs, promo_code=u.get('promo_code', 'Pending'), amb_id=u.get('public_id', 'Pending'), available_tasks=tasks, task_claims=task_claims, shipping_details=shipping_details, analytics=analytics, can_switch_intern=(user_role == 'intern + ambassador'), ambassador_tiers=ambassador_tiers, active_tab=requested_tab, sys_notifs=sys_notifs)
 
 
 def build_ambassador_analytics(user, points, referrals, ambassador_tiers):
