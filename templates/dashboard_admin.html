@@ -252,7 +252,7 @@
                     </div>
                     <div class="au-form-group" style="margin:0;grid-column:1 / -1;">
                         <label>Custom Badge Text (Optional, supports emojis)</label>
-                        <input type="text" name="badge_text" placeholder="e.g. Most Popular ≡ƒöÑ, Recently Added ≡ƒåò">
+                        <input type="text" name="badge_text" placeholder="e.g. Most Popular, Recently Added">
                     </div>
                     <!-- Dynamic Tracks Configuration -->
                     <div class="au-form-group" style="margin:0;grid-column:1 / -1; background: rgba(56, 178, 172, 0.05); padding: 15px; border-radius: 8px; border: 1px dashed var(--primary);">
@@ -311,15 +311,15 @@
                         {% if program.tracks %}
                             {% for track in program.tracks %}
                             <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <a href="{{ track.specs }}" target="_blank" style="color:var(--primary);text-decoration:none;">View {{ track.months }}M Specs Γåù</a>
+                                <a href="{{ track.specs }}" target="_blank" style="color:var(--primary);text-decoration:none;">View {{ track.months }}M Specs</a>
                                 <span style="font-size:0.9em; color:var(--text-muted);">&#8377;{{ track.price }}</span>
                             </div>
                             {% endfor %}
                         {% else %}
                             <!-- Fallback for old programs without dynamic tracks -->
-                            {% if program.offer_1m != False %}<a href="{{ program.specs_beginner }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 1M Specs Γåù (&#8377;{{ program.price_beginner }})</a>{% endif %}
-                            {% if program.offer_2m != False %}<a href="{{ program.specs_intermediate }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 2M Specs Γåù (&#8377;{{ program.price_intermediate }})</a>{% endif %}
-                            {% if program.offer_3m != False %}<a href="{{ program.specs_expert }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 3M Specs Γåù (&#8377;{{ program.price_expert }})</a>{% endif %}
+                            {% if program.offer_1m != False %}<a href="{{ program.specs_beginner }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 1M Specs (&#8377;{{ program.price_beginner }})</a>{% endif %}
+                            {% if program.offer_2m != False %}<a href="{{ program.specs_intermediate }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 2M Specs (&#8377;{{ program.price_intermediate }})</a>{% endif %}
+                            {% if program.offer_3m != False %}<a href="{{ program.specs_expert }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 3M Specs (&#8377;{{ program.price_expert }})</a>{% endif %}
                         {% endif %}
                     </div>
                     <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{ program.short_description }}</p>
@@ -359,7 +359,7 @@
                     <div class="au-form-group"><label>Task Instructions &amp; Guidelines</label><textarea name="description" rows="3" placeholder="Explain exactly what the Ambassador needs to do and provide..." required></textarea></div>
                     <div class="au-form-group" style="max-width:220px;"><label>Merit Point Value</label><input type="number" name="point_value" placeholder="e.g., 50" required></div>
                     <div class="au-form-group" style="max-width:220px;"><label>Max Completions Per Ambassador</label><input type="number" name="max_completions" placeholder="e.g., 1" value="1" min="1" required></div>
-                    <div class="au-form-group" style="grid-column: 1 / -1;"><label>Custom Badge Text (Optional)</label><input type="text" name="badge_text" placeholder="e.g. High Priority ≡ƒÜ¿"></div>
+                    <div class="au-form-group" style="grid-column: 1 / -1;"><label>Custom Badge Text (Optional)</label><input type="text" name="badge_text" placeholder="e.g. High Priority"></div>
                     <button type="submit" class="au-btn violet" style="grid-column: 1 / -1;">Publish Task to Network</button>
                 </form>
             </div>
@@ -788,9 +788,9 @@
                 </select>
                 
                 <div style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;">
-                    <button class="au-btn-ghost sm" onclick="exportData('pdf')" style="color:#ef4444;border-color:rgba(239,68,68,0.2);">≡ƒôä PDF</button>
-                    <button class="au-btn-ghost sm" onclick="exportData('excel')" style="color:#10b981;border-color:rgba(16,185,129,0.2);">≡ƒôè Excel</button>
-                    <button class="au-btn-ghost sm" onclick="exportData('csv')" style="color:var(--primary);border-color:var(--primary-glow);">≡ƒô¥ CSV</button>
+                    <button class="au-btn-ghost sm" onclick="exportData('pdf')" style="color:#ef4444;border-color:rgba(239,68,68,0.2);">PDF</button>
+                    <button class="au-btn-ghost sm" onclick="exportData('excel')" style="color:#10b981;border-color:rgba(16,185,129,0.2);">Excel</button>
+                    <button class="au-btn-ghost sm" onclick="exportData('csv')" style="color:var(--primary);border-color:var(--primary-glow);">CSV</button>
                 </div>
             </div>
 
@@ -886,9 +886,9 @@
                     </div>
                     
                     <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end;">
-                        <button class="au-btn-ghost sm" onclick="exportFilteredData('pdf')" style="color:#ef4444;border-color:rgba(239,68,68,0.2);">≡ƒôä PDF</button>
-                        <button class="au-btn-ghost sm" onclick="exportFilteredData('excel')" style="color:#10b981;border-color:rgba(16,185,129,0.2);">≡ƒôè Excel</button>
-                        <button class="au-btn-ghost sm" onclick="exportFilteredData('csv')" style="color:var(--primary);border-color:var(--primary-glow);">≡ƒô¥ CSV</button>
+                        <button class="au-btn-ghost sm" onclick="exportFilteredData('pdf')" style="color:#ef4444;border-color:rgba(239,68,68,0.2);">PDF</button>
+                        <button class="au-btn-ghost sm" onclick="exportFilteredData('excel')" style="color:#10b981;border-color:rgba(16,185,129,0.2);">Excel</button>
+                        <button class="au-btn-ghost sm" onclick="exportFilteredData('csv')" style="color:var(--primary);border-color:var(--primary-glow);">CSV</button>
                     </div>
                 </div>
 
@@ -1253,7 +1253,7 @@
             <p style="color:var(--text-muted); font-size:0.9em; margin-bottom:20px;">List of all users who successfully enrolled using this promo code.</p>
             
             <div style="margin-bottom:15px; display:flex; justify-content:flex-end;">
-                <button class="au-btn-ghost sm" onclick="downloadReferralsCSV()" style="color:var(--primary); border-color:var(--primary-glow);">≡ƒô¥ Download CSV</button>
+                <button class="au-btn-ghost sm" onclick="downloadReferralsCSV()" style="color:var(--primary); border-color:var(--primary-glow);">Download CSV</button>
             </div>
             
             <div class="au-panel" style="padding:0; overflow-x:auto;">
