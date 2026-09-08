@@ -1162,32 +1162,36 @@
         btn.textContent = '⏳ Sending...';
         status.style.display = 'none';
 
-        fetch('/api/admin/push-notification', {
+        fetch('/admin/push-notification', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(payload)
         })
-        .then(function(r) { return r.json(); })
+        .then(function(r) {
+            return r.text().then(function(txt) {
+                try { return JSON.parse(txt); }
+                catch(e) { throw new Error('Server returned status ' + r.status + '. Check Vercel logs.'); }
+            });
+        })
         .then(function(data) {
             btn.disabled = false;
-            btn.textContent = '🚀 Send Notification';
+            btn.textContent = '\ud83d\ude80 Send Notification';
             status.style.display = 'block';
             if (data.success) {
-                status.innerHTML = '<span style="color:#10b981;">✅ ' + data.message + '</span>';
+                status.innerHTML = '<span style="color:#10b981;">\u2705 ' + data.message + '</span>';
                 form.reset();
                 document.getElementById('push-notif-preview').style.display = 'none';
-                // Re-check 'all'
                 var allCb = form.querySelector('input[value="all"]');
                 if (allCb) allCb.checked = true;
             } else {
-                status.innerHTML = '<span style="color:#ef4444;">❌ ' + (data.error || 'Failed to send') + '</span>';
+                status.innerHTML = '<span style="color:#ef4444;">\u274c ' + (data.error || 'Failed to send') + '</span>';
             }
         })
         .catch(function(err) {
             btn.disabled = false;
-            btn.textContent = '🚀 Send Notification';
+            btn.textContent = '\ud83d\ude80 Send Notification';
             status.style.display = 'block';
-            status.innerHTML = '<span style="color:#ef4444;">❌ Network error: ' + err.message + '</span>';
+            status.innerHTML = '<span style="color:#ef4444;">\u274c ' + err.message + '</span>';
         });
     }
     </script>
