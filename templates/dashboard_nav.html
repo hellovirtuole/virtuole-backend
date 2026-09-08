@@ -40,11 +40,11 @@
         background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
     }
     .nav-notif-btn {
-        display: flex; align-items: center; gap: 12px; cursor: pointer;
-        background: rgba(255,255,255,0.03); padding: 10px 16px;
+        display: flex; align-items: center; gap: 8px; cursor: pointer;
+        background: rgba(255,255,255,0.03); padding: 8px 10px;
         border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);
         transition: all 0.2s ease;
-        width: 100%; box-sizing: border-box;
+        flex: 1; box-sizing: border-box; overflow: hidden;
         color: var(--text-muted);
     }
     .nav-notif-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-main); }
@@ -103,15 +103,15 @@
 
         <div class="dnav-mobile-foot mobile-only">
             <!-- Mobile Notification & Theme Row -->
-            <div class="mobile-only" style="display: flex; align-items: center; gap: 12px; width: 100%;">
-                <div class="nav-notif-btn" onclick="toggleNotifPanel()" style="flex: 1; margin: 0;">
+            <div class="mobile-only" style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                <div class="nav-notif-btn" onclick="toggleNotifPanel()" style="flex: 1; margin: 0; min-width: 0;">
                     <div class="nav-notif-icon-wrap">
                         🔔
                         {% if sys_notifs and sys_notifs|length > 0 %}
                         <span class="nav-notif-badge">{{ sys_notifs|length }}</span>
                         {% endif %}
                     </div>
-                    <span style="font-size:0.85em; font-weight:500;">Notifications</span>
+                    <span style="font-size:0.85em; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Notifications</span>
                 </div>
                 <div class="dnav-mobile-theme" style="flex-shrink: 0;">
                     <label class="theme-switch-wrapper" style="margin: 0;">
@@ -132,15 +132,15 @@
     </div>
     <div class="dnav-right">
         <!-- Desktop Notification & Theme Row -->
-        <div class="desktop-only" style="display: flex; align-items: center; gap: 12px; width: 100%;">
-            <div class="nav-notif-btn" onclick="toggleNotifPanel()" style="flex: 1; margin: 0;">
+        <div class="desktop-only" style="display: flex; align-items: center; gap: 8px; width: 100%;">
+            <div class="nav-notif-btn" onclick="toggleNotifPanel()" style="flex: 1; margin: 0; min-width: 0;">
                 <div class="nav-notif-icon-wrap">
                     🔔
                     {% if sys_notifs and sys_notifs|length > 0 %}
                     <span class="nav-notif-badge">{{ sys_notifs|length }}</span>
                     {% endif %}
                 </div>
-                <span style="font-size:0.85em; font-weight:500;">Notifications</span>
+                <span style="font-size:0.85em; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Notifications</span>
             </div>
             <label class="theme-switch-wrapper" style="margin: 0; flex-shrink: 0;">
                 <div class="theme-switch"><input type="checkbox" class="nav-theme-toggle"><span class="slider"></span></div>
