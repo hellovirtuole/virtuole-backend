@@ -17,20 +17,56 @@
         <div class="logo-text"><span class="virt">VIRTU</span><span class="uole">OLE</span></div>
     </a>
 
-    <!-- Removed admin restriction -->
-    <!-- Notification Bell: fixed to bottom of sidebar, above logout -->
-    <div id="notif-bell-btn" onclick="toggleNotifPanel()" style="position:fixed; bottom:70px; left:0; width:168px; padding:10px 16px; display:flex; align-items:center; gap:10px; cursor:pointer; background:transparent; border-top:1px solid rgba(255,255,255,0.05); z-index:200; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
-        <div style="width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:8px; background:rgba(99,102,241,0.15); border:1px solid rgba(99,102,241,0.3); font-size:0.95rem; position:relative; flex-shrink:0;">
-            🔔
-            {% if sys_notifs and sys_notifs|length > 0 %}
-            <span style="position:absolute; top:-5px; right:-5px; background:#ef4444; color:white; font-size:0.55rem; font-weight:700; padding:1px 4px; border-radius:999px; line-height:1.4;">{{ sys_notifs|length }}</span>
-            {% endif %}
-        </div>
-        <span style="font-size:0.85em; font-weight:500; color:var(--text-muted);">Notifications</span>
-    </div>
+    <style>
+    /* Premium Switch Button */
+    .btn-premium-switch {
+        background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        color: #fff !important;
+        padding: 10px 16px;
+        border-radius: 50px;
+        font-weight: 700;
+        text-decoration: none;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(168,85,247,0.3);
+        transition: all 0.3s ease;
+        border: none;
+        display: inline-block;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .btn-premium-switch:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(168,85,247,0.4);
+        background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+    }
+    .nav-notif-btn {
+        display: flex; align-items: center; gap: 12px; cursor: pointer;
+        background: rgba(255,255,255,0.03); padding: 10px 16px;
+        border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);
+        transition: all 0.2s ease;
+        width: 100%; box-sizing: border-box;
+        color: var(--text-muted);
+    }
+    .nav-notif-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-main); }
+    .nav-notif-icon-wrap {
+        width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+        border-radius: 8px; background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3);
+        font-size: 0.95rem; position: relative; flex-shrink: 0;
+    }
+    .nav-notif-badge {
+        position: absolute; top: -5px; right: -5px; background: #ef4444; color: white;
+        font-size: 0.6rem; font-weight: 700; padding: 2px 5px; border-radius: 999px; line-height: 1.2;
+    }
+    @media (max-width: 900px) {
+        #notif-panel {
+            left: 10px !important; right: 10px !important; bottom: 80px !important; width: auto !important; max-width: none !important; border-radius: 16px !important;
+        }
+    }
+    </style>
+    <!-- Removed fixed notification bell -->
 
     <!-- Slide-in notification panel from left sidebar -->
-    <div id="notif-panel" style="display:none; position:fixed; bottom:0; left:168px; width:360px; max-height:70vh; overflow-y:auto; z-index:9999; background:var(--nav-bg); border:1px solid rgba(255,255,255,0.1); border-radius:0 12px 12px 0; box-shadow:8px 0 40px rgba(0,0,0,0.5);">
+    <div id="notif-panel" style="display:none; position:fixed; bottom:20px; left:280px; width:360px; max-height:70vh; overflow-y:auto; z-index:9999; background:var(--nav-bg); border:1px solid rgba(255,255,255,0.1); border-radius:16px; box-shadow:0 20px 40px rgba(0,0,0,0.5); backdrop-filter: blur(10px);">
         <div style="padding:16px 18px; border-bottom:1px solid rgba(255,255,255,0.07); font-weight:700; font-size:0.9em; color:var(--text-main); display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; background:var(--nav-bg); z-index:1;">
             <span>🔔 Notifications</span>
             <div style="display:flex; align-items:center; gap:10px;">
@@ -71,28 +107,52 @@
                     <div class="theme-switch"><input type="checkbox" class="nav-theme-toggle"><span class="slider"></span></div>
                 </label>
             </div>
+
+            <!-- Mobile Notification Bell -->
+            <div class="nav-notif-btn mobile-only" onclick="toggleNotifPanel()">
+                <div class="nav-notif-icon-wrap">
+                    🔔
+                    {% if sys_notifs and sys_notifs|length > 0 %}
+                    <span class="nav-notif-badge">{{ sys_notifs|length }}</span>
+                    {% endif %}
+                </div>
+                <span style="font-size:0.85em; font-weight:500;">Notifications</span>
+            </div>
+
             {% if session.get('role') == 'intern + ambassador' %}
                 {% if 'intern' in request.path and ambassador_active %}
-                <a href="/dashboard-ambassador" class="dnav-logout mobile-only" style="background: var(--nav-bg); color: var(--primary) !important; border: 1px solid var(--primary); box-shadow: none;">Switch to Ambassador</a>
+                <a href="/dashboard-ambassador" class="btn-premium-switch mobile-only">Switch to Ambassador</a>
                 {% elif 'ambassador' in request.path and can_switch_intern %}
-                <a href="/dashboard-intern" class="dnav-logout mobile-only" style="background: var(--nav-bg); color: var(--primary) !important; border: 1px solid var(--primary); box-shadow: none;">Switch to Intern</a>
+                <a href="/dashboard-intern" class="btn-premium-switch mobile-only">Switch to Intern</a>
                 {% endif %}
             {% endif %}
-            <a href="/logout" class="dnav-logout mobile-only">Secure Logout</a>
+            <a href="/logout" class="dnav-logout mobile-only" style="width:100%; box-sizing:border-box;">Secure Logout</a>
         </div>
     </div>
     <div class="dnav-right">
         <label class="theme-switch-wrapper desktop-only">
             <div class="theme-switch"><input type="checkbox" class="nav-theme-toggle"><span class="slider"></span></div>
         </label>
+
+        <!-- Desktop Notification Bell -->
+        <div class="nav-notif-btn desktop-only" onclick="toggleNotifPanel()">
+            <div class="nav-notif-icon-wrap">
+                🔔
+                {% if sys_notifs and sys_notifs|length > 0 %}
+                <span class="nav-notif-badge">{{ sys_notifs|length }}</span>
+                {% endif %}
+            </div>
+            <span style="font-size:0.85em; font-weight:500;">Notifications</span>
+        </div>
+
         {% if session.get('role') == 'intern + ambassador' %}
             {% if 'intern' in request.path and ambassador_active %}
-            <a href="/dashboard-ambassador" class="dnav-logout desktop-only" style="background: var(--nav-bg); color: var(--primary) !important; border: 1px solid var(--primary); box-shadow: none;">Switch to Ambassador</a>
+            <a href="/dashboard-ambassador" class="btn-premium-switch desktop-only">Switch to Ambassador</a>
             {% elif 'ambassador' in request.path and can_switch_intern %}
-            <a href="/dashboard-intern" class="dnav-logout desktop-only" style="background: var(--nav-bg); color: var(--primary) !important; border: 1px solid var(--primary); box-shadow: none;">Switch to Intern</a>
+            <a href="/dashboard-intern" class="btn-premium-switch desktop-only">Switch to Intern</a>
             {% endif %}
         {% endif %}
-        <a href="/logout" class="dnav-logout desktop-only">Logout</a>
+        <a href="/logout" class="dnav-logout desktop-only" style="width:100%; box-sizing:border-box;">Logout</a>
         <span class="dnav-hamburger" id="dnav-hamburger">☰</span>
     </div>
 </nav>
