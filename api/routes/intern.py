@@ -15,13 +15,17 @@ intern_bp = Blueprint('intern', __name__)
 def validate_promo():
     data = request.get_json()
     promo_code = data.get('promo_code', '').upper()
-    ambassador = supabase.table('users').select('id').eq('promo_code', promo_code).in_('role', ['ambassador', 'intern + ambassador']).execute().data
-    coupon = supabase.table('users').select('id, total_points, ambassador_expiry, coupon_usage_limit, coupon_user_limit, coupon_allowed_level').eq('promo_code', promo_code).eq('role', 'coupon').execute().data
+    user_data = supabase.table('users').select('id, role, total_points, ambassador_expiry, coupon_usage_limit, coupon_user_limit, coupon_allowed_level').eq('promo_code', promo_code).execute().data
     
-    if ambassador:
+    if not user_data:
+        return jsonify({"valid": False, "error": "Invalid or expired code."}), 400
+        
+    c_data = user_data[0]
+    user_role = str(c_data.get('role', '')).lower()
+    
+    if 'ambassador' in user_role:
         return jsonify({"valid": True, "discount_percent": 10})
-    elif coupon:
-        c_data = coupon[0]
+    elif 'coupon' in user_role:
         if c_data.get('ambassador_expiry'):
             try:
                 expiry = datetime.fromisoformat(c_data['ambassador_expiry'])
@@ -79,27 +83,29 @@ def create_phonepe_payment():
     final_price = base_price
     applied_promo = None
     if promo_code:
-        is_ambassador = supabase.table('users').select('id').eq('promo_code', promo_code).in_('role', ['ambassador', 'intern + ambassador']).execute().data
-        is_coupon = supabase.table('users').select('id, total_points, ambassador_expiry').eq('promo_code', promo_code).eq('role', 'coupon').execute().data
+        user_data = supabase.table('users').select('id, role, total_points, ambassador_expiry').eq('promo_code', promo_code).execute().data
         
-        if is_ambassador:
-            final_price = int(base_price * 0.9)
-            applied_promo = promo_code
-        elif is_coupon:
-            c_data = is_coupon[0]
-            is_expired = False
-            if c_data.get('ambassador_expiry'):
-                try:
-                    expiry = datetime.fromisoformat(c_data['ambassador_expiry'])
-                    if datetime.utcnow() > expiry.replace(tzinfo=None):
-                        is_expired = True
-                except ValueError:
-                    pass
+        if user_data:
+            c_data = user_data[0]
+            user_role = str(c_data.get('role', '')).lower()
             
-            if not is_expired:
-                discount_percent = c_data.get('total_points', 0)
-                final_price = int(base_price * ((100 - discount_percent) / 100))
+            if 'ambassador' in user_role:
+                final_price = int(base_price * 0.9)
                 applied_promo = promo_code
+            elif 'coupon' in user_role:
+                is_expired = False
+                if c_data.get('ambassador_expiry'):
+                    try:
+                        expiry = datetime.fromisoformat(c_data['ambassador_expiry'])
+                        if datetime.utcnow() > expiry.replace(tzinfo=None):
+                            is_expired = True
+                    except ValueError:
+                        pass
+                
+                if not is_expired:
+                    discount_percent = c_data.get('total_points', 0)
+                    final_price = int(base_price * ((100 - discount_percent) / 100))
+                    applied_promo = promo_code
 
     transaction_id = f"VT-TXN-{random.randint(100000, 999999)}"
     amount_in_paise = int(final_price * 100) 
