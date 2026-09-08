@@ -22,7 +22,8 @@
         {'id':'exports','label':'Data Exports'},
         {'id':'adv_exports','label':'Advanced Export'},
         {'id':'feedback_log','label':'Feedback Log'},
-        {'id':'ambassador_log','label':'Ambassador Apps'}
+        {'id':'ambassador_log','label':'Ambassador Apps'},
+        {'id':'push_notifs','label':'Push Notifications'}
     ] %}
     {% include 'dashboard_nav.html' %}
 
@@ -987,7 +988,209 @@
             </div>
         </div>
 
+        <!-- ===================== PUSH NOTIFICATIONS ===================== -->
+        <div id="push_notifs-view" class="view-section">
+            <h1 class="dash-greeting">Push Notifications</h1>
+            <p class="dash-sub">Send custom notifications to all users or specific groups. Notifications appear in their dashboard bell and as browser push notifications.</p>
+
+            <div class="au-grid" style="grid-template-columns: 1fr 1fr; gap: 24px;">
+                <!-- Send Notification Form -->
+                <div class="au-panel" style="padding: 28px;">
+                    <div class="dash-section-title" style="margin-bottom:18px;">✉️ Compose Notification</div>
+
+                    <form id="push-notif-form" onsubmit="sendPushNotification(event)">
+                        <div style="margin-bottom:16px;">
+                            <label style="font-weight:600; font-size:0.88em; color:var(--text-main); display:block; margin-bottom:6px;">Target Audience</label>
+                            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                                <label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:8px 14px; border-radius:12px; background:rgba(255,255,255,0.04); border:1px solid var(--card-border); font-size:0.88em; color:var(--text-main); transition:all 0.2s;">
+                                    <input type="checkbox" name="target_group" value="all" checked onchange="toggleAllCheckbox(this)" style="accent-color:var(--primary); width:16px; height:16px;"> Everyone
+                                </label>
+                                <label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:8px 14px; border-radius:12px; background:rgba(255,255,255,0.04); border:1px solid var(--card-border); font-size:0.88em; color:var(--text-main); transition:all 0.2s;">
+                                    <input type="checkbox" name="target_group" value="intern" onchange="toggleGroupCheckbox(this)" style="accent-color:#10b981; width:16px; height:16px;"> Interns
+                                </label>
+                                <label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:8px 14px; border-radius:12px; background:rgba(255,255,255,0.04); border:1px solid var(--card-border); font-size:0.88em; color:var(--text-main); transition:all 0.2s;">
+                                    <input type="checkbox" name="target_group" value="mentor" onchange="toggleGroupCheckbox(this)" style="accent-color:#3b82f6; width:16px; height:16px;"> Mentors
+                                </label>
+                                <label style="display:flex; align-items:center; gap:6px; cursor:pointer; padding:8px 14px; border-radius:12px; background:rgba(255,255,255,0.04); border:1px solid var(--card-border); font-size:0.88em; color:var(--text-main); transition:all 0.2s;">
+                                    <input type="checkbox" name="target_group" value="ambassador" onchange="toggleGroupCheckbox(this)" style="accent-color:#a855f7; width:16px; height:16px;"> Ambassadors
+                                </label>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom:16px;">
+                            <label style="font-weight:600; font-size:0.88em; color:var(--text-main); display:block; margin-bottom:6px;">Notification Type</label>
+                            <select name="notif_type" style="width:100%; padding:10px 14px; border-radius:12px; background:var(--card-bg); border:1px solid var(--card-border); color:var(--text-main); font-size:0.9em; outline:none;">
+                                <option value="announcement">📢 Announcement</option>
+                                <option value="update">🔄 Update</option>
+                                <option value="alert">⚠️ Alert</option>
+                                <option value="promo">🎁 Promotion</option>
+                                <option value="info">ℹ️ Information</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom:16px;">
+                            <label style="font-weight:600; font-size:0.88em; color:var(--text-main); display:block; margin-bottom:6px;">Title</label>
+                            <input type="text" name="title" required placeholder="e.g. New Program Launched!" 
+                                style="width:100%; padding:10px 14px; border-radius:12px; background:var(--card-bg); border:1px solid var(--card-border); color:var(--text-main); font-size:0.9em; outline:none; box-sizing:border-box;">
+                        </div>
+
+                        <div style="margin-bottom:16px;">
+                            <label style="font-weight:600; font-size:0.88em; color:var(--text-main); display:block; margin-bottom:6px;">Message</label>
+                            <textarea name="description" required rows="3" placeholder="Write your notification message here..."
+                                style="width:100%; padding:10px 14px; border-radius:12px; background:var(--card-bg); border:1px solid var(--card-border); color:var(--text-main); font-size:0.9em; outline:none; resize:vertical; box-sizing:border-box; font-family:inherit;"></textarea>
+                        </div>
+
+                        <div style="margin-bottom:20px;">
+                            <label style="font-weight:600; font-size:0.88em; color:var(--text-main); display:block; margin-bottom:6px;">Image URL <span style="color:var(--text-muted); font-weight:400;">(optional)</span></label>
+                            <input type="url" name="image_url" placeholder="https://example.com/banner.jpg"
+                                style="width:100%; padding:10px 14px; border-radius:12px; background:var(--card-bg); border:1px solid var(--card-border); color:var(--text-main); font-size:0.9em; outline:none; box-sizing:border-box;">
+                        </div>
+
+                        <!-- Preview -->
+                        <div id="push-notif-preview" style="display:none; margin-bottom:20px; padding:16px; border-radius:16px; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.15);">
+                            <div style="font-size:0.75em; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">📱 Preview</div>
+                            <div id="push-preview-title" style="font-weight:700; font-size:0.95em; color:var(--text-main);"></div>
+                            <div id="push-preview-desc" style="font-size:0.85em; color:var(--text-muted); margin-top:4px;"></div>
+                            <img id="push-preview-img" src="" style="display:none; max-width:100%; border-radius:8px; margin-top:10px;">
+                        </div>
+
+                        <button type="submit" id="push-notif-btn" style="width:100%; padding:12px; border-radius:50px; border:none; background:linear-gradient(135deg, #6366f1, #a855f7); color:white; font-weight:700; font-size:0.95em; cursor:pointer; box-shadow:0 4px 15px rgba(99,102,241,0.3); transition:all 0.3s;" 
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(99,102,241,0.4)'" 
+                            onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 15px rgba(99,102,241,0.3)'">
+                            🚀 Send Notification
+                        </button>
+                        <div id="push-notif-status" style="margin-top:12px; font-size:0.85em; text-align:center; display:none;"></div>
+                    </form>
+                </div>
+
+                <!-- Recent Notifications Log -->
+                <div class="au-panel" style="padding: 28px;">
+                    <div class="dash-section-title" style="margin-bottom:18px;">📋 Recent Notifications</div>
+                    <div id="push-notif-log" style="max-height:520px; overflow-y:auto;">
+                        {% for n in sys_notifs %}
+                        <div style="padding:14px 16px; border-bottom:1px solid rgba(255,255,255,0.05); transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                <span class="au-badge {% if n.type == 'announcement' %}s-blue{% elif n.type == 'alert' %}s-red{% elif n.type == 'promo' %}s-gold{% else %}s-green{% endif %}" style="font-size:0.7em;">{{ n.type | title }}</span>
+                                <span style="font-size:0.75em; color:var(--text-muted);">{{ n.created_at[:10] }}</span>
+                            </div>
+                            <div style="font-weight:600; font-size:0.88em; color:var(--text-main);">{{ n.title }}</div>
+                            <div style="font-size:0.82em; color:var(--text-muted); margin-top:2px;">{{ n.description }}</div>
+                            {% if n.metadata and n.metadata.target_groups %}
+                            <div style="margin-top:6px; display:flex; gap:4px; flex-wrap:wrap;">
+                                {% for g in n.metadata.target_groups %}
+                                <span style="font-size:0.7em; padding:2px 8px; border-radius:8px; background:rgba(255,255,255,0.06); color:var(--text-muted);">{{ g | title }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <div style="text-align:center; padding:40px; color:var(--text-muted); font-size:0.9em;">
+                            <div style="font-size:2em; margin-bottom:10px;">📭</div>
+                            No notifications sent yet.
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
+
+    <script>
+    // Push Notification Admin Functions
+    function toggleAllCheckbox(el) {
+        if (el.checked) {
+            document.querySelectorAll('#push-notif-form input[name="target_group"]').forEach(function(cb) {
+                if (cb.value !== 'all') cb.checked = false;
+            });
+        }
+    }
+    function toggleGroupCheckbox(el) {
+        var allCb = document.querySelector('#push-notif-form input[value="all"]');
+        if (el.checked && allCb) allCb.checked = false;
+        // If none checked, re-check "all"
+        var anyChecked = document.querySelectorAll('#push-notif-form input[name="target_group"]:checked:not([value="all"])').length > 0;
+        if (!anyChecked && allCb) allCb.checked = true;
+    }
+
+    // Live preview
+    document.addEventListener('DOMContentLoaded', function() {
+        var form = document.getElementById('push-notif-form');
+        if (!form) return;
+        var previewBox = document.getElementById('push-notif-preview');
+        var pTitle = document.getElementById('push-preview-title');
+        var pDesc = document.getElementById('push-preview-desc');
+        var pImg = document.getElementById('push-preview-img');
+
+        function updatePreview() {
+            var title = form.querySelector('[name="title"]').value;
+            var desc = form.querySelector('[name="description"]').value;
+            var img = form.querySelector('[name="image_url"]').value;
+            if (title || desc) {
+                previewBox.style.display = 'block';
+                pTitle.textContent = title || 'Notification Title';
+                pDesc.textContent = desc || 'Notification message';
+                if (img) { pImg.src = img; pImg.style.display = 'block'; } 
+                else { pImg.style.display = 'none'; }
+            } else {
+                previewBox.style.display = 'none';
+            }
+        }
+        form.querySelector('[name="title"]').addEventListener('input', updatePreview);
+        form.querySelector('[name="description"]').addEventListener('input', updatePreview);
+        form.querySelector('[name="image_url"]').addEventListener('input', updatePreview);
+    });
+
+    function sendPushNotification(e) {
+        e.preventDefault();
+        var form = document.getElementById('push-notif-form');
+        var btn = document.getElementById('push-notif-btn');
+        var status = document.getElementById('push-notif-status');
+
+        var groups = [];
+        form.querySelectorAll('input[name="target_group"]:checked').forEach(function(cb) { groups.push(cb.value); });
+
+        var payload = {
+            target_groups: groups,
+            type: form.querySelector('[name="notif_type"]').value,
+            title: form.querySelector('[name="title"]').value,
+            description: form.querySelector('[name="description"]').value,
+            image_url: form.querySelector('[name="image_url"]').value || null
+        };
+
+        btn.disabled = true;
+        btn.textContent = '⏳ Sending...';
+        status.style.display = 'none';
+
+        fetch('/api/admin/push-notification', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            btn.disabled = false;
+            btn.textContent = '🚀 Send Notification';
+            status.style.display = 'block';
+            if (data.success) {
+                status.innerHTML = '<span style="color:#10b981;">✅ ' + data.message + '</span>';
+                form.reset();
+                document.getElementById('push-notif-preview').style.display = 'none';
+                // Re-check 'all'
+                var allCb = form.querySelector('input[value="all"]');
+                if (allCb) allCb.checked = true;
+            } else {
+                status.innerHTML = '<span style="color:#ef4444;">❌ ' + (data.error || 'Failed to send') + '</span>';
+            }
+        })
+        .catch(function(err) {
+            btn.disabled = false;
+            btn.textContent = '🚀 Send Notification';
+            status.style.display = 'block';
+            status.innerHTML = '<span style="color:#ef4444;">❌ Network error: ' + err.message + '</span>';
+        });
+    }
+    </script>
 
     <!-- Required CDNs for Exports -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>

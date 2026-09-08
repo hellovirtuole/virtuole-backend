@@ -181,3 +181,64 @@ def update_role():
         return f"Database Error: {e}", 500
     return redirect(url_for('dashboard.dashboard_admin', tab='users'))
 
+
+@admin_bp.route('/admin/push-notification', methods=['POST'])
+@admin_bp.route('/api/admin/push-notification', methods=['POST'])
+def admin_push_notification():
+    if str(session.get('role', '')).lower() != 'admin':
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    data = request.get_json()
+    target_groups = data.get('target_groups', ['all'])
+    notif_type = data.get('type', 'announcement')
+    title = data.get('title', '')
+    description = data.get('description', '')
+    image_url = data.get('image_url')
+
+    if not title or not description:
+        return jsonify({"success": False, "error": "Title and message are required."}), 400
+
+    try:
+        # Determine which users to target
+        if 'all' in target_groups:
+            users = supabase.table('users').select('id, role').neq('role', 'coupon').execute().data
+        else:
+            users = []
+            for group in target_groups:
+                group_lower = group.lower()
+                res = supabase.table('users').select('id, role').execute().data
+                for u in res:
+                    role = str(u.get('role', '')).lower()
+                    if group_lower in role and u not in users:
+                        users.append(u)
+
+        # Send a notification to each targeted user
+        from api.utils.notifications import send_notification
+        sent_count = 0
+        for user in users:
+            metadata = {
+                'target_groups': target_groups,
+                'sent_by': 'admin'
+            }
+            if image_url:
+                metadata['image_url'] = image_url
+
+            send_notification(
+                target_role=str(user.get('role', '')).lower(),
+                target_user_id=str(user['id']),
+                notif_type=notif_type,
+                title=title,
+                description=description,
+                metadata=metadata
+            )
+            sent_count += 1
+
+        return jsonify({
+            "success": True,
+            "message": f"Notification sent to {sent_count} user(s)."
+        })
+
+    except Exception as e:
+        import traceback
+        print(f"Push notification error: {traceback.format_exc()}")
+        return jsonify({"success": False, "error": str(e)}), 500

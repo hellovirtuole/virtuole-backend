@@ -77,11 +77,14 @@
         {% for notif in sys_notifs %}
         <div style="padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.05); transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <span class="au-badge {% if notif.type == 'feedback' %}s-gold{% else %}s-blue{% endif %}" style="font-size:0.7em;">{{ notif.type | title }}</span>
+                <span class="au-badge {% if notif.type == 'feedback' or notif.type == 'promo' %}s-gold{% elif notif.type == 'alert' %}s-red{% elif notif.type == 'announcement' %}s-blue{% else %}s-green{% endif %}" style="font-size:0.7em;">{{ notif.type | title }}</span>
                 <span style="font-size:0.75em; color:var(--text-muted);">{{ notif.created_at[:10] }}</span>
             </div>
             <div style="font-weight:600; font-size:0.88em; color:var(--text-main); margin-bottom:3px;">{{ notif.title }}</div>
             <div style="font-size:0.82em; color:var(--text-muted); margin-bottom:4px;">{{ notif.description }}</div>
+            {% if notif.metadata and notif.metadata.image_url %}
+            <img src="{{ notif.metadata.image_url }}" style="max-width:100%; border-radius:8px; margin-top:6px;" onerror="this.style.display='none'">
+            {% endif %}
             {% if notif.metadata and notif.metadata.email %}
             <div style="font-size:0.78em; color:var(--text-muted); font-family:monospace;">{{ notif.metadata.email }}</div>
             {% endif %}
@@ -104,7 +107,7 @@
         <div class="dnav-mobile-foot mobile-only">
             <!-- Mobile Notification & Theme Row -->
             <div class="mobile-only" style="display: flex; align-items: center; gap: 8px; width: 100%;">
-                <div class="nav-notif-btn" onclick="toggleNotifPanel()" style="flex: 1; margin: 0; min-width: 0;">
+                <div class="nav-notif-btn" onclick="toggleNotifPanel(event)" style="flex: 1; margin: 0; min-width: 0;">
                     <div class="nav-notif-icon-wrap">
                         🔔
                         {% if sys_notifs and sys_notifs|length > 0 %}
@@ -133,7 +136,7 @@
     <div class="dnav-right">
         <!-- Desktop Notification & Theme Row -->
         <div class="desktop-only" style="display: flex; align-items: center; gap: 8px; width: 100%;">
-            <div class="nav-notif-btn" onclick="toggleNotifPanel()" style="flex: 1; margin: 0; min-width: 0;">
+            <div class="nav-notif-btn" onclick="toggleNotifPanel(event)" style="flex: 1; margin: 0; min-width: 0;">
                 <div class="nav-notif-icon-wrap">
                     🔔
                     {% if sys_notifs and sys_notifs|length > 0 %}
@@ -160,7 +163,8 @@
 </nav>
 
 <script>
-    function toggleNotifPanel() {
+    function toggleNotifPanel(e) {
+        if (e) e.stopPropagation();
         const panel = document.getElementById('notif-panel');
         if (panel) {
             if (panel.style.display === 'none' || panel.style.display === '') {
@@ -173,11 +177,12 @@
 
     // Close panel when clicking outside
     document.addEventListener('click', function(event) {
-        const container = document.querySelector('.notif-bell-container');
-        const panel = document.getElementById('notif-panel');
-        if (container && panel && !container.contains(event.target)) {
-            panel.style.display = 'none';
-        }
+        var panel = document.getElementById('notif-panel');
+        if (!panel || panel.style.display === 'none') return;
+        // Don't close if clicking inside the panel or on a notif button
+        if (panel.contains(event.target)) return;
+        if (event.target.closest && event.target.closest('.nav-notif-btn')) return;
+        panel.style.display = 'none';
     });
 
     /* ---- Tab switching (replaces the old sidebar switchView) ---- */
