@@ -247,9 +247,12 @@ def admin_push_notification():
                         "error": "The system_notifications table does not exist. Please create it in Supabase first."
                     }), 500
 
+        if sent_count == 0 and errors:
+            return jsonify({"success": False, "error": f"Failed to send to any user. Database error: {errors[0]}"}), 500
+
         msg = f"Notification sent to {sent_count} user(s)."
         if errors:
-            msg += f" ({len(errors)} failed)"
+            msg += f" ({len(errors)} failed: {errors[0]})"
 
         return jsonify({"success": True, "message": msg})
 

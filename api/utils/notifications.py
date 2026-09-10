@@ -27,12 +27,12 @@ def send_notification(target_role, target_user_id, notif_type, title, descriptio
             # Since Supabase python client doesn't easily do raw SQL for json filtering in deletes,
             # we fetch the user's notifications, keep 30, and delete the rest.
             res = supabase.table('system_notifications')\
-                .select('id')\
-                .contains('metadata', {'target_user_id': target_user_id})\
+                .select('id, metadata')\
                 .order('created_at', desc=True)\
+                .limit(200)\
                 .execute()
                 
-            user_notifs = res.data
+            user_notifs = [n for n in (res.data or []) if str(n.get('metadata', {}).get('target_user_id')) == str(target_user_id)]
             
             if len(user_notifs) > 30:
                 notifs_to_delete = user_notifs[30:]

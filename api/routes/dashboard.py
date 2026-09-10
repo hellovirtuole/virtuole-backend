@@ -175,8 +175,8 @@ def dashboard_intern():
         requested_tab = request.args.get('active_tab')
         default_tab = requested_tab if requested_tab else ('workspace' if active_projects else 'explore')
 
-        res_notifs = supabase.table('system_notifications').select('*').contains('metadata', {'target_user_id': str(u_id)}).order('created_at', desc=True).limit(30).execute()
-        sys_notifs = res_notifs.data if res_notifs else []
+        _all_notifs = supabase.table('system_notifications').select('*').order('created_at', desc=True).limit(200).execute()
+        sys_notifs = [n for n in (_all_notifs.data or []) if str(n.get('metadata', {}).get('target_user_id')) == str(u_id)][:30]
 
         return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered_programs_grouped, completed_projects=completed_projects, ambassador_active=ambassador_active, active_tab=default_tab, user_profile=user_profile, profile_details=profile_details, sys_notifs=sys_notifs)
     except Exception as e:
@@ -214,8 +214,8 @@ def dashboard_mentor():
             early_subs.append(sub)
 
     u_id = session.get('user_id')
-    res_notifs = supabase.table('system_notifications').select('*').contains('metadata', {'target_user_id': str(u_id)}).order('created_at', desc=True).limit(30).execute()
-    sys_notifs = res_notifs.data if res_notifs else []
+    _all_notifs = supabase.table('system_notifications').select('*').order('created_at', desc=True).limit(200).execute()
+    sys_notifs = [n for n in (_all_notifs.data or []) if str(n.get('metadata', {}).get('target_user_id')) == str(u_id)][:30]
 
     return render_template('dashboard_mentor.html', user_name=session.get('name'), 
                            pending_submissions=pend_subs_raw, 
@@ -759,8 +759,8 @@ def dashboard_ambassador():
     
     requested_tab = request.args.get('active_tab')
     
-    res_notifs = supabase.table('system_notifications').select('*').contains('metadata', {'target_user_id': str(session.get('user_id'))}).order('created_at', desc=True).limit(30).execute()
-    sys_notifs = res_notifs.data if res_notifs else []
+    _all_notifs = supabase.table('system_notifications').select('*').order('created_at', desc=True).limit(200).execute()
+    sys_notifs = [n for n in (_all_notifs.data or []) if str(n.get('metadata', {}).get('target_user_id')) == str(session.get('user_id'))][:30]
 
     return render_template('dashboard_ambassador.html', ambassador_name=session.get('name'), valid_until_date=u['ambassador_expiry'].split('T')[0] if u.get('ambassador_expiry') else 'N/A', total_points=pts, current_tier_name=tier_name, total_referrals=refs, promo_code=u.get('promo_code', 'Pending'), amb_id=u.get('public_id', 'Pending'), available_tasks=tasks, task_claims=task_claims, shipping_details=shipping_details, analytics=analytics, can_switch_intern=(user_role == 'intern + ambassador'), ambassador_tiers=ambassador_tiers, active_tab=requested_tab, sys_notifs=sys_notifs)
 
@@ -811,3 +811,32 @@ def build_ambassador_analytics(user, points, referrals, ambassador_tiers):
         "breakdown_values": [points, referrals],
     }
 
+@dashboard_bp.route('/delete-notification/<notif_id>', methods=['POST'])
+@dashboard_bp.route('/api/delete-notification/<notif_id>', methods=['POST'])
+def delete_notification(notif_id):
+    if 'user_id' not in session:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    try:
+        user_role = str(session.get('role', '')).lower()
+        
+        if user_role == 'admin':
+            # Admin can delete any notification
+            supabase.table('system_notifications').delete().eq('id', notif_id).execute()
+            return jsonify({"success": True})
+        else:
+            # User can only delete their own notifications
+            notif = supabase.table('system_notifications').select('metadata').eq('id', notif_id).execute().data
+            if not notif:
+                return jsonify({"success": False, "error": "Notification not found"}), 404
+                
+            metadata = notif[0].get('metadata', {})
+            if str(metadata.get('target_user_id')) != str(session.get('user_id')):
+                return jsonify({"success": False, "error": "Unauthorized to delete this notification"}), 403
+                
+            supabase.table('system_notifications').delete().eq('id', notif_id).execute()
+            return jsonify({"success": True})
+            
+    except Exception as e:
+        print(f"Error deleting notification: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
