@@ -175,8 +175,18 @@ def dashboard_intern():
         requested_tab = request.args.get('active_tab')
         default_tab = requested_tab if requested_tab else ('workspace' if active_projects else 'explore')
 
-        _res = supabase.table('system_notifications').select('*').eq('metadata->>target_user_id', str(u_id)).order('created_at', desc=True).limit(30).execute()
-        sys_notifs = _res.data if _res else []
+        _all = supabase.table('system_notifications').select('*').order('created_at', desc=True).limit(2000).execute()
+        sys_notifs = []
+        for n in (_all.data or []):
+            import json
+            meta = n.get('metadata')
+            if isinstance(meta, str):
+                try: meta = json.loads(meta)
+                except: meta = {}
+            if not meta: meta = {}
+            if str(meta.get('target_user_id')) == str(u_id):
+                sys_notifs.append(n)
+            if len(sys_notifs) >= 30: break
 
         return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered_programs_grouped, completed_projects=completed_projects, ambassador_active=ambassador_active, active_tab=default_tab, user_profile=user_profile, profile_details=profile_details, sys_notifs=sys_notifs)
     except Exception as e:
@@ -214,8 +224,18 @@ def dashboard_mentor():
             early_subs.append(sub)
 
     u_id = session.get('user_id')
-    _res = supabase.table('system_notifications').select('*').eq('metadata->>target_user_id', str(u_id)).order('created_at', desc=True).limit(30).execute()
-    sys_notifs = _res.data if _res else []
+    _all = supabase.table('system_notifications').select('*').order('created_at', desc=True).limit(2000).execute()
+    sys_notifs = []
+    for n in (_all.data or []):
+        import json
+        meta = n.get('metadata')
+        if isinstance(meta, str):
+            try: meta = json.loads(meta)
+            except: meta = {}
+        if not meta: meta = {}
+        if str(meta.get('target_user_id')) == str(u_id):
+            sys_notifs.append(n)
+        if len(sys_notifs) >= 30: break
 
     return render_template('dashboard_mentor.html', user_name=session.get('name'), 
                            pending_submissions=pend_subs_raw, 
@@ -759,8 +779,18 @@ def dashboard_ambassador():
     
     requested_tab = request.args.get('active_tab')
     
-    _res = supabase.table('system_notifications').select('*').eq('metadata->>target_user_id', str(session.get('user_id'))).order('created_at', desc=True).limit(30).execute()
-    sys_notifs = _res.data if _res else []
+    _all = supabase.table('system_notifications').select('*').order('created_at', desc=True).limit(2000).execute()
+    sys_notifs = []
+    for n in (_all.data or []):
+        import json
+        meta = n.get('metadata')
+        if isinstance(meta, str):
+            try: meta = json.loads(meta)
+            except: meta = {}
+        if not meta: meta = {}
+        if str(meta.get('target_user_id')) == str(session.get('user_id')):
+            sys_notifs.append(n)
+        if len(sys_notifs) >= 30: break
 
     return render_template('dashboard_ambassador.html', ambassador_name=session.get('name'), valid_until_date=u['ambassador_expiry'].split('T')[0] if u.get('ambassador_expiry') else 'N/A', total_points=pts, current_tier_name=tier_name, total_referrals=refs, promo_code=u.get('promo_code', 'Pending'), amb_id=u.get('public_id', 'Pending'), available_tasks=tasks, task_claims=task_claims, shipping_details=shipping_details, analytics=analytics, can_switch_intern=(user_role == 'intern + ambassador'), ambassador_tiers=ambassador_tiers, active_tab=requested_tab, sys_notifs=sys_notifs)
 

@@ -28,11 +28,20 @@ def send_notification(target_role, target_user_id, notif_type, title, descriptio
             # we fetch the user's notifications, keep 30, and delete the rest.
             res = supabase.table('system_notifications')\
                 .select('id, metadata')\
-                .eq('metadata->>target_user_id', str(target_user_id))\
                 .order('created_at', desc=True)\
+                .limit(2000)\
                 .execute()
                 
-            user_notifs = res.data or []
+            user_notifs = []
+            for n in (res.data or []):
+                import json
+                meta = n.get('metadata')
+                if isinstance(meta, str):
+                    try: meta = json.loads(meta)
+                    except: meta = {}
+                if not meta: meta = {}
+                if str(meta.get('target_user_id')) == str(target_user_id):
+                    user_notifs.append(n)
             
             if len(user_notifs) > 30:
                 notifs_to_delete = user_notifs[30:]
