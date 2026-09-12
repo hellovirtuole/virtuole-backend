@@ -27,6 +27,15 @@
         <a href="/blog" class="nav-link {% if 'blog' in request.path %}active{% endif %}">Blog</a>
         
         <div class="dropdown">
+            <a href="#" class="nav-link">Tools ▾</a>
+            <div class="dropdown-content">
+                <a href="https://bestdio.in/" target="_blank">ATS Checker & Resume Maker</a>
+                <a href="https://bestdio.in/" target="_blank">Job Application Writer</a>
+                <a href="https://bestdio.in/" target="_blank">All Tools (Bestdio)</a>
+            </div>
+        </div>
+        
+        <div class="dropdown">
             <a href="#" class="nav-link {% if 'feedback' in request.path or 'terms' in request.path or 'privacy' in request.path or 'contact' in request.path %}active{% endif %}">Policies & Support ▾</a>
             <div class="dropdown-content">
                 <a href="/feedback">Feedback & Reviews</a>
