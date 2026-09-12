@@ -29,7 +29,7 @@
     --text-muted:#98a4bd;
     --card-bg:   rgba(255,255,255,0.045);
     --card-border: rgba(255,255,255,0.09);
-    --primary:   #2dd4bf;
+    --primary: #4277d7;
     --primary-hover: #14b8a6;
     --secondary: #fbbf24;
     --input-bg:  rgba(255,255,255,0.04);
@@ -46,7 +46,7 @@
     --text-muted:#516079;
     --card-bg:   rgba(255,255,255,0.75);
     --card-border: rgba(12,20,40,0.10);
-    --primary:   #0ea5e9;
+    --primary: #4277d7;
     --primary-hover: #0284c7;
     --secondary: #d97706;
     --input-bg:  #ffffff;
@@ -321,7 +321,7 @@ body { background: transparent; }
             --text-muted: #9ca3af;
             --card-bg: rgba(17, 24, 39, 0.6);
             --card-border: rgba(255,255,255,0.05);
-            --primary: #38b2ac;
+            --primary: #4277d7;
             --primary-hover: #2c7a7b;
             --secondary: #ecc94b;
             --input-bg: #111827;
@@ -335,7 +335,7 @@ body { background: transparent; }
             --text-muted: #475569;
             --card-bg: #ffffff;
             --card-border: rgba(0, 0, 0, 0.1);
-            --primary: #0ea5e9;
+            --primary: #4277d7;
             --primary-hover: #0284c7;
             --secondary: #d97706;
             --input-bg: #ffffff;
@@ -473,10 +473,10 @@ body { background: transparent; }
         padding: 14px 5%; background: var(--nav-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
         position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; box-sizing: border-box;
         border-bottom: 1px solid var(--card-border); transition: .4s ease; }
-    .dnav .logo-container { display: flex; align-items: center; text-decoration: none; gap: 11px; height: 38px; flex-shrink: 0; }
+    .dnav .logo-container { border: none !important; outline: none !important; box-shadow: none !important; text-decoration: none !important; display: flex; align-items: center; text-decoration: none; gap: 11px; height: 38px; flex-shrink: 0; }
     .dnav .logo-img { height: 100%; width: auto; object-fit: contain; display: block; }
     .dnav .logo-text { font-family: 'Montserrat', sans-serif; font-size: 1.45em; font-weight: 800; letter-spacing: 1px; display: flex; align-items: center; }
-    .dnav .logo-text .virt { color: var(--text-main) !important; }
+    .dnav .logo-text .virt { color: var(--primary) !important; }
     .dnav .logo-text .uole { color: var(--primary) !important; }
     .dnav .dash-tag { margin-left: 4px; font-size: .58em; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
         color: var(--primary); align-self: center; padding: 3px 9px; border-radius: 20px; background: var(--au-grad-soft); border: 1px solid var(--card-border); }
@@ -513,7 +513,7 @@ body { background: transparent; }
             border-radius: 24px; border: 1px solid var(--card-border);
             padding: 30px 20px; gap: 30px; box-shadow: var(--au-shadow);
         }
-        .dnav .logo-container { height: auto; margin-bottom: 10px; flex-shrink: 0; }
+        .dnav .logo-container { border: none !important; outline: none !important; box-shadow: none !important; text-decoration: none !important; height: auto; margin-bottom: 10px; flex-shrink: 0; }
         .dnav .logo-img { height: 38px; }
         .dnav-center { flex-direction: column; align-items: flex-start; width: 100%; gap: 10px; flex: 1; overflow-y: auto; overflow-x: hidden; margin-right: -10px; padding-right: 10px; }
         .dnav-center::-webkit-scrollbar { width: 4px; }
@@ -554,7 +554,7 @@ body { background: transparent; }
             --text-muted: #9ca3af;
             --card-bg: rgba(17, 24, 39, 0.6);
             --card-border: rgba(255,255,255,0.05);
-            --primary: #38b2ac;
+            --primary: #4277d7;
             --secondary: #ecc94b;
             --input-bg: #111827;
         }
@@ -567,7 +567,7 @@ body { background: transparent; }
             --text-muted: #475569;
             --card-bg: #ffffff;
             --card-border: rgba(0, 0, 0, 0.1);
-            --primary: #0ea5e9;
+            --primary: #4277d7;
             --secondary: #d97706;
             --input-bg: #ffffff;
         }
@@ -630,10 +630,10 @@ body { background: transparent; }
     .footer-brand { max-width: 450px; }
     
     /* Logo Colors Locked */
-    .mega-footer .logo-container { display: flex; align-items: center; text-decoration: none; gap: 12px; height: 40px; }
+    .mega-footer .logo-container { border: none !important; outline: none !important; box-shadow: none !important; text-decoration: none !important; display: flex; align-items: center; text-decoration: none; gap: 12px; height: 40px; }
     .mega-footer .logo-img { height: 100%; width: auto; object-fit: contain; display: block; }
     .mega-footer .logo-text { font-family: 'Montserrat', sans-serif; font-size: 1.6em; font-weight: 800; letter-spacing: 1px; display: flex; align-items: center; }
-    .logo-text .virt { color: var(--text-main) !important; transition: 0.3s;} 
+    .logo-text .virt { color: var(--primary) !important; transition: 0.3s;} 
     .logo-text .uole { color: var(--primary) !important; } 
     
     .footer-brand p { color: var(--text-muted); line-height: 1.6; margin-top: 15px; }
@@ -664,7 +664,7 @@ body { background: transparent; }
         .footer-newsletter form { flex-direction: column; }
         .footer-top { flex-direction: column; align-items: center; text-align: center; gap: 30px; }
         .footer-brand { align-items: center; text-align: center; display: flex; flex-direction: column; max-width: 100%; }
-        .logo-container { justify-content: center; margin-bottom: 10px; }
+        .logo-container { border: none !important; outline: none !important; box-shadow: none !important; text-decoration: none !important; justify-content: center; margin-bottom: 10px; }
         .footer-bottom { flex-direction: column; text-align: center; gap: 20px; align-items: center; }
         .social-circles { justify-content: center; }
         .legal-links { margin-top: 10px; }
@@ -695,7 +695,7 @@ body { background: transparent; }
             --text-muted: #9ca3af;
             --card-bg: rgba(17, 24, 39, 0.6);
             --card-border: rgba(255,255,255,0.05);
-            --primary: #38b2ac;
+            --primary: #4277d7;
             --primary-hover: #2c7a7b;
             --secondary: #ecc94b;
             --input-bg: #111827;
@@ -711,7 +711,7 @@ body { background: transparent; }
             --text-muted: #475569;
             --card-bg: #ffffff;
             --card-border: rgba(0, 0, 0, 0.1);
-            --primary: #0ea5e9;
+            --primary: #4277d7;
             --primary-hover: #0284c7;
             --secondary: #d97706;
             --input-bg: #ffffff;
@@ -914,7 +914,7 @@ body { background: transparent; }
             --text-muted: #9ca3af;
             --card-bg: rgba(17, 24, 39, 0.6);
             --card-border: rgba(255,255,255,0.05);
-            --primary: #38b2ac;
+            --primary: #4277d7;
             --primary-hover: #2c7a7b;
             --secondary: #ecc94b;
             --input-bg: rgba(255, 255, 255, 0.03);
@@ -929,7 +929,7 @@ body { background: transparent; }
             --text-muted: #475569;
             --card-bg: #ffffff;
             --card-border: rgba(0, 0, 0, 0.1);
-            --primary: #0ea5e9;
+            --primary: #4277d7;
             --primary-hover: #0284c7;
             --secondary: #d97706;
             --input-bg: #ffffff;
@@ -1031,12 +1031,12 @@ body { background: transparent; }
         border-bottom: 1px solid var(--card-border); transition: 0.4s ease;
         box-sizing: border-box !important; 
     }
-    .logo-container { display: flex; align-items: center; text-decoration: none; gap: 12px; height: 40px; }
+    .logo-container { border: none !important; outline: none !important; box-shadow: none !important; text-decoration: none !important; display: flex; align-items: center; text-decoration: none; gap: 12px; height: 40px; }
     .logo-img { height: 100%; width: auto; object-fit: contain; display: block; }
     .logo-text { font-family: 'Montserrat', sans-serif; font-size: 1.6em; font-weight: 800; letter-spacing: 1px; display: flex; align-items: center; }
     
     /* Logo Colors Locked */
-    .logo-text .virt { color: var(--text-main) !important; transition: 0.3s;} 
+    .logo-text .virt { color: var(--primary) !important; transition: 0.3s;} 
     .logo-text .uole { color: var(--primary) !important; } 
 
     .nav-center { display: flex; gap: 10px; align-items: center; }
@@ -2104,4 +2104,4 @@ body { background: transparent; }
         width: 100%;
     }
 }
-
+
