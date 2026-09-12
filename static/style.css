@@ -29,7 +29,7 @@
     --text-muted:#98a4bd;
     --card-bg:   rgba(255,255,255,0.045);
     --card-border: rgba(255,255,255,0.09);
-    --primary: #4277d7;
+    --primary:   #2dd4bf;
     --primary-hover: #14b8a6;
     --secondary: #fbbf24;
     --input-bg:  rgba(255,255,255,0.04);
@@ -46,7 +46,7 @@
     --text-muted:#516079;
     --card-bg:   rgba(255,255,255,0.75);
     --card-border: rgba(12,20,40,0.10);
-    --primary: #4277d7;
+    --primary:   #0ea5e9;
     --primary-hover: #0284c7;
     --secondary: #d97706;
     --input-bg:  #ffffff;
@@ -321,7 +321,7 @@ body { background: transparent; }
             --text-muted: #9ca3af;
             --card-bg: rgba(17, 24, 39, 0.6);
             --card-border: rgba(255,255,255,0.05);
-            --primary: #4277d7;
+            --primary: #38b2ac;
             --primary-hover: #2c7a7b;
             --secondary: #ecc94b;
             --input-bg: #111827;
@@ -335,7 +335,7 @@ body { background: transparent; }
             --text-muted: #475569;
             --card-bg: #ffffff;
             --card-border: rgba(0, 0, 0, 0.1);
-            --primary: #4277d7;
+            --primary: #0ea5e9;
             --primary-hover: #0284c7;
             --secondary: #d97706;
             --input-bg: #ffffff;
@@ -476,7 +476,7 @@ body { background: transparent; }
     .dnav .logo-container { border: none !important; outline: none !important; box-shadow: none !important; text-decoration: none !important; display: flex; align-items: center; text-decoration: none; gap: 11px; height: 38px; flex-shrink: 0; }
     .dnav .logo-img { height: 100%; width: auto; object-fit: contain; display: block; }
     .dnav .logo-text { font-family: 'Montserrat', sans-serif; font-size: 1.45em; font-weight: 800; letter-spacing: 1px; display: flex; align-items: center; }
-    .dnav .logo-text .virt { color: var(--primary) !important; }
+    .dnav .logo-text .virt { color: var(--text-main) !important; }
     .dnav .logo-text .uole { color: var(--primary) !important; }
     .dnav .dash-tag { margin-left: 4px; font-size: .58em; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
         color: var(--primary); align-self: center; padding: 3px 9px; border-radius: 20px; background: var(--au-grad-soft); border: 1px solid var(--card-border); }
@@ -554,7 +554,7 @@ body { background: transparent; }
             --text-muted: #9ca3af;
             --card-bg: rgba(17, 24, 39, 0.6);
             --card-border: rgba(255,255,255,0.05);
-            --primary: #4277d7;
+            --primary: #38b2ac;
             --secondary: #ecc94b;
             --input-bg: #111827;
         }
@@ -567,7 +567,7 @@ body { background: transparent; }
             --text-muted: #475569;
             --card-bg: #ffffff;
             --card-border: rgba(0, 0, 0, 0.1);
-            --primary: #4277d7;
+            --primary: #0ea5e9;
             --secondary: #d97706;
             --input-bg: #ffffff;
         }
@@ -633,7 +633,7 @@ body { background: transparent; }
     .mega-footer .logo-container { border: none !important; outline: none !important; box-shadow: none !important; text-decoration: none !important; display: flex; align-items: center; text-decoration: none; gap: 12px; height: 40px; }
     .mega-footer .logo-img { height: 100%; width: auto; object-fit: contain; display: block; }
     .mega-footer .logo-text { font-family: 'Montserrat', sans-serif; font-size: 1.6em; font-weight: 800; letter-spacing: 1px; display: flex; align-items: center; }
-    .logo-text .virt { color: var(--primary) !important; transition: 0.3s;} 
+    .logo-text .virt { color: var(--text-main) !important; transition: 0.3s;} 
     .logo-text .uole { color: var(--primary) !important; } 
     
     .footer-brand p { color: var(--text-muted); line-height: 1.6; margin-top: 15px; }
@@ -695,7 +695,7 @@ body { background: transparent; }
             --text-muted: #9ca3af;
             --card-bg: rgba(17, 24, 39, 0.6);
             --card-border: rgba(255,255,255,0.05);
-            --primary: #4277d7;
+            --primary: #38b2ac;
             --primary-hover: #2c7a7b;
             --secondary: #ecc94b;
             --input-bg: #111827;
@@ -711,7 +711,7 @@ body { background: transparent; }
             --text-muted: #475569;
             --card-bg: #ffffff;
             --card-border: rgba(0, 0, 0, 0.1);
-            --primary: #4277d7;
+            --primary: #0ea5e9;
             --primary-hover: #0284c7;
             --secondary: #d97706;
             --input-bg: #ffffff;
@@ -914,7 +914,7 @@ body { background: transparent; }
             --text-muted: #9ca3af;
             --card-bg: rgba(17, 24, 39, 0.6);
             --card-border: rgba(255,255,255,0.05);
-            --primary: #4277d7;
+            --primary: #38b2ac;
             --primary-hover: #2c7a7b;
             --secondary: #ecc94b;
             --input-bg: rgba(255, 255, 255, 0.03);
@@ -929,7 +929,7 @@ body { background: transparent; }
             --text-muted: #475569;
             --card-bg: #ffffff;
             --card-border: rgba(0, 0, 0, 0.1);
-            --primary: #4277d7;
+            --primary: #0ea5e9;
             --primary-hover: #0284c7;
             --secondary: #d97706;
             --input-bg: #ffffff;
@@ -1036,7 +1036,7 @@ body { background: transparent; }
     .logo-text { font-family: 'Montserrat', sans-serif; font-size: 1.6em; font-weight: 800; letter-spacing: 1px; display: flex; align-items: center; }
     
     /* Logo Colors Locked */
-    .logo-text .virt { color: var(--primary) !important; transition: 0.3s;} 
+    .logo-text .virt { color: var(--text-main) !important; transition: 0.3s;} 
     .logo-text .uole { color: var(--primary) !important; } 
 
     .nav-center { display: flex; gap: 10px; align-items: center; }
