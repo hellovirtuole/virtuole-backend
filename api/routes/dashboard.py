@@ -78,7 +78,8 @@ def dashboard_intern():
             else:
                 track = e.get('track_level', '').lower()
                 if track.startswith('custom_'):
-                    duration_days = int(track.split('_')[1]) * 30
+                    try: duration_days = int(track.split('_')[1]) * 30
+                    except: duration_days = 30
                 elif track.isdigit():
                     duration_days = int(track) * 30
                 else:
@@ -106,11 +107,14 @@ def dashboard_intern():
         
             track = e.get('track_level', '').lower()
             if track.startswith('custom_'):
-                track_display = f"{track.split('_')[1]} Months (Custom)"
+                try: months = int(track.split('_')[1])
+                except: months = 1
+                track_display = f"{months} Months" if months > 1 else "1 Month"
                 specs_link = e['programs'].get('custom_specs', '#')
                 amount_due = e['programs'].get('custom_price', 0)
             elif track.isdigit():
-                track_display = f"{track} Months"
+                months = int(track)
+                track_display = f"{months} Months" if months > 1 else "1 Month"
                 # Find matching track in JSON
                 tracks_json = e['programs'].get('tracks') or []
                 matched = next((t for t in tracks_json if str(t.get('months')) == track), None)
@@ -158,9 +162,12 @@ def dashboard_intern():
         for e in graded_enrolls:
             track = e.get('track_level', '').lower()
             if track.startswith('custom_'):
-                track_display = f"{track.split('_')[1]} Months (Custom)"
+                try: months = int(track.split('_')[1])
+                except: months = 1
+                track_display = f"{months} Months" if months > 1 else "1 Month"
             elif track.isdigit():
-                track_display = f"{track} Months"
+                months = int(track)
+                track_display = f"{months} Months" if months > 1 else "1 Month"
             else:
                 track_display = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}.get(track, e.get('track_level', '').title())
 

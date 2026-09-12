@@ -247,19 +247,22 @@ def api_enroll():
     
     track = track_level.lower()
     if track.startswith('custom_'):
-        months = int(track.split('_')[1])
+        try: months = int(track.split('_')[1])
+        except: months = 1
         duration_days = months * 30
-        track_display = f"{months} Months (Custom)"
+        track_display = f"{months} Months" if months > 1 else "1 Month"
     elif track.isdigit():
         months = int(track)
         duration_days = months * 30
-        track_display = f"{months} Months"
+        track_display = f"{months} Months" if months > 1 else "1 Month"
     else:
         duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
         track_display_map = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}
         track_display = track_display_map.get(track, track_level.title())
-    
-    end_date = (datetime.utcnow() + timedelta(days=duration_days)).strftime("%B %d, %Y")
+        
+    start_dt = datetime.utcnow()
+    end_dt = start_dt + timedelta(days=duration_days)
+    end_date = end_dt.strftime("%B %d, %Y")
     
     html_offer = render_template('docs/offer_letter.html', name=session['name'], date=datetime.utcnow().strftime("%B %d, %Y"), program_title=prog['title'], track_level=track_display, enroll_id=enrollment_id, project_details=prog['short_description'], duration_days=duration_days, end_date=end_date)
     
@@ -290,7 +293,15 @@ def api_submit_project():
         duration_days = 1
     else:
         track = e.get('track_level', '').lower()
-        duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
+        if track.startswith('custom_'):
+            try: months = int(track.split('_')[1])
+            except: months = 1
+            duration_days = months * 30
+        elif track.isdigit():
+            months = int(track)
+            duration_days = months * 30
+        else:
+            duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
         
     end_dt = start_dt + timedelta(days=duration_days)
     
