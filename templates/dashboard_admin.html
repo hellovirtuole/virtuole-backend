@@ -728,72 +728,81 @@
                 <!-- Preview Side -->
                 <div style="flex:1.5; min-width:400px; overflow-x:auto;">
                     <div class="dash-section-title" style="margin-bottom:10px;">Live Preview (A4 Size)</div>
-                    <div id="letter-preview-paper" style="background:white; color:black; padding:0; box-shadow:0 10px 25px rgba(0,0,0,0.1); border-radius:4px; font-family:'Georgia', serif; font-size:14px; line-height:1.6; min-height:842px; width:100%; max-width:595px; margin:0 auto; position:relative; box-sizing:border-box;">
+                    <div id="letter-preview-paper" style="background:white; color:#1e293b; padding:0; box-shadow:0 15px 35px rgba(0,0,0,0.15); border-radius:8px; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; font-size:15px; line-height:1.7; min-height:842px; width:100%; max-width:595px; margin:0 auto; position:relative; box-sizing:border-box; overflow:hidden;">
                         
-                        <div style="border-top:10px solid #1a365d; padding:40px 50px;">
+                        <!-- Watermark -->
+                        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); opacity:0.04; pointer-events:none;">
+                            <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/logo/logo.png" style="width:400px; height:auto; filter:grayscale(100%);">
+                        </div>
+
+                        <!-- Top Accent Bar -->
+                        <div style="height:8px; width:100%; background: linear-gradient(90deg, #1a365d 0%, #2dd4bf 100%);"></div>
+
+                        <div style="padding:40px 50px; position:relative; z-index:1; height: 100%; box-sizing: border-box;">
                             <!-- Header / Logo -->
-                            <div style="display:flex; justify-content:space-between; align-items:flex-start; padding-bottom:20px; margin-bottom:30px;">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-end; padding-bottom:25px; margin-bottom:35px; border-bottom:1px solid #e2e8f0;">
                                 <div style="display:flex; align-items:center; gap:15px;">
-                                    <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/logo/logo.png" alt="Logo" style="height:45px; width:auto; object-fit:contain;">
+                                    <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/logo/logo.png" alt="Logo" style="height:50px; width:auto; object-fit:contain;">
                                     <div>
-                                        <h1 style="margin:0; font-family:'Arial', sans-serif; font-size:26px; color:#1a365d; font-weight:800; letter-spacing:3px;">VIRTU<span style="color:#2dd4bf;">OLE</span></h1>
-                                        <p style="margin:4px 0 0 0; font-family:'Arial', sans-serif; font-size:10px; color:#718096; font-weight:700; text-transform:uppercase; letter-spacing:1px;">Government of India Recognized MSME</p>
+                                        <h1 style="margin:0; font-family:'Helvetica', sans-serif; font-size:28px; color:#0f172a; font-weight:900; letter-spacing:2px;">VIRTU<span style="color:#2dd4bf;">OLE</span></h1>
+                                        <p style="margin:2px 0 0 0; font-size:9px; color:#64748b; font-weight:800; text-transform:uppercase; letter-spacing:1.5px;">Govt. of India Recognized MSME</p>
                                     </div>
                                 </div>
-                                <div style="text-align:right; font-family:'Arial', sans-serif; font-size:11px; color:#4a5568; line-height:1.5;">
-                                    <strong>UDYAM-BR-06-0064801</strong><br>
-                                    Patna, Bihar<br>
+                                <div style="text-align:right; font-size:11px; color:#475569; line-height:1.6;">
+                                    <strong style="color:#0f172a;">UDYAM-BR-06-0064801</strong><br>
+                                    Patna, Bihar, India<br>
                                     www.virtuole.in | support@virtuole.in
                                 </div>
                             </div>
     
                             <!-- Recipient Block & Date -->
-                            <div style="margin-bottom:30px;">
-                                <div style="display:flex; justify-content:flex-end; margin-bottom:15px;">
-                                    <div id="preview-date" style="font-family:'Arial', sans-serif; font-weight:bold; color:#2d3748;">August 15, 2026</div>
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:30px;">
+                                <div style="background:#f8fafc; padding:15px 20px; border-radius:6px; border-left:4px solid #2dd4bf; min-width:200px;">
+                                    <div style="font-size:12px; color:#64748b; margin-bottom:4px; text-transform:uppercase; letter-spacing:1px; font-weight:700;" id="preview-to-label">To,</div>
+                                    <div style="font-weight:bold; font-size:18px; color:#0f172a;" id="preview-name"></div>
+                                    <div style="font-size:13px; color:#475569; font-weight:600; margin-top:2px;" id="preview-title"></div>
                                 </div>
-                                <div>
-                                    <div style="font-family:'Arial', sans-serif; font-size:14px; color:#4a5568; margin-bottom:5px;" id="preview-to-label">To,</div>
-                                    <div style="font-weight:bold; font-size:18px; color:#1a365d;" id="preview-name"></div>
-                                    <div style="font-family:'Arial', sans-serif; font-size:13px; color:#4a5568; font-weight:bold; margin-top:2px;" id="preview-title"></div>
+                                <div style="text-align:right;">
+                                    <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-bottom:4px;">Date</div>
+                                    <div id="preview-date" style="font-weight:700; color:#0f172a; font-size:14px;">August 15, 2026</div>
                                 </div>
                             </div>
 
-                            <div style="margin-bottom:20px; font-family:'Arial', sans-serif; font-size:14px; color:#1a365d; font-weight:bold;" id="preview-subject-container">
-                                <span>Subject: </span><span id="preview-subject"></span>
+                            <div style="margin-bottom:25px; font-size:14px; color:#0f172a; font-weight:bold; border-bottom:1px dashed #cbd5e1; padding-bottom:10px; display:inline-block;" id="preview-subject-container">
+                                <span style="color:#64748b;">Subject: </span><span id="preview-subject"></span>
                             </div>
 
-                            <div style="margin-bottom:20px; font-family:'Arial', sans-serif; font-size:18px; text-align:center; color:#2d3748; font-weight:bold; text-transform:uppercase; letter-spacing:1px;" id="preview-heading"></div>
+                            <div style="margin-bottom:25px; font-family:'Georgia', serif; font-size:22px; text-align:center; color:#0f172a; font-weight:bold; letter-spacing:1px;" id="preview-heading"></div>
     
                             <!-- Body -->
-                            <div id="preview-body" style="min-height:300px; text-align:justify; color:#333; font-size:15px; line-height:1.8;">
+                            <div id="preview-body" style="min-height:300px; text-align:justify; color:#334155; font-size:15px; line-height:1.8; font-family:'Georgia', serif;">
                                 [Letter Content]
                             </div>
     
                             <!-- Sign-off -->
-                            <div style="margin-top:50px; position:relative; display:flex; justify-content:space-between; align-items:flex-end;">
+                            <div style="margin-top:60px; display:flex; justify-content:space-between; align-items:flex-end;">
                                 <div>
-                                    <p style="margin-bottom:20px; font-size:15px;">Sincerely,</p>
-                                    <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/public-assets/vishal_signature.png" style="height:55px; width:auto; display:block; margin-bottom:5px;" alt="Signature">
-                                    <div style="border-top:2px solid #2d3748; padding-top:8px; width:200px;">
-                                        <div style="font-family:'Arial', sans-serif; font-weight:bold; font-size:15px; color:#1a365d;" id="preview-sign-name">Vishal</div>
-                                        <div style="font-family:'Arial', sans-serif; font-size:12px; color:#4a5568;" id="preview-sign-title">Founder, Virtuole</div>
+                                    <p style="margin-bottom:15px; font-size:15px; font-family:'Georgia', serif; font-style:italic;">Sincerely,</p>
+                                    <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/public-assets/vishal_signature.png" style="height:60px; width:auto; display:block; margin-bottom:5px;" alt="Signature">
+                                    <div style="border-top:1px solid #94a3b8; padding-top:8px; width:220px;">
+                                        <div style="font-weight:bold; font-size:16px; color:#0f172a;" id="preview-sign-name">Vishal</div>
+                                        <div style="font-size:12px; color:#64748b; font-weight:600;" id="preview-sign-title">Founder, Virtuole</div>
                                     </div>
                                 </div>
                                 
                                 <!-- Digital Stamp (SVG) -->
-                                <div id="preview-stamp" style="opacity:0.9;">
-                                    <div style="border:2px solid #c53030; color:#c53030; text-align:center; border-radius:100px; width:100px; height:100px; font-family:'Arial', sans-serif; display:flex; align-items:center; justify-content:center; flex-direction:column;">
-                                        <span style="font-weight:800; font-size:13px; letter-spacing:1px;">VIRTUOLE</span>
-                                        <span style="font-size:9px; font-weight:bold; display:block; margin:4px 0;">OFFICIAL</span>
-                                        <span style="font-size:8px; border-top:1px solid #c53030; padding-top:3px; display:inline-block; width:60px;">MSME SEAL</span>
+                                <div id="preview-stamp" style="opacity:0.85; transform: rotate(-5deg);">
+                                    <div style="border:3px double #b91c1c; color:#b91c1c; text-align:center; border-radius:50%; width:110px; height:110px; display:flex; align-items:center; justify-content:center; flex-direction:column; box-shadow: inset 0 0 0 2px rgba(185, 28, 28, 0.2);">
+                                        <span style="font-weight:900; font-size:14px; letter-spacing:1.5px;">VIRTUOLE</span>
+                                        <span style="font-size:9px; font-weight:bold; display:block; margin:5px 0;">OFFICIAL</span>
+                                        <span style="font-size:8px; border-top:1px solid #b91c1c; padding-top:4px; display:inline-block; width:70px; font-weight:700;">MSME SEAL</span>
                                     </div>
                                 </div>
                             </div>
                             
                             <!-- Footer -->
-                            <div style="position:absolute; bottom:30px; left:50px; right:50px; border-top:1px solid #e2e8f0; padding-top:10px; text-align:center; font-family:'Arial', sans-serif; font-size:10px; color:#a0aec0; line-height:1.5;">
-                                This is an officially generated document by Virtuole. Verify authenticity by contacting support@virtuole.in.<br>
+                            <div style="position:absolute; bottom:40px; left:50px; right:50px; border-top:1px solid #e2e8f0; padding-top:15px; text-align:center; font-size:10px; color:#94a3b8; line-height:1.6;">
+                                This document is digitally generated by Virtuole Systems.<br>To verify authenticity, contact <strong>support@virtuole.in</strong> or visit <strong>virtuole.in</strong>.<br>
                                 &copy; 2026 Virtuole. All rights reserved.
                             </div>
                         </div>
