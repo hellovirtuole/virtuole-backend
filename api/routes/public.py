@@ -63,8 +63,16 @@ def download_cert_intern(enrollment_id):
         return "Not Eligible for Certificate", 403
         
     track = e.get('track_level', '').lower()
-    track_display_map = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}
-    track_display = track_display_map.get(track, track.title())
+    if track.startswith('custom_'):
+        try: months = int(track.split('_')[1])
+        except: months = 1
+        track_display = f"{months} Months" if months > 1 else "1 Month"
+    elif track.isdigit():
+        months = int(track)
+        track_display = f"{months} Months" if months > 1 else "1 Month"
+    else:
+        track_display_map = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}
+        track_display = track_display_map.get(track, track.title())
 
     return render_template('docs/certificate.html', name=e['users']['full_name'], date=date_str, program_title=e['programs']['title'], track_level=track_display, enroll_id=enrollment_id, score=score)
 
@@ -86,8 +94,16 @@ def download_lor_intern(enrollment_id):
         return "Only students with a 100% Elite Score are eligible for a Letter of Recommendation.", 403
 
     track = e.get('track_level', '').lower()
-    track_display_map = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}
-    track_display = track_display_map.get(track, track.title())
+    if track.startswith('custom_'):
+        try: months = int(track.split('_')[1])
+        except: months = 1
+        track_display = f"{months} Months" if months > 1 else "1 Month"
+    elif track.isdigit():
+        months = int(track)
+        track_display = f"{months} Months" if months > 1 else "1 Month"
+    else:
+        track_display_map = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}
+        track_display = track_display_map.get(track, track.title())
 
     return render_template('docs/lor.html', name=e['users']['full_name'], date=date_str, program_title=e['programs']['title'], track_level=track_display, enroll_id=enrollment_id, project_details=e['programs']['short_description'])
 
@@ -105,13 +121,14 @@ def download_offer(enrollment_id):
         
     track = e.get('track_level', '').lower()
     if track.startswith('custom_'):
-        months = int(track.split('_')[1])
+        try: months = int(track.split('_')[1])
+        except: months = 1
         duration_days = months * 30
-        track_display = f"{months} Months (Custom)"
+        track_display = f"{months} Months" if months > 1 else "1 Month"
     elif track.isdigit():
         months = int(track)
         duration_days = months * 30
-        track_display = f"{months} Months"
+        track_display = f"{months} Months" if months > 1 else "1 Month"
     else:
         duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
         track_display_map = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}
@@ -209,14 +226,23 @@ def view_public_offer():
             start_dt = datetime.utcnow()
             
         track = e.get('track_level', '').lower()
-        duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
+        if track.startswith('custom_'):
+            try: months = int(track.split('_')[1])
+            except: months = 1
+            duration_days = months * 30
+            track_display = f"{months} Months" if months > 1 else "1 Month"
+        elif track.isdigit():
+            months = int(track)
+            duration_days = months * 30
+            track_display = f"{months} Months" if months > 1 else "1 Month"
+        else:
+            duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
+            track_display_map = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}
+            track_display = track_display_map.get(track, track.title())
+
         end_dt = start_dt + timedelta(days=duration_days)
-        
         raw_date = start_dt.strftime("%B %d, %Y")
         end_date = end_dt.strftime("%B %d, %Y")
-        
-        track_display_map = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}
-        track_display = track_display_map.get(track, track.title())
         
         html_content = render_template('docs/offer_letter.html', name=e['users']['full_name'], date=raw_date, program_title=e['programs']['title'], track_level=track_display, enroll_id=enrollment_id, project_details=e['programs']['short_description'], duration_days=duration_days, end_date=end_date)
         return html_content + "<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); }</script>"
