@@ -1,5 +1,19 @@
-<html><body style="font-family: Helvetica, Arial, sans-serif; padding: 20px; color: #111827;">
-    <div style="height:8px; width:100%; background: linear-gradient(90deg, #1a365d 0%, #2dd4bf 100%); margin: -20px -20px 30px -20px;"></div>
+<html>
+<head>
+    <style>
+        @media print {
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+    </style>
+</head>
+<body style="font-family: Helvetica, Arial, sans-serif; padding: 20px; color: #111827; position: relative; z-index: 1;">
+    <!-- Watermark -->
+    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); opacity:0.04; pointer-events:none; z-index: -1;">
+        <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/logo/logo.png" style="width:400px; height:auto; filter:grayscale(100%);">
+    </div>
+
+    <!-- Top Accent Bar -->
+    <div style="position: absolute; top: 0; left: 0; right: 0; height: 8px; background: linear-gradient(90deg, #1a365d 0%, #2dd4bf 100%);"></div>
     
     <table style="width:100%; margin-bottom:35px; border-bottom:1px solid #e2e8f0; padding-bottom:20px; border: none; border-collapse: collapse;">
         <tr>
