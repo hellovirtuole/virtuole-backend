@@ -62,7 +62,11 @@ def download_cert_intern(enrollment_id):
     if not score or int(score) < 80:
         return "Not Eligible for Certificate", 403
         
-    return render_template('docs/certificate.html', name=e['users']['full_name'], date=date_str, program_title=e['programs']['title'], track_level=e['track_level'].title(), enroll_id=enrollment_id, score=score)
+    track = e.get('track_level', '').lower()
+    track_display_map = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}
+    track_display = track_display_map.get(track, track.title())
+
+    return render_template('docs/certificate.html', name=e['users']['full_name'], date=date_str, program_title=e['programs']['title'], track_level=track_display, enroll_id=enrollment_id, score=score)
 
 @public_bp.route('/download_lor_intern/<enrollment_id>')
 def download_lor_intern(enrollment_id):
@@ -81,7 +85,11 @@ def download_lor_intern(enrollment_id):
     if not score or int(score) < 100:
         return "Only students with a 100% Elite Score are eligible for a Letter of Recommendation.", 403
 
-    return render_template('docs/lor.html', name=e['users']['full_name'], date=date_str, program_title=e['programs']['title'], track_level=e['track_level'].title(), enroll_id=enrollment_id, project_details=e['programs']['short_description'])
+    track = e.get('track_level', '').lower()
+    track_display_map = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}
+    track_display = track_display_map.get(track, track.title())
+
+    return render_template('docs/lor.html', name=e['users']['full_name'], date=date_str, program_title=e['programs']['title'], track_level=track_display, enroll_id=enrollment_id, project_details=e['programs']['short_description'])
 
 @public_bp.route('/download_offer/<enrollment_id>')
 def download_offer(enrollment_id):
