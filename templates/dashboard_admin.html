@@ -699,6 +699,10 @@
                         <input type="text" id="let-subject" class="au-input" placeholder="e.g. Offer of Virtual Internship" oninput="updateLetterPreview()">
                     </div>
                     <div>
+                        <label>Ref No. (Optional)</label>
+                        <input type="text" id="let-ref-no" class="au-input" placeholder="e.g. VR-2026-001" oninput="updateLetterPreview()">
+                    </div>
+                    <div>
                         <label>Bold Heading (Optional)</label>
                         <input type="text" id="let-heading" class="au-input" placeholder="e.g. OFFICIAL OFFER LETTER" oninput="updateLetterPreview()">
                     </div>
@@ -719,6 +723,12 @@
                     <div>
                         <label>Signature Image URL (Optional)</label>
                         <input type="text" id="let-sign-img" class="au-input" value="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/public-assets/vishal_signature.png" oninput="updateLetterPreview()">
+                    </div>
+                    <div>
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--text-main);font-size:.9em;margin-top:10px;">
+                            <input type="checkbox" id="let-inc-sign-img" onchange="updateLetterPreview()" checked style="width:18px;height:18px;">
+                            Include Signature Image
+                        </label>
                     </div>
                     <div>
                         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--text-main);font-size:.9em;margin-top:10px;">
@@ -749,7 +759,6 @@
                                     <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/logo/logo.png" alt="Logo" style="height:50px; width:auto; object-fit:contain;">
                                     <div>
                                         <h1 style="margin:0; font-family:'Helvetica', sans-serif; font-size:28px; color:#0f172a; font-weight:900; letter-spacing:2px;">VIRTU<span style="color:#2dd4bf;">OLE</span></h1>
-                                        <p style="margin:2px 0 0 0; font-size:9px; color:#64748b; font-weight:800; text-transform:uppercase; letter-spacing:1.5px;">Govt. of India Recognized MSME</p>
                                     </div>
                                 </div>
                                 <div style="text-align:right; font-size:11px; color:#475569; line-height:1.6;">
@@ -760,15 +769,21 @@
                             </div>
     
                             <!-- Recipient Block & Date -->
-                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:30px;">
-                                <div style="background:#f8fafc; padding:15px 20px; border-radius:6px; border-left:4px solid #2dd4bf; min-width:200px;">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom: 25px;">
+                                <div id="preview-ref-no-container" style="display:none; font-size:12px; font-weight:bold; color:#475569; text-transform:uppercase; letter-spacing:1px;">
+                                    Ref No: <span id="preview-ref-no" style="color:#0f172a;"></span>
+                                </div>
+                                <div style="text-align:right; flex-grow: 1;">
+                                    <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-bottom:4px;">Date</div>
+                                    <div id="preview-date" style="font-weight:700; color:#0f172a; font-size:14px;">August 15, 2026</div>
+                                </div>
+                            </div>
+    
+                            <div style="margin-bottom:30px;">
+                                <div style="background:#f8fafc; padding:15px 20px; border-radius:6px; border-left:4px solid #2dd4bf; display:inline-block; min-width:250px;">
                                     <div style="font-size:12px; color:#64748b; margin-bottom:4px; text-transform:uppercase; letter-spacing:1px; font-weight:700;" id="preview-to-label">To,</div>
                                     <div style="font-weight:bold; font-size:18px; color:#0f172a;" id="preview-name"></div>
                                     <div style="font-size:13px; color:#475569; font-weight:600; margin-top:2px;" id="preview-title"></div>
-                                </div>
-                                <div style="text-align:right;">
-                                    <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-bottom:4px;">Date</div>
-                                    <div id="preview-date" style="font-weight:700; color:#0f172a; font-size:14px;">August 15, 2026</div>
                                 </div>
                             </div>
 
@@ -787,8 +802,8 @@
                             <div style="margin-top:60px; display:flex; justify-content:space-between; align-items:flex-end;">
                                 <div>
                                     <p style="margin-bottom:15px; font-size:15px; font-family:'Georgia', serif; font-style:italic;">Sincerely,</p>
-                                    <img id="preview-sign-img" src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/public-assets/vishal_signature.png" style="height:60px; width:auto; display:block; margin-bottom:5px;" alt="Signature">
-                                    <div style="border-top:1px solid #94a3b8; padding-top:8px; width:220px;">
+                                    <img id="preview-sign-img" src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/public-assets/vishal_signature.png" style="height:60px; width:auto; display:block; margin-bottom:5px;" alt="Signature" onerror="this.style.display='none'">
+                                    <div id="preview-sign-border" style="border-top:1px solid #94a3b8; padding-top:8px; width:220px;">
                                         <div style="font-weight:bold; font-size:16px; color:#0f172a;" id="preview-sign-name">Vishal</div>
                                         <div style="font-size:12px; color:#64748b; font-weight:600;" id="preview-sign-title">Founder, Virtuole</div>
                                     </div>
@@ -1682,13 +1697,25 @@
             document.getElementById('preview-sign-title').innerText = document.getElementById('let-sign-title').value || '';
             document.getElementById('preview-stamp').style.display = document.getElementById('let-stamp').checked ? 'block' : 'none';
             
+            const refNoVal = document.getElementById('let-ref-no').value;
+            if (refNoVal) {
+                document.getElementById('preview-ref-no').innerText = refNoVal;
+                document.getElementById('preview-ref-no-container').style.display = 'block';
+            } else {
+                document.getElementById('preview-ref-no-container').style.display = 'none';
+            }
+
             const signImgVal = document.getElementById('let-sign-img').value;
+            const incSignImg = document.getElementById('let-inc-sign-img').checked;
             const signImgEl = document.getElementById('preview-sign-img');
-            if (signImgVal) {
+            const signBorderEl = document.getElementById('preview-sign-border');
+            if (incSignImg && signImgVal) {
                 signImgEl.src = signImgVal;
                 signImgEl.style.display = 'block';
+                signBorderEl.style.borderTop = '1px solid #94a3b8';
             } else {
                 signImgEl.style.display = 'none';
+                signBorderEl.style.borderTop = 'none';
             }
         }
         
