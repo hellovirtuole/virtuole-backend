@@ -310,6 +310,7 @@ def api_submit_project():
     supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": request.form.get('code_link'), "defense_link": request.form.get('defense_link')}).execute()
     supabase.table('enrollments').update({"status": "submitted"}).eq('enrollment_id', enrollment_id).execute()
     send_notification('intern', session['user_id'], 'submission', 'Project Submitted', f'Your project for {enrollment_id} has entered evaluation.')
+    send_notification('mentor', None, 'new_submission', 'New Project Submission', f'A new project for {enrollment_id} has been submitted for evaluation.')
     send_system_email(session['email'], "Submission Received", f"Your architecture for {enrollment_id} has entered evaluation.")
     return redirect(url_for('dashboard.dashboard_intern'))
 

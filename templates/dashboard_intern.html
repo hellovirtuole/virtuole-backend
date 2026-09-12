@@ -1,28 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Intern Dashboard | Virtuole</title>
     {% include 'theme.html' %}
 </head>
+
 <body class="dash-body">
     <div class="aurora-bg"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
 
     {% set dash_title = 'Intern' %}
     {% set nav_tabs = [
-        {'id':'workspace','label':'Active Programs'},
-        {'id':'explore','label':'Explore Programs'},
-        {'id':'credentials','label':'My Credentials'},
-        {'id':'protocol','label':'Grading Protocol'},
-        {'id':'profile','label':'My Profile'}
+    {'id':'workspace','label':'Active Programs'},
+    {'id':'explore','label':'Explore Programs'},
+    {'id':'credentials','label':'My Credentials'},
+    {'id':'protocol','label':'Grading Protocol'},
+    {'id':'profile','label':'My Profile'}
     ] %}
     {% include 'dashboard_nav.html' %}
 
     <main class="dash-main">
 
         <!-- ===================== ACTIVE PROGRAMS ===================== -->
-        <div id="workspace-view" class="view-section{% if active_tab == 'workspace' or not active_tab %} active{% endif %}">
+        <div id="workspace-view"
+            class="view-section{% if active_tab == 'workspace' or not active_tab %} active{% endif %}">
             <h1 class="dash-greeting">Hello, {{ user_name | default("Intern") }}</h1>
             <p class="dash-sub">Manage your active projects and submit architectures.</p>
 
@@ -34,26 +37,37 @@
                         <h4 class="au-panel-title" style="margin:0;">{{ project.program_title }}</h4>
                         <span class="au-badge ok" style="flex-shrink:0;">Enrolled</span>
                     </div>
-                    <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:14px 0 8px;">{{ project.description }}</p>
-                    <p style="font-size:.9em;margin:0 0 12px;">Complexity Track: <strong style="color:var(--text-main);">{{ project.track_level | title }}</strong></p>
+                    <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:14px 0 8px;">{{
+                        project.description }}</p>
+                    <p style="font-size:.9em;margin:0 0 12px;">Complexity Track: <strong
+                            style="color:var(--text-main);">{{ project.track_level | title }}</strong></p>
                     {% if project.status == 'resubmit' %}
-                    <p style="font-size:.9em;margin:0 0 12px; color: #ef4444; font-weight: 600; padding: 6px 12px; background: rgba(239, 68, 68, 0.1); border-radius: 6px; display: inline-block;">
+                    <p
+                        style="font-size:.9em;margin:0 0 12px; color: #ef4444; font-weight: 600; padding: 6px 12px; background: rgba(239, 68, 68, 0.1); border-radius: 6px; display: inline-block;">
                         🚨 {{ project.remaining_hours }} Hours Remaining (24-Hour Resubmission Window)
                     </p>
                     {% else %}
-                    <p style="font-size:.9em;margin:0 0 12px; color: {% if project.remaining_days < 5 %}#e53e3e{% else %}var(--primary){% endif %};">
-                        ⏳ <strong>{{ project.remaining_days }} Days Remaining</strong> ({{ project.duration_days }}-Day Window)
+                    <p
+                        style="font-size:.9em;margin:0 0 12px; color: {% if project.remaining_days < 5 %}#e53e3e{% else %}var(--primary){% endif %};">
+                        ⏳ <strong>{{ project.remaining_days }} Days Remaining</strong> ({{ project.duration_days }}-Day
+                        Window)
                     </p>
                     {% endif %}
-                    <p style="font-size:.82em;font-family:monospace;color:var(--text-muted);background:rgba(148,163,184,.08);padding:8px 12px;border-radius:8px;margin:0 0 20px;">ID: {{ project.enrollment_id }}</p>
+                    <p
+                        style="font-size:.82em;font-family:monospace;color:var(--text-muted);background:rgba(148,163,184,.08);padding:8px 12px;border-radius:8px;margin:0 0 20px;">
+                        ID: {{ project.enrollment_id }}</p>
                     <div style="margin-top:auto;display:flex;flex-wrap:wrap;gap:10px;">
                         <a href="{{ project.specs_link }}" target="_blank" class="au-btn-ghost sm">Download Specs</a>
-                        <button class="au-btn violet sm" onclick="openSubmitModal('{{ project.enrollment_id }}', {{ project.amount_due }})">Submit Architecture</button>
-                        <a href="/download_offer/{{ project.enrollment_id }}" target="_blank" class="au-btn-ghost sm">📄 Offer Letter</a>
+                        <button class="au-btn violet sm"
+                            onclick="openSubmitModal('{{ project.enrollment_id }}', {{ project.amount_due }})">Submit
+                            Architecture</button>
+                        <a href="/download_offer/{{ project.enrollment_id }}" target="_blank" class="au-btn-ghost sm">📄
+                            Offer Letter</a>
                     </div>
                 </div>
                 {% else %}
-                <div class="au-panel" style="text-align:center;color:var(--text-muted);grid-column:1 / -1;">You are not currently enrolled in any active programs.</div>
+                <div class="au-panel" style="text-align:center;color:var(--text-muted);grid-column:1 / -1;">You are not
+                    currently enrolled in any active programs.</div>
                 {% endfor %}
             </div>
         </div>
@@ -64,20 +78,29 @@
             <p class="dash-sub">Discover and enroll in new MSME architectures.</p>
 
             {% for category, programs in offered_programs.items() %}
-            <div class="dash-section-title" style="margin-top:24px; margin-bottom:12px; font-size: 1.15em; color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">{{ category }}</div>
+            <div class="dash-section-title"
+                style="margin-top:24px; margin-bottom:12px; font-size: 1.15em; color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">
+                {{ category }}</div>
             <div class="au-grid">
                 {% for program in programs %}
                 <div class="au-card reveal" style="padding:0;overflow:hidden;display:flex;flex-direction:column;">
                     {% if program.image_url %}
-                    <img src="{{ program.image_url }}" alt="{{ program.title }}" style="width: 100%; height: 160px; object-fit: cover; display: block; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <img src="{{ program.image_url }}" alt="{{ program.title }}"
+                        style="width: 100%; height: 160px; object-fit: cover; display: block; border-bottom: 1px solid rgba(255,255,255,0.05);">
                     {% endif %}
                     <div style="padding:26px; display:flex; flex-direction:column; flex-grow:1; position:relative;">
                         {% if program.badge_text %}
-                        <div style="position:absolute; top:-12px; right:20px; background:linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color:#000; font-size:0.75em; font-weight:800; padding:4px 12px; border-radius:12px; box-shadow:0 4px 12px rgba(245,158,11,0.3); z-index:1;">{{ program.badge_text }}</div>
+                        <div
+                            style="position:absolute; top:-12px; right:20px; background:linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color:#000; font-size:0.75em; font-weight:800; padding:4px 12px; border-radius:12px; box-shadow:0 4px 12px rgba(245,158,11,0.3); z-index:1;">
+                            {{ program.badge_text }}</div>
                         {% endif %}
                         <h4 class="au-panel-title">{{ program.title }}</h4>
-                        <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{ program.short_description }}</p>
-                        <button class="au-btn sm" style="margin-top:auto;width:100%; background: var(--primary); background-image: none; color: #fff; border: none;" onclick='openEnrollModal({{ program.id | tojson }}, {{ program.title | tojson }}, {{ program.tracks | tojson }}, {{ program.allow_custom_timeline | default(false) | tojson }}, {{ program.custom_min_months | default(1) }}, {{ program.max_custom_months | default(12) }}, {{ program.custom_price | default(0) }})'>Enroll Now</button>
+                        <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{
+                            program.short_description }}</p>
+                        <button class="au-btn sm"
+                            style="margin-top:auto;width:100%; background: var(--primary); background-image: none; color: #fff; border: none;"
+                            onclick='openEnrollModal({{ program.id | tojson }}, {{ program.title | tojson }}, {{ program.tracks | tojson }}, {{ program.allow_custom_timeline | default(false) | tojson }}, {{ program.custom_min_months | default(1) }}, {{ program.max_custom_months | default(12) }}, {{ program.custom_price | default(0) }})'>Enroll
+                            Now</button>
                     </div>
                 </div>
                 {% endfor %}
@@ -88,27 +111,36 @@
         <!-- ===================== MY CREDENTIALS ===================== -->
         <div id="credentials-view" class="view-section{% if active_tab == 'credentials' %} active{% endif %}">
             <h1 class="dash-greeting">My Credentials</h1>
-            <p class="dash-sub">Access your official certificates and Letters of Recommendation from successfully completed projects.</p>
+            <p class="dash-sub">Access your official certificates and Letters of Recommendation from successfully
+                completed projects.</p>
 
             <div class="au-grid" style="margin-top:8px;">
                 {% for cert in completed_projects %}
                 <div class="au-card reveal" style="padding:26px;display:flex;flex-direction:column;">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
                         <h4 class="au-panel-title" style="margin:0;">{{ cert.program_title }}</h4>
-                        <span class="au-badge {% if cert.score == 100 %}warn{% else %}ok{% endif %}" style="flex-shrink:0;">Score: {{ cert.score }}%</span>
+                        <span class="au-badge {% if cert.score == 100 %}warn{% else %}ok{% endif %}"
+                            style="flex-shrink:0;">Score: {{ cert.score }}%</span>
                     </div>
-                    <p style="font-size:.9em;margin:14px 0 8px;">Track: <strong style="color:var(--text-main);">{{ cert.track_level | title }}</strong></p>
-                    <p style="font-size:.82em;font-family:monospace;color:var(--text-muted);background:rgba(148,163,184,.08);padding:8px 12px;border-radius:8px;margin:0 0 20px;">ID: {{ cert.enrollment_id }}<br>Evaluated: {{ cert.evaluated_date }}</p>
+                    <p style="font-size:.9em;margin:14px 0 8px;">Track: <strong style="color:var(--text-main);">{{
+                            cert.track_level | title }}</strong></p>
+                    <p
+                        style="font-size:.82em;font-family:monospace;color:var(--text-muted);background:rgba(148,163,184,.08);padding:8px 12px;border-radius:8px;margin:0 0 20px;">
+                        ID: {{ cert.enrollment_id }}<br>Evaluated: {{ cert.evaluated_date }}</p>
                     <div style="margin-top:auto;display:flex;flex-wrap:wrap;gap:10px;">
-                        <a href="/credential/{{ cert.enrollment_id }}" target="_blank" class="au-btn outline sm">Live Profile ↗</a>
-                        <a href="/download_cert_intern/{{ cert.enrollment_id }}" target="_blank" class="au-btn success sm">Download Certificate</a>
+                        <a href="/credential/{{ cert.enrollment_id }}" target="_blank" class="au-btn outline sm">Live
+                            Profile ↗</a>
+                        <a href="/download_cert_intern/{{ cert.enrollment_id }}" target="_blank"
+                            class="au-btn success sm">Download Certificate</a>
                         {% if cert.score == 100 %}
-                        <a href="/download_lor_intern/{{ cert.enrollment_id }}" target="_blank" class="au-btn sm" style="--au-b1:#fbbf24;--au-b2:#f59e0b;color:#111827;">Download LoR</a>
+                        <a href="/download_lor_intern/{{ cert.enrollment_id }}" target="_blank" class="au-btn sm"
+                            style="--au-b1:#fbbf24;--au-b2:#f59e0b;color:#111827;">Download LoR</a>
                         {% endif %}
                     </div>
                 </div>
                 {% else %}
-                <div class="au-panel" style="text-align:center;color:var(--text-muted);grid-column:1 / -1;">You have not completed any programs yet.</div>
+                <div class="au-panel" style="text-align:center;color:var(--text-muted);grid-column:1 / -1;">You have not
+                    completed any programs yet.</div>
                 {% endfor %}
             </div>
         </div>
@@ -116,33 +148,55 @@
         <!-- ===================== GRADING PROTOCOL ===================== -->
         <div id="protocol-view" class="view-section{% if active_tab == 'protocol' %} active{% endif %}">
             <h1 class="dash-greeting">Grading Protocol</h1>
-            <p class="dash-sub">Understand exactly how your project will be graded by our engineering mentors and how to unlock the Elite LoR.</p>
+            <p class="dash-sub">Understand exactly how your project will be graded by our engineering mentors and how to
+                unlock the Elite LoR.</p>
 
-            <div class="au-panel reveal" style="display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:18px;border-left:4px solid var(--au-gold);">
-                <div style="font-family:'Montserrat',sans-serif;font-size:2.5em;font-weight:800;min-width:120px;text-align:center;color:var(--au-gold);">100%</div>
+            <div class="au-panel reveal"
+                style="display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:18px;border-left:4px solid var(--au-gold);">
+                <div
+                    style="font-family:'Montserrat',sans-serif;font-size:2.5em;font-weight:800;min-width:120px;text-align:center;color:var(--au-gold);">
+                    100%</div>
                 <div style="flex:1;min-width:240px;">
                     <h4 class="au-panel-title" style="font-size:1.15em;">Flawless Execution (Elite Credential)</h4>
-                    <p style="color:var(--text-muted);font-size:.95em;line-height:1.6;margin:0;">Your codebase handles all hidden edge-cases perfectly, demonstrates optimal algorithmic efficiency (Big O), and strictly follows standard structural architecture. <strong style="color:var(--text-main);">Reward:</strong> MSME Certificate + The Founder's Letter of Recommendation.</p>
+                    <p style="color:var(--text-muted);font-size:.95em;line-height:1.6;margin:0;">Your codebase handles
+                        all hidden edge-cases perfectly, demonstrates optimal algorithmic efficiency (Big O), and
+                        strictly follows standard structural architecture. <strong
+                            style="color:var(--text-main);">Reward:</strong> MSME Certificate + The Founder's Letter of
+                        Recommendation.</p>
                 </div>
             </div>
 
-            <div class="au-panel reveal d1" style="display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:18px;border-left:4px solid #34d399;">
-                <div style="font-family:'Montserrat',sans-serif;font-size:2.5em;font-weight:800;min-width:120px;text-align:center;color:#34d399;">80–99%</div>
+            <div class="au-panel reveal d1"
+                style="display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:18px;border-left:4px solid #34d399;">
+                <div
+                    style="font-family:'Montserrat',sans-serif;font-size:2.5em;font-weight:800;min-width:120px;text-align:center;color:#34d399;">
+                    80–99%</div>
                 <div style="flex:1;min-width:240px;">
                     <h4 class="au-panel-title" style="font-size:1.15em;">Standard Passing Grade</h4>
-                    <p style="color:var(--text-muted);font-size:.95em;line-height:1.6;margin:0;">Your architecture works as intended and fulfills the core mandate, but may lack optimized efficiency or fail minor edge cases. <strong style="color:var(--text-main);">Reward:</strong> Official MSME Certificate of Completion.</p>
+                    <p style="color:var(--text-muted);font-size:.95em;line-height:1.6;margin:0;">Your architecture works
+                        as intended and fulfills the core mandate, but may lack optimized efficiency or fail minor edge
+                        cases. <strong style="color:var(--text-main);">Reward:</strong> Official MSME Certificate of
+                        Completion.</p>
                 </div>
             </div>
 
-            <div class="au-panel reveal d2" style="display:flex;align-items:center;gap:22px;flex-wrap:wrap;border-left:4px solid #f87171;">
-                <div style="font-family:'Montserrat',sans-serif;font-size:2.5em;font-weight:800;min-width:120px;text-align:center;color:#f87171;">&lt; 80%</div>
+            <div class="au-panel reveal d2"
+                style="display:flex;align-items:center;gap:22px;flex-wrap:wrap;border-left:4px solid #f87171;">
+                <div
+                    style="font-family:'Montserrat',sans-serif;font-size:2.5em;font-weight:800;min-width:120px;text-align:center;color:#f87171;">
+                    &lt; 80%</div>
                 <div style="flex:1;min-width:240px;">
-                    <h4 class="au-panel-title" style="font-size:1.15em;color:#f87171;">Failure / 24-Hour Resubmission Window</h4>
-                    <p style="color:var(--text-muted);font-size:.95em;line-height:1.6;margin:0;">The code is fundamentally broken, plagiarized, or fails core functional requirements. You will receive an email containing exact mentor feedback. You have a strict <strong style="color:var(--text-main);">24-hour window</strong> to fix your codebase and resubmit for free before your data is purged.</p>
+                    <h4 class="au-panel-title" style="font-size:1.15em;color:#f87171;">Failure / 24-Hour Resubmission
+                        Window</h4>
+                    <p style="color:var(--text-muted);font-size:.95em;line-height:1.6;margin:0;">The code is
+                        fundamentally broken, plagiarized, or fails core functional requirements. You will receive an
+                        email containing exact mentor feedback. You have a strict <strong
+                            style="color:var(--text-main);">24-hour window</strong> to fix your codebase and resubmit
+                        for free before your data is purged.</p>
                 </div>
             </div>
         </div>
-        
+
         <!-- ===================== MY PROFILE ===================== -->
         <div id="profile-view" class="view-section{% if active_tab == 'profile' %} active{% endif %}">
             <h1 class="dash-greeting">My Profile</h1>
@@ -166,59 +220,79 @@
                     })
                     .catch(function(e){ alert('Network error: ' + e); btn.disabled = false; btn.innerText = 'Save Profile Updates'; });
                 ">
-                    <h3 style="margin-bottom: 20px; color: var(--text-main); font-family: 'Montserrat', sans-serif;">Personal Details</h3>
-                    
+                    <h3 style="margin-bottom: 20px; color: var(--text-main); font-family: 'Montserrat', sans-serif;">
+                        Personal Details</h3>
+
                     <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom: 15px;">
                         <div class="au-form-group" style="flex:1; min-width: calc(50% - 15px);">
                             <label>Full Name (As shown on certificates)</label>
-                            <input type="text" name="full_name" class="au-input" value="{{ user_profile.get('full_name', '') }}" required>
+                            <input type="text" name="full_name" class="au-input"
+                                value="{{ user_profile.get('full_name', '') }}" required>
                         </div>
                         <div class="au-form-group" style="flex:1; min-width: calc(50% - 15px);">
                             <label>Email Address</label>
-                            <input type="email" class="au-input" value="{{ user_profile.get('email', '') }}" readonly style="opacity: 0.7; cursor: not-allowed;" title="Email cannot be changed directly.">
+                            <input type="email" class="au-input" value="{{ user_profile.get('email', '') }}" readonly
+                                style="opacity: 0.7; cursor: not-allowed;" title="Email cannot be changed directly.">
                         </div>
                     </div>
                     <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom: 15px;">
                         <div class="au-form-group" style="flex:1; min-width: calc(50% - 15px);">
                             <label>Gender</label>
                             <select name="gender" class="au-input" required>
-                                <option value="" disabled {% if not profile_details.get('gender') %}selected{% endif %}>Select Gender...</option>
-                                <option value="Male" {% if profile_details.get('gender') == 'Male' %}selected{% endif %}>Male</option>
-                                <option value="Female" {% if profile_details.get('gender') == 'Female' %}selected{% endif %}>Female</option>
-                                <option value="Other" {% if profile_details.get('gender') == 'Other' %}selected{% endif %}>Other</option>
+                                <option value="" disabled {% if not profile_details.get('gender') %}selected{% endif %}>
+                                    Select Gender...</option>
+                                <option value="Male" {% if profile_details.get('gender')=='Male' %}selected{% endif %}>
+                                    Male</option>
+                                <option value="Female" {% if profile_details.get('gender')=='Female' %}selected{% endif
+                                    %}>Female</option>
+                                <option value="Other" {% if profile_details.get('gender')=='Other' %}selected{% endif
+                                    %}>Other</option>
                             </select>
                         </div>
                         <div class="au-form-group" style="flex:1; min-width: calc(50% - 15px);">
                             <label>Contact Phone Number</label>
-                            <input type="tel" name="phone" class="au-input" value="{{ profile_details.get('phone', '') }}" required placeholder="+91 ">
+                            <input type="tel" name="phone" class="au-input"
+                                value="{{ profile_details.get('phone', '') }}" required placeholder="+91 ">
                         </div>
                     </div>
-                    
-                    <h3 style="margin-top: 30px; margin-bottom: 20px; color: var(--text-main); font-family: 'Montserrat', sans-serif;">Location Details</h3>
+
+                    <h3
+                        style="margin-top: 30px; margin-bottom: 20px; color: var(--text-main); font-family: 'Montserrat', sans-serif;">
+                        Location Details</h3>
                     <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom: 15px;">
                         <div class="au-form-group" style="flex:1; min-width: calc(50% - 15px);">
                             <label>City</label>
-                            <input type="text" name="city" class="au-input" value="{{ profile_details.get('city', '') }}" required placeholder="e.g., Mumbai">
+                            <input type="text" name="city" class="au-input"
+                                value="{{ profile_details.get('city', '') }}" required placeholder="e.g., Mumbai">
                         </div>
                         <div class="au-form-group" style="flex:1; min-width: calc(50% - 15px);">
                             <label>State</label>
-                            <input type="text" name="state" class="au-input" value="{{ profile_details.get('state', '') }}" required placeholder="e.g., Maharashtra">
+                            <input type="text" name="state" class="au-input"
+                                value="{{ profile_details.get('state', '') }}" required placeholder="e.g., Maharashtra">
                         </div>
                     </div>
-                    
-                    <h3 style="margin-top: 30px; margin-bottom: 20px; color: var(--text-main); font-family: 'Montserrat', sans-serif;">Academic Details</h3>
+
+                    <h3
+                        style="margin-top: 30px; margin-bottom: 20px; color: var(--text-main); font-family: 'Montserrat', sans-serif;">
+                        Academic Details</h3>
                     <div style="display:flex; gap:15px; flex-wrap:wrap;">
                         <div class="au-form-group" style="flex:1; min-width: 100%;">
                             <label>Institution / College Name</label>
-                            <input type="text" name="college_name" class="au-input" value="{{ profile_details.get('college_name', '') }}" required placeholder="e.g., State University">
+                            <input type="text" name="college_name" class="au-input"
+                                value="{{ profile_details.get('college_name', '') }}" required
+                                placeholder="e.g., State University">
                         </div>
                         <div class="au-form-group" style="flex:1; min-width: 250px;">
                             <label>Academic Course</label>
-                            <input type="text" name="course_name" class="au-input" value="{{ profile_details.get('course_name', '') }}" required placeholder="e.g., BCA / BTech">
+                            <input type="text" name="course_name" class="au-input"
+                                value="{{ profile_details.get('course_name', '') }}" required
+                                placeholder="e.g., BCA / BTech">
                         </div>
                         <div class="au-form-group" style="flex:1; min-width: 250px;">
                             <label>Academic Session / Year</label>
-                            <input type="text" name="session_year" class="au-input" value="{{ profile_details.get('session_year', '') }}" required placeholder="e.g., 2025-2028">
+                            <input type="text" name="session_year" class="au-input"
+                                value="{{ profile_details.get('session_year', '') }}" required
+                                placeholder="e.g., 2025-2028">
                         </div>
                     </div>
 
@@ -235,30 +309,46 @@
         <div class="au-modal-card au-form">
             <button type="button" class="au-modal-close" onclick="closeModal('enrollModal')">&times;</button>
             <h3>Program Registration</h3>
-            <p style="color:var(--text-muted);font-size:.9em;margin:0 0 22px;">Provide your academic details exactly as they should appear on your official Offer Letter.</p>
-            <form action="/enroll" method="POST" onsubmit="var btn = this.querySelector('button[type=submit]'); btn.disabled=true; btn.innerText='Enrolling...';">
+            <p style="color:var(--text-muted);font-size:.9em;margin:0 0 22px;">Provide your academic details exactly as
+                they should appear on your official Offer Letter.</p>
+            <form action="/enroll" method="POST"
+                onsubmit="var btn = this.querySelector('button[type=submit]'); btn.disabled=true; btn.innerText='Enrolling...';">
                 <input type="hidden" id="enroll-program-name" name="program_id">
-                <div class="au-form-group"><label>Institution / College Name</label><input type="text" name="college_name" value="{{ profile_details.get('college_name', '') }}" readonly style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.1);"></div>
-                <div class="au-form-group"><label>Academic Course</label><input type="text" name="course_name" value="{{ profile_details.get('course_name', '') }}" readonly style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.1);"></div>
-                <div class="au-form-group"><label>Academic Session / Year</label><input type="text" name="session_year" value="{{ profile_details.get('session_year', '') }}" readonly style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.1);"></div>
-                <p style="font-size: 0.8em; color: var(--au-gold); margin-top: -10px; margin-bottom: 15px;">(Academic details are synced from your Profile)</p>
+                <div class="au-form-group"><label>Institution / College Name</label><input type="text"
+                        name="college_name" value="{{ profile_details.get('college_name', '') }}" readonly
+                        style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.1);"></div>
+                <div class="au-form-group"><label>Academic Course</label><input type="text" name="course_name"
+                        value="{{ profile_details.get('course_name', '') }}" readonly
+                        style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.1);"></div>
+                <div class="au-form-group"><label>Academic Session / Year</label><input type="text" name="session_year"
+                        value="{{ profile_details.get('session_year', '') }}" readonly
+                        style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.1);"></div>
+                <p style="font-size: 0.8em; color: var(--au-gold); margin-top: -10px; margin-bottom: 15px;">(Academic
+                    details are synced from your Profile)</p>
                 <div class="au-form-group">
                     <label>Select Duration</label>
-                    <div id="dynamic-tracks-btn-container" style="display: flex; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;">
+                    <div id="dynamic-tracks-btn-container"
+                        style="display: flex; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;">
                         <!-- JS will inject buttons here -->
                     </div>
                     <div id="custom-duration-container" style="display: none; margin-bottom: 8px;">
                         <label>Enter Custom Duration (Months)</label>
-                        <input type="number" name="custom_months" id="custom_months_input" min="1" oninput="updateCustomTrackDetails(this.value)">
+                        <input type="number" name="custom_months" id="custom_months_input" min="1"
+                            oninput="updateCustomTrackDetails(this.value)">
                     </div>
-                    <div id="track-details" style="font-size: 0.9em; color: var(--text-muted); margin-bottom: 10px;">Select a duration to see details.</div>
+                    <div id="track-details" style="font-size: 0.9em; color: var(--text-muted); margin-bottom: 10px;">
+                        Select a duration to see details.</div>
                     <input type="hidden" name="track_level" id="hidden-track-level" required>
                 </div>
-                <div class="au-form-group" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px;">
-                    <input type="checkbox" id="enroll_terms" name="terms_agree" required style="width: auto; margin-top: 2px;">
-                    <label for="enroll_terms" style="font-size: 0.85em; text-transform: none; line-height: 1.4; color: var(--text-muted);">I accept all Terms and Conditions, rules, and platform policies.</label>
+                <div class="au-form-group"
+                    style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px;">
+                    <input type="checkbox" id="enroll_terms" name="terms_agree" required
+                        style="width: auto; margin-top: 2px;">
+                    <label for="enroll_terms"
+                        style="font-size: 0.85em; text-transform: none; line-height: 1.4; color: var(--text-muted);">I
+                        accept all Terms and Conditions, rules, and platform policies.</label>
                 </div>
-                
+
                 <button type="submit" class="au-btn" style="width:100%;">Complete Enrollment (Free)</button>
             </form>
         </div>
@@ -268,7 +358,8 @@
         <div class="au-modal-card au-form">
             <button type="button" class="au-modal-close" onclick="closeModal('submitModal')">&times;</button>
             <h3>Submit Architecture</h3>
-            <p style="color:var(--text-muted);font-size:.9em;margin:0 0 22px;">Your submission will be securely routed to the grading matrix. You will be redirected to the secure gateway for the evaluation fee.</p>
+            <p style="color:var(--text-muted);font-size:.9em;margin:0 0 22px;">Your submission will be securely routed
+                to the grading matrix. You will be redirected to the secure gateway for the evaluation fee.</p>
             <form id="submissionForm" onsubmit="handlePaymentSubmit(event)">
                 <div class="au-form-group">
                     <label>Unique Enrollment ID</label>
@@ -282,15 +373,19 @@
                     <label>Architecture Defense Write-up (Link)</label>
                     <input type="url" id="modal-defense-link" placeholder="https://docs.google.com/...">
                 </div>
-                <div class="au-form-group" style="background:rgba(139,92,246,.06);padding:16px;border-radius:var(--au-radius-sm);border:1px dashed rgba(139,92,246,.3);">
+                <div class="au-form-group"
+                    style="background:rgba(139,92,246,.06);padding:16px;border-radius:var(--au-radius-sm);border:1px dashed rgba(139,92,246,.3);">
                     <label style="color:#b794f4;">Ambassador or Custom Promo Code</label>
                     <div style="display:flex;gap:10px;">
-                        <input type="text" id="promo-input" placeholder="Enter GTM Code..." style="text-transform:uppercase;">
-                        <button type="button" class="au-btn violet sm" style="white-space:nowrap;" onclick="applyPromoCode()">Apply</button>
+                        <input type="text" id="promo-input" placeholder="Enter GTM Code..."
+                            style="text-transform:uppercase;">
+                        <button type="button" class="au-btn violet sm" style="white-space:nowrap;"
+                            onclick="applyPromoCode()">Apply</button>
                     </div>
                     <div id="promo-msg" style="font-size:.85em;margin-top:8px;display:none;"></div>
                 </div>
-                <button type="submit" class="au-btn violet" id="payButton" style="width:100%;">Confirm &amp; Pay ₹<span id="modal-price"></span></button>
+                <button type="submit" class="au-btn violet" id="payButton" style="width:100%;">Confirm &amp; Pay ₹<span
+                        id="modal-price"></span></button>
             </form>
         </div>
     </div>
@@ -298,163 +393,164 @@
     {% include 'footer.html' %}
 
     <script>
-    /* Modal helpers (switchView + theme handled by dashboard_nav.html) */
-    function closeModal(modalId) { document.getElementById(modalId).classList.remove('open'); }
+        /* Modal helpers (switchView + theme handled by dashboard_nav.html) */
+        function closeModal(modalId) { document.getElementById(modalId).classList.remove('open'); }
 
-    function openEnrollModal(programId, programTitle, tracks, allowCustom, minCustom, maxCustom, customPrice) {
-        document.getElementById('enroll-program-name').value = programId;
-        document.querySelector('#enrollModal h3').innerText = 'Enroll: ' + programTitle;
-        
-        window.currentTracks = tracks || [];
-        window.customConfig = { allow: allowCustom, min: minCustom, max: maxCustom, price: customPrice };
-        
-        const container = document.getElementById('dynamic-tracks-btn-container');
-        container.innerHTML = '';
-        
-        window.currentTracks.forEach(t => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'au-btn-ghost track-btn';
-            btn.style.flex = '1';
-            btn.style.padding = '10px';
-            btn.innerText = t.months + ' Months';
-            btn.onclick = function() { selectTrack(t.months.toString(), this, t.price); };
-            container.appendChild(btn);
-        });
+        function openEnrollModal(programId, programTitle, tracks, allowCustom, minCustom, maxCustom, customPrice) {
+            document.getElementById('enroll-program-name').value = programId;
+            document.querySelector('#enrollModal h3').innerText = 'Enroll: ' + programTitle;
 
-        if (allowCustom) {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'au-btn-ghost track-btn';
-            btn.style.flex = '1';
-            btn.style.padding = '10px';
-            btn.innerText = 'Custom';
-            btn.onclick = function() { selectTrack('custom', this, customPrice); };
-            container.appendChild(btn);
-        }
-        
-        document.getElementById('hidden-track-level').value = '';
-        document.getElementById('custom_months_input').value = '';
-        document.getElementById('custom-duration-container').style.display = 'none';
-        document.getElementById('track-details').innerText = 'Select a duration to see details.';
-        
-        document.getElementById('enrollModal').classList.add('open');
-    }
+            window.currentTracks = tracks || [];
+            window.customConfig = { allow: allowCustom, min: minCustom, max: maxCustom, price: customPrice };
 
-    function selectTrack(trackId, btnElement, price) {
-        document.getElementById('hidden-track-level').value = trackId;
-        document.querySelectorAll('.track-btn').forEach(btn => {
-            btn.className = 'au-btn-ghost track-btn';
-        });
-        btnElement.className = 'au-btn track-btn';
-        
-        if (trackId === 'custom') {
-            document.getElementById('custom-duration-container').style.display = 'block';
-            document.getElementById('custom_months_input').min = window.customConfig.min;
-            document.getElementById('custom_months_input').max = window.customConfig.max;
-            updateCustomTrackDetails(document.getElementById('custom_months_input').value);
-        } else {
-            document.getElementById('custom-duration-container').style.display = 'none';
-            document.getElementById('track-details').innerText = `${trackId} Months Duration (₹${price} upon submission)`;
-        }
-    }
-    
-    function updateCustomTrackDetails(months) {
-        if (!months) {
-            document.getElementById('track-details').innerText = `Please enter a duration (Range: ${window.customConfig.min}-${window.customConfig.max} Months).`;
-            return;
-        }
-        let parsed = parseInt(months);
-        if (parsed > window.customConfig.max || parsed < window.customConfig.min) {
-            document.getElementById('track-details').innerText = `Duration must be between ${window.customConfig.min} and ${window.customConfig.max} Months.`;
-            return;
-        }
-        document.getElementById('track-details').innerText = `${parsed} Months Custom Duration (₹${window.customConfig.price} upon submission)`;
-    }
+            const container = document.getElementById('dynamic-tracks-btn-container');
+            container.innerHTML = '';
 
-    let currentBasePrice = 0;
-    let appliedPromo = "";
-
-    function openSubmitModal(enrollmentId, price) {
-        document.getElementById('modal-enrollment-id').value = enrollmentId;
-        currentBasePrice = parseInt(price);
-        document.getElementById('modal-price').innerText = currentBasePrice;
-        document.getElementById('promo-input').value = "";
-        document.getElementById('promo-msg').style.display = 'none';
-        appliedPromo = "";
-        document.getElementById('submitModal').classList.add('open');
-    }
-
-    async function applyPromoCode() {
-        const code = document.getElementById('promo-input').value.trim();
-        const msgDiv = document.getElementById('promo-msg');
-        const enrollmentId = document.getElementById('modal-enrollment-id').value;
-        if (!code) return;
-        try {
-            const response = await fetch('/validate-promo', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ promo_code: code, enrollment_id: enrollmentId })
+            window.currentTracks.forEach(t => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'au-btn-ghost track-btn';
+                btn.style.flex = '1';
+                btn.style.padding = '10px';
+                btn.innerText = t.months + ' Months';
+                btn.onclick = function () { selectTrack(t.months.toString(), this, t.price); };
+                container.appendChild(btn);
             });
-            const data = await response.json();
-            if (data.valid) {
-                appliedPromo = code;
-                const discount = data.discount_percent || 10;
-                const newPrice = currentBasePrice * ((100 - discount) / 100);
-                document.getElementById('modal-price').innerText = Math.round(newPrice);
-                msgDiv.style.color = '#34d399';
-                msgDiv.innerText = `✔️ Code applied! ${discount}% discount activated.`;
-                msgDiv.style.display = 'block';
-            } else {
-                appliedPromo = "";
-                document.getElementById('modal-price').innerText = currentBasePrice;
-                msgDiv.style.color = '#f87171';
-                msgDiv.innerText = '❌ ' + data.error;
-                msgDiv.style.display = 'block';
+
+            if (allowCustom) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'au-btn-ghost track-btn';
+                btn.style.flex = '1';
+                btn.style.padding = '10px';
+                btn.innerText = 'Custom';
+                btn.onclick = function () { selectTrack('custom', this, customPrice); };
+                container.appendChild(btn);
             }
-        } catch (err) {
-            console.error("Promo verification failed", err);
-        }
-    }
 
-    async function handlePaymentSubmit(event) {
-        event.preventDefault();
-        const payBtn = document.getElementById('payButton');
-        const currentDisplayedPrice = document.getElementById('modal-price').innerText;
-        payBtn.innerText = "Generating Secure Gateway...";
-        payBtn.disabled = true;
-        const payload = {
-            enrollment_id: document.getElementById('modal-enrollment-id').value,
-            code_link: document.getElementById('modal-code-link').value,
-            defense_link: document.getElementById('modal-defense-link').value,
-            promo_code: appliedPromo
-        };
-        try {
-            const response = await fetch('/create-payment', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+            document.getElementById('hidden-track-level').value = '';
+            document.getElementById('custom_months_input').value = '';
+            document.getElementById('custom-duration-container').style.display = 'none';
+            document.getElementById('track-details').innerText = 'Select a duration to see details.';
+
+            document.getElementById('enrollModal').classList.add('open');
+        }
+
+        function selectTrack(trackId, btnElement, price) {
+            document.getElementById('hidden-track-level').value = trackId;
+            document.querySelectorAll('.track-btn').forEach(btn => {
+                btn.className = 'au-btn-ghost track-btn';
             });
-            const data = await response.json();
-            if (data.payment_url) {
-                window.location.href = data.payment_url;
+            btnElement.className = 'au-btn track-btn';
+
+            if (trackId === 'custom') {
+                document.getElementById('custom-duration-container').style.display = 'block';
+                document.getElementById('custom_months_input').min = window.customConfig.min;
+                document.getElementById('custom_months_input').max = window.customConfig.max;
+                updateCustomTrackDetails(document.getElementById('custom_months_input').value);
             } else {
-                alert("Payment initiation failed: " + (data.error || "Please check your PhonePe .env keys."));
+                document.getElementById('custom-duration-container').style.display = 'none';
+                document.getElementById('track-details').innerText = `${trackId} Months Duration (₹${price} upon submission)`;
+            }
+        }
+
+        function updateCustomTrackDetails(months) {
+            if (!months) {
+                document.getElementById('track-details').innerText = `Please enter a duration (Range: ${window.customConfig.min}-${window.customConfig.max} Months).`;
+                return;
+            }
+            let parsed = parseInt(months);
+            if (parsed > window.customConfig.max || parsed < window.customConfig.min) {
+                document.getElementById('track-details').innerText = `Duration must be between ${window.customConfig.min} and ${window.customConfig.max} Months.`;
+                return;
+            }
+            document.getElementById('track-details').innerText = `${parsed} Months Custom Duration (₹${window.customConfig.price} upon submission)`;
+        }
+
+        let currentBasePrice = 0;
+        let appliedPromo = "";
+
+        function openSubmitModal(enrollmentId, price) {
+            document.getElementById('modal-enrollment-id').value = enrollmentId;
+            currentBasePrice = parseInt(price);
+            document.getElementById('modal-price').innerText = currentBasePrice;
+            document.getElementById('promo-input').value = "";
+            document.getElementById('promo-msg').style.display = 'none';
+            appliedPromo = "";
+            document.getElementById('submitModal').classList.add('open');
+        }
+
+        async function applyPromoCode() {
+            const code = document.getElementById('promo-input').value.trim();
+            const msgDiv = document.getElementById('promo-msg');
+            const enrollmentId = document.getElementById('modal-enrollment-id').value;
+            if (!code) return;
+            try {
+                const response = await fetch('/validate-promo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ promo_code: code, enrollment_id: enrollmentId })
+                });
+                const data = await response.json();
+                if (data.valid) {
+                    appliedPromo = code;
+                    const discount = data.discount_percent || 10;
+                    const newPrice = currentBasePrice * ((100 - discount) / 100);
+                    document.getElementById('modal-price').innerText = Math.round(newPrice);
+                    msgDiv.style.color = '#34d399';
+                    msgDiv.innerText = `✔️ Code applied! ${discount}% discount activated.`;
+                    msgDiv.style.display = 'block';
+                } else {
+                    appliedPromo = "";
+                    document.getElementById('modal-price').innerText = currentBasePrice;
+                    msgDiv.style.color = '#f87171';
+                    msgDiv.innerText = '❌ ' + data.error;
+                    msgDiv.style.display = 'block';
+                }
+            } catch (err) {
+                console.error("Promo verification failed", err);
+            }
+        }
+
+        async function handlePaymentSubmit(event) {
+            event.preventDefault();
+            const payBtn = document.getElementById('payButton');
+            const currentDisplayedPrice = document.getElementById('modal-price').innerText;
+            payBtn.innerText = "Generating Secure Gateway...";
+            payBtn.disabled = true;
+            const payload = {
+                enrollment_id: document.getElementById('modal-enrollment-id').value,
+                code_link: document.getElementById('modal-code-link').value,
+                defense_link: document.getElementById('modal-defense-link').value,
+                promo_code: appliedPromo
+            };
+            try {
+                const response = await fetch('/create-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (data.payment_url) {
+                    window.location.href = data.payment_url;
+                } else {
+                    alert("Payment initiation failed: " + (data.error || "Please check your PhonePe .env keys."));
+                    payBtn.innerHTML = `Confirm & Pay ₹<span id="modal-price">${currentDisplayedPrice}</span>`;
+                    payBtn.disabled = false;
+                }
+            } catch (err) {
+                console.error(err);
+                alert("System error. Ensure your backend is running and API keys are set.");
                 payBtn.innerHTML = `Confirm & Pay ₹<span id="modal-price">${currentDisplayedPrice}</span>`;
                 payBtn.disabled = false;
             }
-        } catch (err) {
-            console.error(err);
-            alert("System error. Ensure your backend is running and API keys are set.");
-            payBtn.innerHTML = `Confirm & Pay ₹<span id="modal-price">${currentDisplayedPrice}</span>`;
-            payBtn.disabled = false;
         }
-    }
 
-    /* Close modal on backdrop click */
-    document.querySelectorAll('.au-modal').forEach(function (m) {
-        m.addEventListener('click', function (e) { if (e.target === m) m.classList.remove('open'); });
-    });
+        /* Close modal on backdrop click */
+        document.querySelectorAll('.au-modal').forEach(function (m) {
+            m.addEventListener('click', function (e) { if (e.target === m) m.classList.remove('open'); });
+        });
     </script>
 </body>
+
 </html>

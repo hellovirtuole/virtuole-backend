@@ -691,8 +691,16 @@
                         </div>
                     </div>
                     <div>
-                        <label>Recipient Title/Role</label>
+                        <label>Recipient Title/Role (Optional)</label>
                         <input type="text" id="let-title" class="au-input" placeholder="e.g. Go-To-Market Ambassador" oninput="updateLetterPreview()">
+                    </div>
+                    <div>
+                        <label>Subject Line (Optional)</label>
+                        <input type="text" id="let-subject" class="au-input" placeholder="e.g. Offer of Virtual Internship" oninput="updateLetterPreview()">
+                    </div>
+                    <div>
+                        <label>Bold Heading (Optional)</label>
+                        <input type="text" id="let-heading" class="au-input" placeholder="e.g. OFFICIAL OFFER LETTER" oninput="updateLetterPreview()">
                     </div>
                     <div>
                         <label>Letter Body</label>
@@ -720,54 +728,76 @@
                 <!-- Preview Side -->
                 <div style="flex:1.5; min-width:400px; overflow-x:auto;">
                     <div class="dash-section-title" style="margin-bottom:10px;">Live Preview (A4 Size)</div>
-                    <div id="letter-preview-paper" style="background:white; color:black; padding:50px; box-shadow:0 10px 25px rgba(0,0,0,0.1); border-radius:4px; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; font-size:14px; line-height:1.6; min-height:842px; width:100%; max-width:595px; margin:0 auto; position:relative; box-sizing:border-box;">
+                    <div id="letter-preview-paper" style="background:white; color:black; padding:0; box-shadow:0 10px 25px rgba(0,0,0,0.1); border-radius:4px; font-family:'Georgia', serif; font-size:14px; line-height:1.6; min-height:842px; width:100%; max-width:595px; margin:0 auto; position:relative; box-sizing:border-box;">
                         
-                        <!-- Header / Logo -->
-                        <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #2563eb; padding-bottom:20px; margin-bottom:30px;">
-                            <div>
-                                <h1 style="margin:0; font-size:24px; color:#2563eb; font-weight:700; letter-spacing:1px;">VIRTUOLE</h1>
-                                <p style="margin:0; font-size:12px; color:#64748b;">www.virtuole.com</p>
+                        <div style="border-top:10px solid #1a365d; padding:40px 50px;">
+                            <!-- Header / Logo -->
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #e2e8f0; padding-bottom:20px; margin-bottom:30px;">
+                                <div style="display:flex; align-items:center; gap:15px;">
+                                    <!-- Placeholder for Logo Image -->
+                                    <div style="width:45px; height:45px; background-color:#1a365d; border-radius:4px; display:flex; align-items:center; justify-content:center; color:white; font-family:'Arial', sans-serif; font-weight:bold; font-size:24px;">V</div>
+                                    <div>
+                                        <h1 style="margin:0; font-family:'Arial', sans-serif; font-size:26px; color:#1a365d; font-weight:800; letter-spacing:3px;">VIRTU<span style="color:#e53e3e;">OLE</span></h1>
+                                        <p style="margin:4px 0 0 0; font-family:'Arial', sans-serif; font-size:10px; color:#718096; font-weight:700; text-transform:uppercase; letter-spacing:1px;">Government of India Recognized MSME</p>
+                                    </div>
+                                </div>
+                                <div style="text-align:right; font-family:'Arial', sans-serif; font-size:11px; color:#4a5568; line-height:1.5;">
+                                    <strong>UDYAM-BR-06-0064801</strong><br>
+                                    Virtuole Headquarters, Tech Park<br>
+                                    New Delhi, India 110001<br>
+                                    www.virtuole.in | support@virtuole.in
+                                </div>
                             </div>
-                            <div style="text-align:right;">
-                                <div id="preview-date" style="font-weight:600; color:#333;">August 15, 2026</div>
+    
+                            <!-- Recipient Block & Date -->
+                            <div style="margin-bottom:30px;">
+                                <div style="display:flex; justify-content:flex-end; margin-bottom:15px;">
+                                    <div id="preview-date" style="font-family:'Arial', sans-serif; font-weight:bold; color:#2d3748;">August 15, 2026</div>
+                                </div>
+                                <div>
+                                    <div style="font-family:'Arial', sans-serif; font-size:14px; color:#4a5568; margin-bottom:5px;" id="preview-to-label">To,</div>
+                                    <div style="font-weight:bold; font-size:18px; color:#1a365d;" id="preview-name"></div>
+                                    <div style="font-family:'Arial', sans-serif; font-size:13px; color:#4a5568; font-weight:bold; margin-top:2px;" id="preview-title"></div>
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- Recipient Block -->
-                        <div style="margin-bottom:30px;">
-                            <div style="font-weight:bold; font-size:16px;" id="preview-name">[Recipient Name]</div>
-                            <div style="color:#475569;" id="preview-title">[Recipient Title]</div>
-                        </div>
+                            <div style="margin-bottom:20px; font-family:'Arial', sans-serif; font-size:14px; color:#1a365d; font-weight:bold;" id="preview-subject-container">
+                                <span>Subject: </span><span id="preview-subject"></span>
+                            </div>
 
-                        <!-- Body -->
-                        <div id="preview-body" style="min-height:350px; text-align:justify; color:#333;">
-                            [Letter Content]
-                        </div>
-
-                        <!-- Sign-off -->
-                        <div style="margin-top:50px; position:relative;">
-                            <p style="margin-bottom:40px;">Sincerely,</p>
+                            <div style="margin-bottom:20px; font-family:'Arial', sans-serif; font-size:18px; text-align:center; color:#2d3748; font-weight:bold; text-transform:uppercase; letter-spacing:1px;" id="preview-heading"></div>
+    
+                            <!-- Body -->
+                            <div id="preview-body" style="min-height:300px; text-align:justify; color:#333; font-size:15px; line-height:1.8;">
+                                [Letter Content]
+                            </div>
+    
+                            <!-- Sign-off -->
+                            <div style="margin-top:50px; position:relative; display:flex; justify-content:space-between; align-items:flex-end;">
+                                <div>
+                                    <p style="margin-bottom:20px; font-size:15px;">Sincerely,</p>
+                                    <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/public-assets/vishal_signature.png" style="height:55px; width:auto; display:block; margin-bottom:5px;" alt="Signature">
+                                    <div style="border-top:2px solid #2d3748; padding-top:8px; width:200px;">
+                                        <div style="font-family:'Arial', sans-serif; font-weight:bold; font-size:15px; color:#1a365d;" id="preview-sign-name">Vishal</div>
+                                        <div style="font-family:'Arial', sans-serif; font-size:12px; color:#4a5568;" id="preview-sign-title">Founder, Virtuole</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Digital Stamp (SVG) -->
+                                <div id="preview-stamp" style="opacity:0.9;">
+                                    <div style="border:2px solid #c53030; color:#c53030; text-align:center; border-radius:100px; width:100px; height:100px; font-family:'Arial', sans-serif; display:flex; align-items:center; justify-content:center; flex-direction:column;">
+                                        <span style="font-weight:800; font-size:13px; letter-spacing:1px;">VIRTUOLE</span>
+                                        <span style="font-size:9px; font-weight:bold; display:block; margin:4px 0;">OFFICIAL</span>
+                                        <span style="font-size:8px; border-top:1px solid #c53030; padding-top:3px; display:inline-block; width:60px;">MSME SEAL</span>
+                                    </div>
+                                </div>
+                            </div>
                             
-                            <!-- Digital Stamp (SVG) -->
-                            <div id="preview-stamp" style="position:absolute; top:20px; left:120px; opacity:0.8;">
-                                <svg width="100" height="100" viewBox="0 0 100 100">
-                                    <circle cx="50" cy="50" r="45" fill="none" stroke="#2563eb" stroke-width="2" stroke-dasharray="4 2"/>
-                                    <circle cx="50" cy="50" r="38" fill="none" stroke="#2563eb" stroke-width="1"/>
-                                    <path id="curve" d="M 15 50 A 35 35 0 1 1 85 50 A 35 35 0 1 1 15 50" fill="transparent" />
-                                    <text fill="#2563eb" font-size="10" font-weight="bold" letter-spacing="2">
-                                        <textPath href="#curve" startOffset="50%" text-anchor="middle">OFFICIAL DIGITAL STAMP</textPath>
-                                    </text>
-                                    <text x="50" y="55" font-size="20" font-weight="900" fill="#2563eb" text-anchor="middle">V</text>
-                                </svg>
+                            <!-- Footer -->
+                            <div style="position:absolute; bottom:30px; left:50px; right:50px; border-top:1px solid #e2e8f0; padding-top:10px; text-align:center; font-family:'Arial', sans-serif; font-size:10px; color:#a0aec0; line-height:1.5;">
+                                This is an officially generated document by Virtuole. Verify authenticity by contacting support@virtuole.in.<br>
+                                &copy; 2026 Virtuole. All rights reserved.
                             </div>
-
-                            <div style="font-weight:bold; font-size:16px;" id="preview-sign-name">Vishal</div>
-                            <div style="color:#475569;" id="preview-sign-title">Founder, Virtuole</div>
-                        </div>
-                        
-                        <!-- Footer -->
-                        <div style="position:absolute; bottom:40px; left:50px; right:50px; border-top:1px solid #cbd5e1; padding-top:10px; text-align:center; font-size:10px; color:#94a3b8;">
-                            This is an officially generated document by Virtuole. Verify authenticity by contacting support@virtuole.com.
                         </div>
                     </div>
                 </div>
@@ -1615,8 +1645,23 @@
 
         // --- Letter Generator Logic ---
         function updateLetterPreview() {
-            document.getElementById('preview-name').innerText = document.getElementById('let-name').value || '[Recipient Name]';
-            document.getElementById('preview-title').innerText = document.getElementById('let-title').value || '[Recipient Title]';
+            const nameVal = document.getElementById('let-name').value;
+            const titleVal = document.getElementById('let-title').value;
+            const subjectVal = document.getElementById('let-subject').value;
+            const headingVal = document.getElementById('let-heading').value;
+
+            document.getElementById('preview-name').innerText = nameVal;
+            document.getElementById('preview-name').style.display = nameVal ? 'block' : 'none';
+            document.getElementById('preview-to-label').style.display = nameVal ? 'block' : 'none';
+
+            document.getElementById('preview-title').innerText = titleVal;
+            document.getElementById('preview-title').style.display = titleVal ? 'block' : 'none';
+
+            document.getElementById('preview-subject').innerText = subjectVal;
+            document.getElementById('preview-subject-container').style.display = subjectVal ? 'block' : 'none';
+
+            document.getElementById('preview-heading').innerText = headingVal;
+            document.getElementById('preview-heading').style.display = headingVal ? 'block' : 'none';
             
             const dateVal = document.getElementById('let-date').value;
             if (dateVal) {

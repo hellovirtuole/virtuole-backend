@@ -4,6 +4,7 @@ from api.config import supabase, limiter
 from api.utils.email import send_system_email, send_ambassador_email
 import random, string, uuid, json
 from datetime import datetime, timedelta
+from api.utils.notifications import send_notification
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -61,8 +62,9 @@ def register():
                 "id": auth_user.user.id, "full_name": full_name, "email": email, "public_id": public_id, "role": "intern"
             }).execute()
             if promo_used:
-                send_ambassador_email("ambassador@virtuole.in", f"Conversion Logged: Code {promo_used}", f"A new student has registered using promo code {promo_used}.")
+                send_notification('admin', None, 'promo_used', f"Conversion Logged: Code {promo_used}", f"A new student has registered using promo code {promo_used}.")
             send_system_email(email, "Welcome to Virtuole", f"Hello {full_name},\nYour public identity ID is {public_id}. Please log in to your dashboard to view offered programs and begin your internship.")
+            send_notification('intern', auth_user.user.id, 'signup', 'Welcome to Virtuole', f"Hello {full_name}, your public identity ID is {public_id}. Start exploring programs!")
             return redirect(url_for('auth.login', message="Account created successfully. Please login."))
         # sign_up returned no user (e.g. confirmation pending / duplicate email)
         return render_template('login.html', error="We could not create your account. This email may already be registered — try logging in instead.")
