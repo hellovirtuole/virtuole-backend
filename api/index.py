@@ -3,7 +3,12 @@ from flask import Flask, request, jsonify, render_template, session, redirect, u
 from flask_cors import CORS
 from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
-
+from datetime import datetime, timedelta
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from api.config import supabase
+from api.utils.email import send_system_email, send_ambassador_email
 load_dotenv()
 
 base_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
