@@ -1082,7 +1082,7 @@ body { background: transparent; }
     .desktop-only { display: flex; }
     .back-btn.desktop-only { display: inline-flex; }
 
-    @media (max-width: 850px) {
+    @media (max-width: 1150px) {
         .nav-center {
             position: fixed !important; top: 70px; right: -100%; flex-direction: column; background: var(--nav-bg);
             width: 65% !important; height: 100vh; padding: 40px 24px; gap: 20px; z-index: 1001; transition: right 0.3s ease !important;
@@ -1338,7 +1338,7 @@ body { background: transparent; }
    ========================== */
 
 /* Fix nav-center mobile panel for proper scrolling & better UX */
-@media (max-width: 850px) {
+@media (max-width: 1150px) {
     /* Shrink logo text on phones so it doesn't fight the hamburger */
     nav .logo-text { font-size: 1.3em; }
 
