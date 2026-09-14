@@ -1,39 +1,240 @@
-<html><body style="font-family: Helvetica, Arial, sans-serif; padding: 30px; border: 8px solid #9f7aea; text-align: center; background-color: #faf5ff; max-width: 900px; margin: auto;">
-    <h1 style="color: #1a365d; margin: 0; letter-spacing: 4px; font-size: 28px;">
-        <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/logo/logo.png" alt="Logo" style="height: 30px; vertical-align: middle; margin-right: 10px; display: inline-block;">
-        <span style="vertical-align: middle;">VIRTU<span style="color: #2dd4bf;">OLE</span></span>
-    </h1>
-    <p style="color: #4a5568; font-size: 12px; margin: 5px 0 0 0;">MSME Reg. No: UDYAM-BR-06-0064801 | Patna, Bihar | ambassador@virtuole.in</p>
-    
-    <h2 style="color: #1a365d; margin-top: 25px; letter-spacing: 2px; font-size: 20px;">GTM AMBASSADOR PROGRAM</h2>
-    <h1 style="color: #805ad5; font-size: 38px; margin-top: 15px; text-transform: uppercase;">Certificate of Achievement</h1>
-    
-    <p style="font-size: 16px; color: #4a5568; margin-top: 20px;">This official document certifies that</p>
-    <h2 style="font-size: 36px; color: #1a365d; border-bottom: 2px solid #805ad5; display: inline-block; padding-bottom: 5px; margin: 10px 0;">{{ name }}</h2>
-    <p style="font-size: 16px; color: #4a5568; margin-top: 15px;">has successfully achieved the highly esteemed rank of</p>
-    
-    <div style="background: #1a202c; display: inline-block; padding: 10px 30px; margin: 15px 0;">
-        <h3 style="color: #ecc94b; font-size: 24px; margin: 0;">{{ tier_name | upper }}</h3>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #e5e7eb;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Montserrat', sans-serif;
+            color: #1f2937;
+        }
+        .cert-container {
+            width: 1000px;
+            height: 700px;
+            background: #ffffff;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Left Panel */
+        .left-panel {
+            width: 730px;
+            padding: 50px 80px;
+            box-sizing: border-box;
+            background-color: #fcfcfd;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .title {
+            font-family: 'Merriweather', serif;
+            font-size: 42px;
+            font-weight: 700;
+            color: #4b5563;
+            letter-spacing: 1px;
+            margin: 0;
+            text-transform: uppercase;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            margin-top: 30px;
+            font-weight: 700;
+            font-size: 26px;
+            letter-spacing: 2px;
+            color: #4b5563;
+        }
+        .logo-container img {
+            height: 55px;
+            margin-right: 18px;
+        }
+        
+        .certify-text {
+            margin-top: 35px;
+            font-size: 17px;
+            color: #6b7280;
+        }
+        
+        .name {
+            font-family: 'Merriweather', serif;
+            font-size: 60px;
+            color: #1f2937;
+            margin: 15px 0 0 0;
+            font-weight: 400;
+        }
+        
+        .underline {
+            width: 100%;
+            height: 1px;
+            background-color: #9ca3af;
+            margin-top: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .description {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #4b5563;
+            max-width: 95%;
+        }
+        
+        .highlight {
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        /* Signatures */
+        .signatures {
+            display: flex;
+            justify-content: flex-start;
+            margin-top: auto;
+            margin-bottom: 10px;
+        }
+        .sig-block {
+            margin-right: 70px;
+            width: 220px;
+        }
+        .sig-line {
+            height: 1px;
+            background-color: #9ca3af;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .sig-name {
+            font-size: 15px;
+            font-weight: 700;
+            margin: 0 0 5px 0;
+            color: #1f2937;
+        }
+        .sig-title {
+            font-size: 13px;
+            color: #6b7280;
+            margin: 0;
+        }
+
+        /* Right Panel */
+        .right-panel {
+            width: 270px;
+            background-color: #13131c;
+            color: #ffffff;
+            padding: 70px 40px;
+            box-sizing: border-box;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Faint texture background on right panel */
+        .right-texture {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url('data:image/svg+xml;utf8,<svg width="150" height="150" xmlns="http://www.w3.org/2000/svg"><circle cx="75" cy="75" r="60" fill="none" stroke="%23ffffff" stroke-opacity="0.04" stroke-width="1"/><circle cx="75" cy="75" r="40" fill="none" stroke="%23ffffff" stroke-opacity="0.04" stroke-width="1"/><circle cx="75" cy="75" r="20" fill="none" stroke="%23ffffff" stroke-opacity="0.04" stroke-width="1"/></svg>');
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .right-content {
+            position: relative;
+            z-index: 5;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .meta-label {
+            font-size: 14px;
+            color: #9ca3af;
+            margin-bottom: 8px;
+        }
+        .meta-value {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 40px;
+        }
+        
+        .qr-code {
+            margin-top: auto;
+            width: 150px;
+            height: 150px;
+            background-color: #ffffff;
+            padding: 10px;
+            border-radius: 4px;
+            align-self: center;
+        }
+        .qr-code img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+    <div class="cert-container">
+        <!-- Left Panel -->
+        <div class="left-panel">
+            <div class="logo-container" style="margin-top: 0; margin-bottom: 20px;">
+                <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/logo/logo.png" alt="Logo">
+                VIRTUOLE
+            </div>
+
+            <h1 class="title">CERTIFICATE OF ACHIEVEMENT</h1>
+            
+            <div class="certify-text">This is to certify that</div>
+            
+            <div class="name">{{ name }}</div>
+            <div class="underline"></div>
+            
+            <div class="description">
+                has successfully achieved the highly esteemed rank of <span class="highlight">{{ tier_name | upper }}</span> in the GTM Ambassador Program.<br><br>
+                Accumulating a total of <span class="highlight">{{ points }} Merit Points</span> through exceptional community leadership and technical advocacy.
+            </div>
+            
+            <div class="signatures">
+                <div class="sig-block">
+                    <!-- Signature Image -->
+                    <div style="height: 60px; display: flex; align-items: flex-end; margin-bottom: 10px;">
+                        <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/public-assets/vishal_signature.png" style="height: 45px; object-fit: contain;" alt="Signature">
+                    </div>
+                    <div class="sig-line"></div>
+                    <p class="sig-name">Vishal Kumar</p>
+                    <p class="sig-title">Founder & Proprietor</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Panel -->
+        <div class="right-panel">
+            <div class="right-texture"></div>
+            <div class="right-content">
+                <div class="meta-label">Date of issue:</div>
+                <div class="meta-value">{{ date }}</div>
+                
+                <div class="meta-label">Ambassador ID:</div>
+                <div class="meta-value">{{ amb_id }}</div>
+                
+                <!-- Custom Stamp Image -->
+                <div class="qr-code" style="background-color: transparent; padding: 0;">
+                    <img src="YOUR_STAMP_IMAGE_URL_HERE.png" alt="Stamp">
+                </div>
+                
+                <div style="margin-top: 30px; font-size: 11px; color: #6b7280; text-align: center;">MSME Reg. No: UDYAM-BR-06-0064801</div>
+            </div>
+        </div>
     </div>
     
-    <p style="font-size: 14px; color: #4a5568; margin-top: 15px; padding: 0 50px;">Accumulating a total of <strong>{{ points }} Merit Points</strong> through exceptional community leadership and technical advocacy.</p>
-    <p style="font-size: 12px; color: #718096; margin-top: 25px;">Ambassador ID: {{ amb_id }} &nbsp;|&nbsp; Date of Issue: {{ date }}</p>
-    
-    <table style="width: 100%; margin-top: 30px; border: none;">
-        <tr>
-            <td style="width: 50%; text-align: center; vertical-align: bottom; border: none;">
-                <div style="display: inline-block; width: 120px; padding: 10px; border: 2px dashed #805ad5; color: #805ad5; text-align: center;">
-                    <span style="font-weight: bold; font-size: 14px;">VIRTUOLE</span><br>
-                    <span style="font-size: 9px;">GTM OFFICIAL RANK</span><br>
-                    <span style="font-size: 8px;">UDYAM-BR-06-0064801</span>
-                </div>
-            </td>
-            <td style="width: 50%; text-align: center; vertical-align: bottom; border: none;">
-                <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/public-assets/vishal_signature.png" style="height: 55px; width: 150px;" alt="Vishal Kumar Signature"><br>
-                <hr style="width: 200px; text-align: center; border: none; border-top: 1px solid #111827; margin: auto;">
-                <p style="margin-top: 5px; font-size: 14px;"><strong>Vishal Kumar</strong><br>Founder & Proprietor, Virtuole</p>
-            </td>
-        </tr>
-    </table>
-    <br><p style="color: gray; font-size: 10px; border-top: 1px solid #eee; padding-top: 10px;">To save this certificate, press Ctrl+P (Windows) or Cmd+P (Mac) and select "Save as PDF". Ensure "Background graphics" is enabled.</p>
-</body></html>
+    <div style="position: fixed; bottom: 10px; text-align: center; width: 100%;">
+        <p style="color: #9ca3af; font-size: 11px; margin: 0; font-family: 'Montserrat', sans-serif;">To save this certificate, press Ctrl+P (Windows) or Cmd+P (Mac) and select "Save as PDF". Ensure "Background graphics" is enabled.</p>
+    </div>
+</body>
+</html>

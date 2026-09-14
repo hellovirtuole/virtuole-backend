@@ -1,39 +1,290 @@
-<html><body style="font-family: Helvetica, Arial, sans-serif; padding: 30px; border: 8px solid #1a365d; text-align: center; max-width: 900px; margin: auto;">
-    <h1 style="color: #1a365d; margin: 0; letter-spacing: 4px; font-size: 32px;">
-        <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/logo/logo.png" alt="Logo" style="height: 35px; vertical-align: middle; margin-right: 10px; display: inline-block;">
-        <span style="vertical-align: middle;">VIRTU<span style="color: #2dd4bf;">OLE</span></span>
-    </h1>
-    <p style="color: #4a5568; font-size: 12px; margin: 5px 0 0 0;">MSME Reg. No: UDYAM-BR-06-0064801 | Patna, Bihar | support@virtuole.in</p>
-    
-    <h1 style="color: #ecc94b; font-size: 38px; margin-top: 30px; text-transform: uppercase;">Certificate of Completion</h1>
-    <p style="font-size: 16px; color: #4a5568; margin-top: 20px;">This official document certifies that</p>
-    
-    <h2 style="font-size: 36px; color: #1a365d; border-bottom: 2px solid #cbd5e0; display: inline-block; padding-bottom: 5px; margin: 10px 0;">{{ name }}</h2>
-    
-    <p style="font-size: 16px; color: #4a5568; margin: 20px 0;">has successfully completed the Virtual Internship Program, demonstrating proficiency in:</p>
-    <h3 style="color: #38b2ac; font-size: 24px; margin: 10px 0;">{{ program_title }} ({{ track_level }})</h3>
-    
-    <div style="background: #f7fafc; border: 1px solid #e2e8f0; padding: 10px; margin: 20px 100px;">
-        <p style="margin: 0; font-weight: bold; color: #2d3748; font-size: 16px;">Final Evaluation Score: <span style="color: #38b2ac;">{{ score }}%</span></p>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Great+Vibes&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #e5e7eb;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Montserrat', sans-serif;
+            color: #1d1e1c;
+        }
+        .cert-container {
+            width: 1000px;
+            height: 700px;
+            position: relative;
+            background-color: #eef1f0; /* very light mint/grey */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* The green bottom section */
+        .bottom-section {
+            height: 180px;
+            background-color: #9bbba4; /* sage green */
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            z-index: 0;
+        }
+        
+        /* Faint texture over the whole thing for a paper feel */
+        .texture {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            opacity: 0.25;
+            pointer-events: none;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noise)"/></svg>');
+            mix-blend-mode: multiply;
+            z-index: 1;
+        }
+
+        /* Ribbon */
+        .ribbon {
+            position: absolute;
+            top: 0;
+            right: 120px;
+            width: 46px;
+            height: 220px;
+            background-color: #2b2b2b;
+            z-index: 5;
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 22px), 0 100%);
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.15));
+        }
+
+        /* Content Wrapper */
+        .content {
+            position: relative;
+            z-index: 10;
+            padding: 35px 80px;
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Logo */
+        .logo-container {
+            display: flex;
+            align-items: center;
+            color: #1d1e1c;
+            font-weight: 800;
+            font-size: 26px;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+        }
+        .logo-img {
+            height: 65px;
+            margin-right: 20px;
+        }
+
+        /* Typography */
+        .title {
+            font-size: 58px;
+            font-weight: 900;
+            line-height: 1.1;
+            margin: 0;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #1d1e1c;
+        }
+        
+        .presented {
+            font-size: 16px;
+            font-weight: 500;
+            margin-top: 20px;
+            color: #4b5563;
+        }
+
+        .name {
+            font-family: 'Great Vibes', cursive;
+            font-size: 80px;
+            margin: 5px 0 0 0;
+            color: #1d1e1c;
+            font-weight: 400;
+            letter-spacing: 2px;
+        }
+        
+        .name-underline {
+            width: 65%;
+            height: 1px;
+            background-color: #1d1e1c;
+            margin-top: 0px;
+            margin-bottom: 20px;
+        }
+
+        .description {
+            font-size: 15px;
+            line-height: 1.6;
+            max-width: 65%;
+            color: #4b5563;
+            font-weight: 500;
+        }
+        
+        .highlight {
+            font-weight: 700;
+            color: #1d1e1c;
+        }
+
+        /* Bottom signatures and date */
+        .footer-row {
+            display: flex;
+            justify-content: flex-start;
+            align-items: flex-end;
+            margin-top: auto;
+            position: relative;
+            z-index: 10;
+            padding-bottom: 10px;
+        }
+        
+        .footer-col {
+            margin-right: 60px;
+            width: 170px;
+        }
+        
+        .footer-col.date-col {
+            margin-right: 0;
+        }
+
+        .footer-val {
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            height: 30px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+
+        .footer-line {
+            height: 1px;
+            background-color: #1d1e1c;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .footer-label {
+            font-size: 15px;
+            font-weight: 700;
+            text-align: center;
+            color: #1d1e1c;
+        }
+
+        /* Custom Stamp */
+        .seal {
+            position: absolute;
+            right: 70px;
+            bottom: 125px; /* Shifted slightly higher */
+            width: 140px;
+            height: 140px;
+            z-index: 20;
+        }
+        .seal img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* MSME Logo on Right */
+        .msme-logo {
+            position: absolute;
+            bottom: 25px;
+            right: 80px;
+            height: 40px;
+            z-index: 20;
+        }
+        
+        .msme {
+            position: absolute;
+            bottom: 25px;
+            left: 80px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #2b2b2b;
+            letter-spacing: 1px;
+            z-index: 20;
+        }
+    </style>
+</head>
+<body>
+    <div class="cert-container">
+        <!-- Backgrounds -->
+        <div class="bottom-section"></div>
+        <div class="texture"></div>
+        
+        <!-- Ribbon -->
+        <div class="ribbon"></div>
+        
+        <!-- The Custom Stamp Image -->
+        <div class="seal">
+            <img src="YOUR_STAMP_IMAGE_URL_HERE.png" alt="Your Stamp">
+        </div>
+
+        <!-- MSME Logo (Image) -->
+        <div class="msme-logo">
+            <img src="YOUR_MSME_LOGO_URL_HERE.png" style="height: 100%; width: auto;" alt="MSME Logo">
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Logo -->
+            <div class="logo-container">
+                <img class="logo-img" src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/logo/logo.png" alt="Logo">
+                VIRTUOLE
+            </div>
+
+            <h1 class="title">CERTIFICATE<br>OF COMPLETION</h1>
+            
+            <div class="presented">We hereby present this certificate to</div>
+            
+            <div class="name">{{ name }}</div>
+            <div class="name-underline"></div>
+            
+            <div class="description">
+                for your extraordinary dedication and successful completion of the <span class="highlight">Virtual Internship Program</span>, demonstrating proficiency in the specialized track of <span class="highlight">{{ program_title }} ({{ duration }})</span>.
+            </div>
+
+            <!-- Footer Signatures -->
+            <div class="footer-row">
+                <div class="footer-col">
+                    <div class="footer-val">
+                        <span style="font-size: 15px;">ID: {{ enroll_id }}</span>
+                    </div>
+                    <div class="footer-line"></div>
+                    <div class="footer-label">Verified Credential</div>
+                </div>
+
+                <div class="footer-col">
+                    <div class="footer-val">
+                        <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/public-assets/vishal_signature.png" style="height: 45px; width: auto; margin-bottom: -5px;" alt="Signature">
+                    </div>
+                    <div class="footer-line"></div>
+                    <div class="footer-label">Founder & Proprietor</div>
+                </div>
+
+                <div class="footer-col date-col">
+                    <div class="footer-val" style="font-size: 15px;">{{ date }}</div>
+                    <div class="footer-line"></div>
+                    <div class="footer-label">Date</div>
+                </div>
+            </div>
+            
+            <div class="msme">MSME Reg. No: UDYAM-BR-06-0064801 | support@virtuole.in</div>
+        </div>
     </div>
     
-    <p style="font-size: 12px; color: #718096; margin-top: 30px;">Credential ID: {{ enroll_id }} &nbsp;|&nbsp; Date of Issue: {{ date }}</p>
-    
-    <table style="width: 100%; margin-top: 40px; border: none;">
-        <tr>
-            <td style="width: 50%; text-align: center; vertical-align: bottom; border: none;">
-                <div style="display: inline-block; width: 120px; padding: 10px; border: 2px solid #38b2ac; color: #38b2ac; text-align: center;">
-                    <span style="font-weight: bold; font-size: 14px;">VIRTUOLE</span><br>
-                    <span style="font-size: 9px;">VERIFIED CREDENTIAL</span><br>
-                    <span style="font-size: 8px;">UDYAM-BR-06-0064801</span>
-                </div>
-            </td>
-            <td style="width: 50%; text-align: center; vertical-align: bottom; border: none;">
-                <img src="https://fkrxuptprlhfedlyanzf.supabase.co/storage/v1/object/public/public-assets/vishal_signature.png" style="height: 55px; width: 150px;" alt="Vishal Kumar Signature"><br>
-                <hr style="width: 200px; text-align: center; border: none; border-top: 1px solid #111827; margin: auto;">
-                <p style="margin-top: 5px; font-size: 14px;"><strong>Vishal Kumar</strong><br>Founder & Proprietor, Virtuole</p>
-            </td>
-        </tr>
-    </table>
-    <br><p style="color: gray; font-size: 10px; border-top: 1px solid #eee; padding-top: 10px;">To save this certificate, press Ctrl+P (Windows) or Cmd+P (Mac) and select "Save as PDF". Ensure "Background graphics" is enabled.</p>
-</body></html>
+    <div style="position: fixed; bottom: 10px; text-align: center; width: 100%;">
+        <p style="color: #9ca3af; font-size: 11px; margin: 0; font-family: 'Montserrat', sans-serif;">To save this certificate, press Ctrl+P (Windows) or Cmd+P (Mac) and select "Save as PDF". Ensure "Background graphics" is enabled.</p>
+    </div>
+</body>
+</html>

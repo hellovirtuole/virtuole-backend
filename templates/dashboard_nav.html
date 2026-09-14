@@ -60,25 +60,11 @@
     @media (max-width: 900px) {
         #notif-panel {
             position: fixed !important;
-            left: 10px !important; right: 10px !important; bottom: 70px !important;
-            width: auto !important; max-width: none !important;
+            left: 10px !important; right: 10px !important; top: 70px !important; bottom: auto !important;
+            width: auto !important; max-width: none !important; max-height: calc(100vh - 90px) !important;
             border-radius: 16px !important;
             z-index: 10000 !important;
         }
-        .mobile-notif-fixed {
-            display: flex !important;
-        }
-    }
-    @media (min-width: 901px) {
-        .mobile-notif-fixed {
-            display: none !important;
-        }
-    }
-    .mobile-notif-fixed {
-        position: fixed; bottom: 0; left: 0; right: 0; z-index: 9998;
-        display: none; align-items: center; justify-content: center; gap: 10px;
-        padding: 10px 16px; background: var(--nav-bg); border-top: 1px solid var(--card-border);
-        backdrop-filter: blur(12px);
     }
     </style>
     <!-- Removed fixed notification bell -->
@@ -87,6 +73,17 @@
         {% for t in nav_tabs %}
         <a class="dnav-tab{% if active_tab == t.id or (loop.first and not active_tab) %} active{% endif %}" data-view="{{ t.id }}" onclick="switchView('{{ t.id }}', this)">{{ t.label }}</a>
         {% endfor %}
+
+        <!-- Mobile-only Notifications Button -->
+        <a class="dnav-tab mobile-only" onclick="toggleNotifPanel(event); document.getElementById('dnav-center').classList.remove('active'); document.getElementById('dnav-hamburger').textContent = '☰';" style="display: flex; justify-content: space-between; align-items: center;">
+            Notifications
+            <div class="nav-notif-icon-wrap" style="width:28px; height:28px; font-size:0.85em;">
+                🔔
+                {% if sys_notifs and sys_notifs|length > 0 %}
+                <span class="nav-notif-badge" style="top:-3px; right:-3px; font-size:0.55rem;">{{ sys_notifs|length }}</span>
+                {% endif %}
+            </div>
+        </a>
 
         <div class="dnav-mobile-foot mobile-only">
             <!-- Mobile Theme Toggle Only -->
@@ -171,19 +168,7 @@
     {% endfor %}
 </div>
 
-<!-- Fixed Mobile Notification Bell (always visible on mobile, outside the hamburger menu) -->
-<div class="mobile-notif-fixed" onclick="toggleNotifPanel(event)">
-    <div class="nav-notif-icon-wrap">
-        🔔
-        {% if sys_notifs and sys_notifs|length > 0 %}
-        <span class="nav-notif-badge">{{ sys_notifs|length }}</span>
-        {% endif %}
-    </div>
-    <span style="font-size:0.88em; font-weight:600; color:var(--text-main);">Notifications</span>
-    <label class="theme-switch-wrapper" style="margin-left:auto; flex-shrink:0;">
-        <div class="theme-switch"><input type="checkbox" class="nav-theme-toggle"><span class="slider"></span></div>
-    </label>
-</div>
+
 
 <script>
     function toggleNotifPanel(e) {
