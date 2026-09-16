@@ -8,10 +8,17 @@ load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+
 if SUPABASE_URL and SUPABASE_KEY:
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 else:
     supabase = None
+
+if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
+    supabase_admin: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+else:
+    supabase_admin = None
 
 def get_real_client_ip():
     forwarded_for = request.headers.get('X-Forwarded-For')

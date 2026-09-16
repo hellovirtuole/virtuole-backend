@@ -1,6 +1,6 @@
 
 from flask import Blueprint, request, jsonify, render_template, session, redirect, url_for, send_from_directory
-from api.config import supabase, limiter
+from api.config import supabase, limiter, supabase_admin
 from api.utils.email import send_system_email, send_ambassador_email
 import random, string, uuid, json
 from datetime import datetime, timedelta
@@ -140,10 +140,35 @@ def logout():
 def forgot_password():
     email = request.form.get('email')
     try:
-        supabase.auth.reset_password_for_email(
-            email, 
-            options={"redirect_to": "https://www.virtuole.in/reset-password"}
-        )
+        if supabase_admin:
+            try:
+                link_data = supabase_admin.auth.admin.generate_link(
+                    {"type": "recovery", "email": email, "options": {"redirect_to": "https://www.virtuole.in/reset-password"}}
+                )
+                reset_url = link_data.properties.action_link
+                
+                html_content = f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+                    <h2 style="color: #333;">Password Reset Request</h2>
+                    <p style="color: #555;">Hello,</p>
+                    <p style="color: #555;">We received a request to reset your password. Click the button below to choose a new one:</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{reset_url}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Reset Password</a>
+                    </div>
+                    <p style="color: #555; font-size: 0.9em;">Or copy and paste this link into your browser:<br>
+                    <a href="{reset_url}">{reset_url}</a></p>
+                    <p style="color: #777; font-size: 0.8em; margin-top: 30px;">If you didn't request a password reset, you can safely ignore this email.</p>
+                </div>
+                """
+                send_system_email(email, "Reset Your Password - Virtuole", html_content, is_html=True)
+            except Exception as e:
+                print(f"Generate link failed (user might not exist): {e}")
+                pass
+        else:
+            supabase.auth.reset_password_for_email(
+                email, 
+                options={"redirect_to": "https://www.virtuole.in/reset-password"}
+            )
         return redirect(url_for('auth.login', message="If an account exists, a password reset link has been sent to your email!"))
     except Exception as e:
         return render_template('login.html', error=str(e))
