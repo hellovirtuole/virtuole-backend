@@ -549,6 +549,21 @@ def dashboard_admin():
     except BaseException:
         sys_notifs = []
 
+    # Fetch data from Google Sheets webhook
+    import requests as _requests
+    sheet_webhook_url = os.environ.get('GOOGLE_SHEET_WEBHOOK')
+    sheet_feedback = []
+    sheet_ambassadors = []
+    sheet_webhook_set = bool(sheet_webhook_url)
+    if sheet_webhook_url:
+        try:
+            resp = _requests.get(sheet_webhook_url + '?action=read', timeout=5)
+            sheet_data = resp.json()
+            sheet_feedback = sheet_data.get('feedback', []) or []
+            sheet_ambassadors = sheet_data.get('ambassadors', []) or []
+        except BaseException as e:
+            print(f"Sheet fetch error: {e}")
+
     # Fetch recent transactions for PhonePe live status & reconciliation hub
     recent_transactions = []
     try:
@@ -564,6 +579,7 @@ def dashboard_admin():
         print(f"Error fetching recent transactions for admin: {tx_err}")
 
     return render_template('dashboard_admin.html', user_name=session.get('name'), total_earnings=round(earnings, 2), total_enrolled=enrolled, total_certified=certified, pending_grading=pend_grading, offered_programs=progs, all_tasks=tasks, user_directory=users, coupons=coupons, all_ambassadors=all_ambassadors, grouped_ambassadors=grouped_ambassadors, ambassador_tiers=ambassador_tiers_asc, active_tab=active_tab, current_filter=timeframe, analytics=analytics, subscribers=subscribers, advanced_users=advanced_users, activity_feed=activity_feed, top_ambassadors=top_ambassadors, top_states=top_states, projected_revenue=round(projected_revenue, 2), sys_notifs=sys_notifs, sheet_feedback=sheet_feedback, sheet_ambassadors=sheet_ambassadors, sheet_webhook_set=sheet_webhook_set, recent_transactions=recent_transactions)
+
 
 
 @dashboard_bp.route('/admin/tiers', methods=['POST'])
