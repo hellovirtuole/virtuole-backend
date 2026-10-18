@@ -27,7 +27,34 @@
         <div id="workspace-view"
             class="view-section{% if active_tab == 'workspace' or not active_tab %} active{% endif %}">
             <h1 class="dash-greeting">Hello, {{ user_name | default("Intern") }}</h1>
-            <p class="dash-sub">Manage your active projects and submit architectures.</p>
+            <p class="dash-sub">Manage your active projects, track upcoming batch start dates, and submit architectures.</p>
+
+            {% if pending_projects and pending_projects | length > 0 %}
+            <div class="dash-section-title" style="margin-top:8px; color: #f59e0b; display: flex; align-items: center; gap: 8px;">
+                <span>⏳ Applications Under Mentor Review</span>
+                <span class="au-badge warn" style="font-size: 0.75rem;">{{ pending_projects | length }} Pending</span>
+            </div>
+            <div class="au-grid" style="margin-bottom: 30px;">
+                {% for p in pending_projects %}
+                <div class="au-card reveal" style="padding: 24px; border: 1px solid rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.03); display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
+                        <h4 class="au-panel-title" style="margin: 0; font-size: 1.1em;">{{ p.program_title }}</h4>
+                        <span class="au-badge warn" style="flex-shrink: 0;">⏳ Under Review</span>
+                    </div>
+                    <p style="color: var(--text-muted); font-size: .9em; line-height: 1.5; margin: 0 0 16px;">{{ p.description }}</p>
+                    <div style="background: rgba(148, 163, 184, 0.08); padding: 12px 14px; border-radius: 8px; margin-bottom: 16px; font-size: .88em;">
+                        <div style="margin-bottom: 4px;"><strong>Duration Track:</strong> {{ p.track_level }}</div>
+                        <div style="margin-bottom: 4px;"><strong>Tracking ID:</strong> <span style="font-family: monospace;">{{ p.enrollment_id }}</span></div>
+                        <div style="color: #2dd4bf; margin-top: 6px; font-weight: 600;">📅 Projected Batch Start: {{ p.projected_start_date }}</div>
+                    </div>
+                    <div style="font-size: .82em; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-top: auto;">
+                        <span>ℹ️</span>
+                        <span>Your enrollment request is with our mentors. Once accepted, your official Offer Letter and start date will be confirmed.</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
 
             <div class="dash-section-title" style="margin-top:8px;">Active Programs</div>
             <div class="au-grid">
@@ -35,7 +62,11 @@
                 <div class="au-card reveal" style="padding:26px;display:flex;flex-direction:column;">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
                         <h4 class="au-panel-title" style="margin:0;">{{ project.program_title }}</h4>
+                        {% if not project.is_started %}
+                        <span class="au-badge" style="background:rgba(45,212,191,0.15);color:#2dd4bf;border-color:rgba(45,212,191,0.3);flex-shrink:0;">Scheduled</span>
+                        {% else %}
                         <span class="au-badge ok" style="flex-shrink:0;">Enrolled</span>
+                        {% endif %}
                     </div>
                     <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:14px 0 8px;">{{
                         project.description }}</p>
@@ -45,6 +76,11 @@
                     <p
                         style="font-size:.9em;margin:0 0 12px; color: #ef4444; font-weight: 600; padding: 6px 12px; background: rgba(239, 68, 68, 0.1); border-radius: 6px; display: inline-block;">
                         🚨 {{ project.remaining_hours }} Hours Remaining (24-Hour Resubmission Window)
+                    </p>
+                    {% elif not project.is_started %}
+                    <p
+                        style="font-size:.9em;margin:0 0 12px; color: #2dd4bf; font-weight: 600; padding: 6px 12px; background: rgba(45, 212, 191, 0.1); border-radius: 6px; display: inline-block;">
+                        🚀 <strong>Batch Starts: {{ project.start_date_str }}</strong> (in {{ project.days_until_start }} days)
                     </p>
                     {% else %}
                     <p
@@ -59,6 +95,7 @@
                     <div style="margin-top:auto;display:flex;flex-wrap:wrap;gap:10px;">
                         <a href="{{ project.specs_link }}" target="_blank" class="au-btn-ghost sm">Download Specs</a>
                         <button class="au-btn violet sm"
+                            {% if not project.is_started %}disabled style="opacity:0.6; cursor:not-allowed;" title="Submission opens on batch start date ({{ project.start_date_str }})"{% endif %}
                             onclick="openSubmitModal('{{ project.enrollment_id }}', {{ project.amount_due }})">Submit
                             Architecture</button>
                         <a href="/download_offer/{{ project.enrollment_id }}" target="_blank" class="au-btn-ghost sm">📄
@@ -309,10 +346,9 @@
         <div class="au-modal-card au-form">
             <button type="button" class="au-modal-close" onclick="closeModal('enrollModal')">&times;</button>
             <h3>Program Registration</h3>
-            <p style="color:var(--text-muted);font-size:.9em;margin:0 0 22px;">Provide your academic details exactly as
-                they should appear on your official Offer Letter.</p>
+            <p style="color:var(--text-muted);font-size:.9em;margin:0 0 22px;">Submit your academic details to request mentor approval for this internship.</p>
             <form action="/enroll" method="POST"
-                onsubmit="var btn = this.querySelector('button[type=submit]'); btn.disabled=true; btn.innerText='Enrolling...';">
+                onsubmit="var btn = this.querySelector('button[type=submit]'); btn.disabled=true; btn.innerText='Submitting Request...';">
                 <input type="hidden" id="enroll-program-name" name="program_id">
                 <div class="au-form-group"><label>Institution / College Name</label><input type="text"
                         name="college_name" value="{{ profile_details.get('college_name', '') }}" readonly
@@ -349,7 +385,10 @@
                         accept all Terms and Conditions, rules, and platform policies.</label>
                 </div>
 
-                <button type="submit" class="au-btn" style="width:100%;">Complete Enrollment (Free)</button>
+                <button type="submit" class="au-btn" style="width:100%;">Request Mentor Approval (Free)</button>
+                <p style="font-size: 0.8em; color: var(--text-muted); margin-top: 10px; line-height: 1.4; text-align: center;">
+                    * Applications are reviewed by mentors. When approved, your internship commences on the next upcoming cohort date (1st, 10th, or 20th), and your official Offer Letter will be emailed immediately.
+                </p>
             </form>
         </div>
     </div>

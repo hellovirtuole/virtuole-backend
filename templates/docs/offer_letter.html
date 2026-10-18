@@ -35,7 +35,7 @@
     
     <table style="width: 100%; margin-bottom: 30px; font-size: 14px; border: none;">
         <tr>
-            <td style="padding: 5px 0; border: none;"><strong>Date:</strong> {{ date }}</td>
+            <td style="padding: 5px 0; border: none;"><strong>Date of Issuance:</strong> {{ issue_date | default(date) }}</td>
             <td style="text-align: right; border: none;"><strong>Tracking ID:</strong> {{ enroll_id }}</td>
         </tr>
         <tr>
@@ -45,10 +45,10 @@
     </table>
     
     <p>Dear {{ name }},</p>
-    <p>We are thrilled to officially offer you a Virtual Internship position at Virtuole. You are enrolled in the <strong>{{ program_title }}</strong> program for a duration of <strong>{{ duration }}</strong>.</p>
+    <p>We are thrilled to officially offer you a Virtual Internship position at Virtuole. You are enrolled in the <strong>{{ program_title }}</strong> program for a duration of <strong>{{ track_level | default(duration) }}</strong>.</p>
     <p><strong>Project Overview & Mandate:</strong> {{ project_details }}</p>
     <p>Your mandate is to complete the assigned project requirements within a {{ duration_days }}-day window.</p>
-    <p><strong>Timeline:</strong> {{ date }} &mdash; {{ end_date }}</p>
+    <p><strong>Internship Timeline:</strong> {{ date }} &mdash; {{ end_date }} (Start Date: {{ date }})</p>
     <p>Virtuole operates strictly on a merit-based evaluation framework. Your final credentials, including your eligibility for the Founder's Letter of Recommendation, will be determined entirely by the structural quality, algorithmic efficiency, and originality of your final code submission.</p>
     <br><br><br>
     

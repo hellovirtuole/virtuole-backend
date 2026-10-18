@@ -5,6 +5,7 @@ from api.utils.email import send_system_email, send_ambassador_email
 import random, string, uuid, json, os, base64, hashlib, requests
 from datetime import datetime, timedelta
 from api.utils.notifications import send_notification
+from api.utils.batch import parse_track_duration, calculate_next_start_date
 
 intern_bp = Blueprint('intern', __name__)
 
@@ -227,46 +228,61 @@ def api_enroll():
     if str(session.get('role', '')).lower() not in ['intern', 'intern + ambassador']: return redirect('/login')
     program_id = request.form.get('program_id')
     track_level = request.form.get('track_level')
+    college_name = request.form.get('college_name')
+    course_name = request.form.get('course_name')
+    session_year = request.form.get('session_year')
+
     if track_level == 'custom':
         custom_months = request.form.get('custom_months', 1)
         track_level = f"custom_{custom_months}"
     enrollment_id = f"VT-E-{random.randint(100000, 999999)}"
-    
-    existing = supabase.table('enrollments').select('id').eq('user_id', session['user_id']).eq('program_id', program_id).eq('track_level', track_level).in_('status', ['active', 'submitted']).execute().data
+
+    # Check if already enrolled or requested
+    existing = supabase.table('enrollments').select('id, status').eq('user_id', session['user_id']).eq('program_id', program_id).eq('track_level', track_level).in_('status', ['pending', 'active', 'submitted', 'resubmit']).execute().data
     if existing:
         return redirect(url_for('dashboard.dashboard_intern'))
-        
-    supabase.table('enrollments').insert({
-        "enrollment_id": enrollment_id, "user_id": session['user_id'], "program_id": program_id,
-        "track_level": track_level, "status": "active"
-    }).execute()
-    
-    send_notification('intern', session['user_id'], 'enrollment', 'Enrollment Successful', f'You have successfully enrolled in the program (ID: {enrollment_id}).')
-    
+
+    insert_payload = {
+        "enrollment_id": enrollment_id,
+        "user_id": session['user_id'],
+        "program_id": program_id,
+        "track_level": track_level,
+        "status": "pending"
+    }
+    if college_name: insert_payload["college_name"] = college_name
+    if course_name: insert_payload["course_name"] = course_name
+    if session_year: insert_payload["session_year"] = session_year
+
+    supabase.table('enrollments').insert(insert_payload).execute()
+
+    duration_days, track_display = parse_track_duration(track_level)
     prog = supabase.table('programs').select('*').eq('id', program_id).execute().data[0]
-    
-    track = track_level.lower()
-    if track.startswith('custom_'):
-        try: months = int(track.split('_')[1])
-        except: months = 1
-        duration_days = months * 30
-        track_display = f"{months} Months" if months > 1 else "1 Month"
-    elif track.isdigit():
-        months = int(track)
-        duration_days = months * 30
-        track_display = f"{months} Months" if months > 1 else "1 Month"
-    else:
-        duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
-        track_display_map = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}
-        track_display = track_display_map.get(track, track_level.title())
-        
-    start_dt = datetime.utcnow()
-    end_dt = start_dt + timedelta(days=duration_days)
-    end_date = end_dt.strftime("%B %d, %Y")
-    
-    html_offer = render_template('docs/offer_letter.html', name=session['name'], date=datetime.utcnow().strftime("%B %d, %Y"), program_title=prog['title'], track_level=track_display, enroll_id=enrollment_id, project_details=prog['short_description'], duration_days=duration_days, end_date=end_date)
-    
-    send_system_email(session['email'], "Official Internship Offer Letter - Virtuole", html_offer, is_html=True)
+
+    # Send in-app notification to intern
+    send_notification('intern', session['user_id'], 'enrollment_request', 'Enrollment Request Submitted', f'Your application for {prog["title"]} ({track_display}) has been sent for mentor approval.')
+
+    # Send in-app notification to mentors
+    send_notification('mentor', None, 'new_enrollment_request', 'New Enrollment Request', f'{session.get("name", "An intern")} requested enrollment in {prog["title"]} (ID: {enrollment_id}).')
+
+    # Send confirmation email to applicant that request is under review
+    next_batch = calculate_next_start_date(datetime.utcnow()).strftime("%B %d, %Y")
+    req_email_html = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1e293b;">
+        <h2 style="color: #2563eb;">Enrollment Request Received</h2>
+        <p>Dear {session.get('name', 'Intern')},</p>
+        <p>Thank you for applying to the <strong>{prog['title']}</strong> program ({track_display}) at Virtuole.</p>
+        <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0 0 8px;"><strong>Enrollment Tracking ID:</strong> {enrollment_id}</p>
+            <p style="margin: 0 0 8px;"><strong>Status:</strong> Under Mentor Review</p>
+            <p style="margin: 0;"><strong>Projected Batch Start:</strong> {next_batch}</p>
+        </div>
+        <p>Our mentorship team is currently reviewing your application. As soon as a mentor accepts your request, your official Internship Offer Letter will be generated with your confirmed start date and emailed to you directly.</p>
+        <p style="margin-top: 30px; font-size: 13px; color: #64748b;">Virtuole Engineering Platform | support@virtuole.in</p>
+    </div>
+    """
+    if session.get('email'):
+        send_system_email(session['email'], f"Enrollment Request Under Review - {prog['title']}", req_email_html, is_html=True)
+
     return redirect(url_for('dashboard.dashboard_intern'))
 
 

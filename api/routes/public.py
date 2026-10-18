@@ -4,6 +4,7 @@ from api.config import supabase, limiter
 from api.utils.email import send_system_email, send_ambassador_email
 import random, string, uuid, json
 from datetime import datetime, timedelta
+from api.utils.batch import parse_track_duration
 
 public_bp = Blueprint('public', __name__)
 
@@ -112,35 +113,27 @@ def download_offer(enrollment_id):
     if str(session.get('role', '')).lower() not in ['intern', 'intern + ambassador']: return redirect('/login')
     enroll_data = supabase.table('enrollments').select('*, programs(*), users(full_name)').eq('enrollment_id', enrollment_id).eq('user_id', session['user_id']).execute().data
     if not enroll_data: return "Invalid Assignment Context", 403
-        
+
     e = enroll_data[0]
+    if e.get('status') == 'pending':
+        return "Offer Letter is currently unavailable. Your enrollment request is awaiting mentor approval.", 403
+
+    raw_start = e.get('start_date') or e.get('created_at')
     try:
-        start_dt = datetime.fromisoformat(e['created_at'].replace('Z', '+00:00')) if e.get('created_at') else datetime.utcnow()
+        start_dt = datetime.fromisoformat(raw_start.replace('Z', '+00:00')) if raw_start else datetime.utcnow()
     except:
         start_dt = datetime.utcnow()
-        
-    track = e.get('track_level', '').lower()
-    if track.startswith('custom_'):
-        try: months = int(track.split('_')[1])
-        except: months = 1
-        duration_days = months * 30
-        track_display = f"{months} Months" if months > 1 else "1 Month"
-    elif track.isdigit():
-        months = int(track)
-        duration_days = months * 30
-        track_display = f"{months} Months" if months > 1 else "1 Month"
-    else:
-        duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
-        track_display_map = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}
-        track_display = track_display_map.get(track, track.title())
-        
+
+    start_dt = start_dt.replace(tzinfo=None)
+    duration_days, track_display = parse_track_duration(e.get('track_level'))
     end_dt = start_dt + timedelta(days=duration_days)
-    
+
     raw_date = start_dt.strftime("%B %d, %Y")
     end_date = end_dt.strftime("%B %d, %Y")
-    
-    html_content = render_template('docs/offer_letter.html', name=e['users']['full_name'], date=raw_date, program_title=e['programs']['title'], track_level=track_display, enroll_id=enrollment_id, project_details=e['programs']['short_description'], duration_days=duration_days, end_date=end_date)
-    
+    issue_date = datetime.utcnow().strftime("%B %d, %Y")
+
+    html_content = render_template('docs/offer_letter.html', name=e['users']['full_name'], date=raw_date, issue_date=issue_date, program_title=e['programs']['title'], track_level=track_display, duration=track_display, enroll_id=enrollment_id, project_details=e['programs']['short_description'], duration_days=duration_days, end_date=end_date)
+
     # Auto-Print dialog script
     return html_content + "<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); }</script>"
 
@@ -220,31 +213,23 @@ def view_public_offer():
         enroll_data = supabase.table('enrollments').select('*, programs(*), users(full_name)').eq('enrollment_id', enrollment_id).execute().data
         if not enroll_data: return render_template('offer.html', error=True)
         e = enroll_data[0]
+        if e.get('status') == 'pending':
+            return render_template('offer.html', error=False, pending=True)
+
+        raw_start = e.get('start_date') or e.get('created_at')
         try:
-            start_dt = datetime.fromisoformat(e['created_at'].replace('Z', '+00:00')) if e.get('created_at') else datetime.utcnow()
+            start_dt = datetime.fromisoformat(raw_start.replace('Z', '+00:00')) if raw_start else datetime.utcnow()
         except:
             start_dt = datetime.utcnow()
-            
-        track = e.get('track_level', '').lower()
-        if track.startswith('custom_'):
-            try: months = int(track.split('_')[1])
-            except: months = 1
-            duration_days = months * 30
-            track_display = f"{months} Months" if months > 1 else "1 Month"
-        elif track.isdigit():
-            months = int(track)
-            duration_days = months * 30
-            track_display = f"{months} Months" if months > 1 else "1 Month"
-        else:
-            duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
-            track_display_map = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}
-            track_display = track_display_map.get(track, track.title())
 
+        start_dt = start_dt.replace(tzinfo=None)
+        duration_days, track_display = parse_track_duration(e.get('track_level'))
         end_dt = start_dt + timedelta(days=duration_days)
         raw_date = start_dt.strftime("%B %d, %Y")
         end_date = end_dt.strftime("%B %d, %Y")
-        
-        html_content = render_template('docs/offer_letter.html', name=e['users']['full_name'], date=raw_date, program_title=e['programs']['title'], track_level=track_display, enroll_id=enrollment_id, project_details=e['programs']['short_description'], duration_days=duration_days, end_date=end_date)
+        issue_date = datetime.utcnow().strftime("%B %d, %Y")
+
+        html_content = render_template('docs/offer_letter.html', name=e['users']['full_name'], date=raw_date, issue_date=issue_date, program_title=e['programs']['title'], track_level=track_display, duration=track_display, enroll_id=enrollment_id, project_details=e['programs']['short_description'], duration_days=duration_days, end_date=end_date)
         return html_content + "<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); }</script>"
     except:
         return render_template('offer.html', error=True)

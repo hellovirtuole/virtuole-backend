@@ -18,7 +18,12 @@
             <p>Enter the unique Enrollment ID provided during registration to securely download your official offer document.</p>
         </div>
 
-        {% if error %}
+        {% if pending %}
+            <div class="au-card reveal d1" style="border-left: 4px solid var(--au-gold, #f59e0b); background: rgba(245, 158, 11, 0.05); text-align: left; padding: 20px;">
+                <h3 style="color: #f59e0b; margin-top: 0;">⏳ Application Under Review</h3>
+                <p style="margin-bottom: 0;">This enrollment request has been submitted and is currently awaiting mentor review. Official offer letters with confirmed cohort start dates are generated immediately upon mentor acceptance.</p>
+            </div>
+        {% elif error %}
             <div class="au-card error-card reveal d1">
                 <h3>Document Not Found</h3>
                 <p>We could not find a valid enrollment matching that ID. Please check the ID and try again.</p>

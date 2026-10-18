@@ -5,6 +5,7 @@ from api.utils.email import send_system_email, send_ambassador_email
 import random, string, uuid, json, os
 from datetime import datetime, timedelta
 from api.routes.ambassador import parse_shipping_address
+from api.utils.batch import calculate_next_start_date, parse_track_duration
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
@@ -36,13 +37,30 @@ def dashboard_intern():
                     pass
                 
         u_id = session['user_id']
-        active_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).in_('status', ['active', 'resubmit']).execute().data
+        active_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).in_('status', ['active', 'resubmit']).execute().data or []
+        pending_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).eq('status', 'pending').order('created_at', desc=True).execute().data or []
         active_projects = []
-    
+        now = datetime.utcnow()
+        next_batch_date = calculate_next_start_date(now)
+        next_batch_date_str = next_batch_date.strftime("%B %d, %Y")
+
+        pending_projects = []
+        for pe in pending_enrolls:
+            p = pe.get('programs') or {}
+            _, track_display = parse_track_duration(pe.get('track_level'))
+            pending_projects.append({
+                'program_title': p.get('title', 'Architecture Internship'),
+                'description': p.get('short_description', ''),
+                'track_level': track_display,
+                'enrollment_id': pe['enrollment_id'],
+                'status': 'pending',
+                'projected_start_date': next_batch_date_str
+            })
+
         # Fetch full user profile for the profile tab
         u_data = supabase.table('users').select('*').eq('id', u_id).execute().data
         user_profile = u_data[0] if u_data else {}
-    
+
         # profile_details is a jsonb column — Supabase returns it as a dict directly
         profile_details = user_profile.get('profile_details') or {}
         if not isinstance(profile_details, dict):
@@ -51,7 +69,7 @@ def dashboard_intern():
                 profile_details = json.loads(profile_details)
             except Exception:
                 profile_details = {}
-    
+
         # Auto-fill academic details from first enrollment if missing in profile
         if not profile_details.get('college_name'):
             try:
@@ -62,31 +80,27 @@ def dashboard_intern():
                     profile_details['session_year'] = first_enroll[0].get('session_year', '')
             except Exception:
                 pass
-    
-        now = datetime.utcnow()
+
         for e in active_enrolls:
+            raw_start = e.get('start_date') or e.get('created_at')
             try:
-                start_dt = datetime.fromisoformat(e['created_at'].replace('Z', '+00:00')) if e.get('created_at') else now
+                start_dt = datetime.fromisoformat(raw_start.replace('Z', '+00:00')) if raw_start else now
             except:
                 start_dt = now
-        
+
             # Ensure naive datetime for math
             start_dt = start_dt.replace(tzinfo=None)
-        
+            duration_days, track_display = parse_track_duration(e.get('track_level'))
+
             if e['status'] == 'resubmit':
                 duration_days = 1
-            else:
-                track = e.get('track_level', '').lower()
-                if track.startswith('custom_'):
-                    try: duration_days = int(track.split('_')[1]) * 30
-                    except: duration_days = 30
-                elif track.isdigit():
-                    duration_days = int(track) * 30
-                else:
-                    duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
-            
+
             end_dt = start_dt + timedelta(days=duration_days)
-        
+            is_started = (now >= start_dt)
+            days_until_start = max(0, (start_dt - now).days)
+            start_date_str = start_dt.strftime("%B %d, %Y")
+            end_date_str = end_dt.strftime("%B %d, %Y")
+
             if now > end_dt:
                 if e['status'] == 'active':
                     # Auto-delete expired enrollment
@@ -101,21 +115,15 @@ def dashboard_intern():
                         "evaluated_at": now.isoformat()
                     }).execute()
                 continue
-            
+
             remaining_days = max(0, (end_dt - now).days)
             remaining_hours = max(0, int((end_dt - now).total_seconds() / 3600))
-        
+
             track = e.get('track_level', '').lower()
             if track.startswith('custom_'):
-                try: months = int(track.split('_')[1])
-                except: months = 1
-                track_display = f"{months} Months" if months > 1 else "1 Month"
                 specs_link = e['programs'].get('custom_specs', '#')
                 amount_due = e['programs'].get('custom_price', 0)
             elif track.isdigit():
-                months = int(track)
-                track_display = f"{months} Months" if months > 1 else "1 Month"
-                # Find matching track in JSON
                 tracks_json = e['programs'].get('tracks') or []
                 matched = next((t for t in tracks_json if str(t.get('months')) == track), None)
                 if matched:
@@ -125,7 +133,6 @@ def dashboard_intern():
                     specs_link = '#'
                     amount_due = 0
             else:
-                track_display = {'beginner': '1 Month', 'intermediate': '2 Months', 'expert': '3 Months'}.get(track, e.get('track_level', '').title())
                 specs_link = e['programs'].get(f"specs_{track}", '#')
                 amount_due = e['programs'].get(f"price_{track}", 0)
 
@@ -139,7 +146,11 @@ def dashboard_intern():
                 'status': e['status'],
                 'remaining_days': remaining_days,
                 'remaining_hours': remaining_hours,
-                'duration_days': duration_days
+                'duration_days': duration_days,
+                'is_started': is_started,
+                'days_until_start': days_until_start,
+                'start_date_str': start_date_str,
+                'end_date_str': end_date_str
             })
         offered = supabase.table('programs').select('*').eq('is_active', True).execute().data
         offered_programs_grouped = {}
@@ -180,7 +191,7 @@ def dashboard_intern():
 
         # Determine the default active tab: Explore if no active programs, otherwise Workspace.
         requested_tab = request.args.get('active_tab')
-        default_tab = requested_tab if requested_tab else ('workspace' if active_projects else 'explore')
+        default_tab = requested_tab if requested_tab else ('workspace' if (active_projects or pending_projects) else 'explore')
 
         _all = supabase.table('system_notifications').select('*').order('created_at', desc=True).limit(2000).execute()
         sys_notifs = []
@@ -195,7 +206,7 @@ def dashboard_intern():
                 sys_notifs.append(n)
             if len(sys_notifs) >= 30: break
 
-        return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, offered_programs=offered_programs_grouped, completed_projects=completed_projects, ambassador_active=ambassador_active, active_tab=default_tab, user_profile=user_profile, profile_details=profile_details, sys_notifs=sys_notifs)
+        return render_template('dashboard_intern.html', user_name=session.get('name'), active_projects=active_projects, pending_projects=pending_projects, offered_programs=offered_programs_grouped, completed_projects=completed_projects, ambassador_active=ambassador_active, active_tab=default_tab, user_profile=user_profile, profile_details=profile_details, sys_notifs=sys_notifs)
     except Exception as e:
         import traceback
         return f"<h1>Internal Server Error inside dashboard_intern</h1><pre>{traceback.format_exc()}</pre>", 500
@@ -204,6 +215,40 @@ def dashboard_intern():
 @dashboard_bp.route('/dashboard-mentor')
 def dashboard_mentor():
     if str(session.get('role', '')).lower() != 'mentor': return redirect('/login')
+    now = datetime.utcnow()
+    next_batch_date = calculate_next_start_date(now)
+    next_batch_date_str = next_batch_date.strftime("%B %d, %Y")
+
+    # Fetch pending enrollment requests
+    pend_enrolls_raw = supabase.table('enrollments').select('*, programs(title, short_description), users(full_name, email, promo_code)').eq('status', 'pending').order('created_at', desc=True).execute().data or []
+    pending_enrollments = []
+    for pe in pend_enrolls_raw:
+        duration_days, track_display = parse_track_duration(pe.get('track_level'))
+        u = pe.get('users') or {}
+        p = pe.get('programs') or {}
+
+        req_dt_str = 'Recent'
+        if pe.get('created_at'):
+            try:
+                req_dt = datetime.fromisoformat(pe['created_at'].replace('Z', '+00:00'))
+                req_dt_str = req_dt.strftime("%b %d, %Y")
+            except Exception:
+                pass
+
+        pending_enrollments.append({
+            "id": pe.get('id'),
+            "enrollment_id": pe.get('enrollment_id'),
+            "student_name": u.get('full_name', 'Student Intern'),
+            "student_email": u.get('email', 'N/A'),
+            "program_title": p.get('title', 'Architecture Program'),
+            "track_display": track_display,
+            "duration_days": duration_days,
+            "requested_at": req_dt_str,
+            "projected_start": next_batch_date_str,
+            "college_name": pe.get('college_name', ''),
+            "course_name": pe.get('course_name', '')
+        })
+
     pend_subs_raw = supabase.table('submissions').select('*, enrollments(created_at, track_level)').is_('score', 'null').execute().data
     graded_subs = supabase.table('submissions').select('*').not_.is_('score', 'null').execute().data
     claims = supabase.table('ambassador_claims').select('id, proof_link, notes, ambassador_id, users(full_name, email), ambassador_tasks(title, point_value)').eq('status', 'pending').execute().data
@@ -212,7 +257,6 @@ def dashboard_mentor():
     
     overdue_subs = []
     early_subs = []
-    now = datetime.utcnow()
     for sub in (pend_subs_raw or []):
         e = sub.get('enrollments') or {}
         try:
@@ -245,6 +289,8 @@ def dashboard_mentor():
         if len(sys_notifs) >= 30: break
 
     return render_template('dashboard_mentor.html', user_name=session.get('name'), 
+                           pending_enrollments=pending_enrollments,
+                           next_batch_date_str=next_batch_date_str,
                            pending_submissions=pend_subs_raw, 
                            overdue_subs=overdue_subs, early_subs=early_subs,
                            graded_submissions=graded_subs, pending_claims=pending_claims, analytics=analytics, sys_notifs=sys_notifs)

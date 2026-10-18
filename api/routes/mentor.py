@@ -5,6 +5,7 @@ from api.utils.email import send_system_email, send_ambassador_email
 import random, string, uuid, json
 from datetime import datetime, timedelta
 from api.utils.notifications import send_notification
+from api.utils.batch import calculate_next_start_date, parse_track_duration
 
 mentor_bp = Blueprint('mentor', __name__)
 
@@ -83,4 +84,97 @@ def evaluate_task():
     elif action == 'reject':
         supabase.table('ambassador_claims').update({"status": "rejected"}).eq('id', claim_id).execute()
         send_notification('ambassador', claim_data['ambassador_id'], 'task_rejected', 'Task Proof Rejected', "Your task proof could not be verified.")
+    return redirect(url_for('dashboard.dashboard_mentor'))
+
+
+@mentor_bp.route('/accept-enrollment', methods=['POST'])
+@mentor_bp.route('/api/accept-enrollment', methods=['POST'])
+def accept_enrollment():
+    if str(session.get('role', '')).lower() != 'mentor':
+        return redirect('/login')
+
+    enrollment_id = request.form.get('enrollment_id')
+    if not enrollment_id:
+        return redirect(url_for('dashboard.dashboard_mentor'))
+
+    enroll_query = supabase.table('enrollments').select('*, programs(*), users(*)').eq('enrollment_id', enrollment_id).execute()
+    if not enroll_query.data:
+        return redirect(url_for('dashboard.dashboard_mentor'))
+
+    e = enroll_query.data[0]
+    student = e.get('users') or {}
+    prog = e.get('programs') or {}
+
+    now = datetime.utcnow()
+    # Batch date calculation: upcoming 1st, 10th, or 20th
+    start_dt = calculate_next_start_date(now)
+    duration_days, track_display = parse_track_duration(e.get('track_level'))
+    end_dt = start_dt + timedelta(days=duration_days)
+
+    start_date_str = start_dt.strftime("%B %d, %Y")
+    end_date_str = end_dt.strftime("%B %d, %Y")
+    issue_date_str = now.strftime("%B %d, %Y")
+
+    # Update enrollment status to active and start timestamp
+    update_payload = {
+        "status": "active",
+        "created_at": start_dt.isoformat()
+    }
+    try:
+        supabase.table('enrollments').update({**update_payload, "start_date": start_dt.isoformat()}).eq('enrollment_id', enrollment_id).execute()
+    except Exception:
+        supabase.table('enrollments').update(update_payload).eq('enrollment_id', enrollment_id).execute()
+
+    # Generate official offer letter
+    html_offer = render_template(
+        'docs/offer_letter.html',
+        name=student.get('full_name', 'Intern'),
+        date=start_date_str,
+        issue_date=issue_date_str,
+        program_title=prog.get('title', 'Virtual Architecture Program'),
+        track_level=track_display,
+        duration=track_display,
+        enroll_id=enrollment_id,
+        project_details=prog.get('short_description', 'Virtual Architecture Internship'),
+        duration_days=duration_days,
+        end_date=end_date_str
+    )
+
+    # Email offer letter to the intern
+    if student.get('email'):
+        send_system_email(student['email'], f"Official Internship Offer Letter - Virtuole ({prog.get('title')})", html_offer, is_html=True)
+
+    # In-app notifications
+    send_notification('intern', e.get('user_id'), 'enrollment_accepted', 'Enrollment Approved!', f"Your application for {prog.get('title')} has been accepted by your mentor! Your batch starts on {start_date_str}. Official offer letter has been emailed to you.")
+    send_notification('mentor', session.get('user_id'), 'enrollment_accepted', 'Request Approved', f"You accepted {student.get('full_name', 'Intern')} for {prog.get('title')}. Batch start: {start_date_str}.")
+
+    return redirect(url_for('dashboard.dashboard_mentor'))
+
+
+@mentor_bp.route('/reject-enrollment', methods=['POST'])
+@mentor_bp.route('/api/reject-enrollment', methods=['POST'])
+def reject_enrollment():
+    if str(session.get('role', '')).lower() != 'mentor':
+        return redirect('/login')
+
+    enrollment_id = request.form.get('enrollment_id')
+    reason = request.form.get('reason', 'Application did not meet batch criteria at this time.')
+    if not enrollment_id:
+        return redirect(url_for('dashboard.dashboard_mentor'))
+
+    enroll_query = supabase.table('enrollments').select('*, programs(title), users(email, full_name)').eq('enrollment_id', enrollment_id).execute()
+    if not enroll_query.data:
+        return redirect(url_for('dashboard.dashboard_mentor'))
+
+    e = enroll_query.data[0]
+    student = e.get('users') or {}
+    prog = e.get('programs') or {}
+
+    supabase.table('enrollments').update({"status": "rejected"}).eq('enrollment_id', enrollment_id).execute()
+
+    if student.get('email'):
+        rejection_msg = f"Dear {student.get('full_name', 'Applicant')},\n\nThank you for your interest in Virtuole.\n\nYour application for {prog.get('title', 'the internship program')} has been reviewed by our mentorship team, and could not be approved at this time.\n\nMentor Feedback: {reason}\n\nYou are welcome to explore and apply to other programs or future batches on the platform.\n\nBest regards,\nVirtuole Mentorship Team"
+        send_system_email(student['email'], "Application Status Update - Virtuole", rejection_msg)
+
+    send_notification('intern', e.get('user_id'), 'enrollment_rejected', 'Application Update', f"Your enrollment request for {prog.get('title')} was not approved.")
     return redirect(url_for('dashboard.dashboard_mentor'))
