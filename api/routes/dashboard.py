@@ -260,30 +260,58 @@ def dashboard_mentor():
             "course_name": pe.get('course_name', '')
         })
 
-    pend_subs_raw = supabase.table('submissions').select('*, enrollments(created_at, track_level)').is_('score', 'null').execute().data
-    graded_subs = supabase.table('submissions').select('*').not_.is_('score', 'null').execute().data
-    claims = supabase.table('ambassador_claims').select('id, proof_link, notes, ambassador_id, users(full_name, email), ambassador_tasks(title, point_value)').eq('status', 'pending').execute().data
-    pending_claims = [{"id": c['id'], "ambassador_id": c['ambassador_id'], "ambassador_name": c['users']['full_name'], "ambassador_email": c['users']['email'], "task_title": c['ambassador_tasks']['title'], "point_value": c['ambassador_tasks']['point_value'], "proof_link": c['proof_link'], "notes": c['notes']} for c in claims]
-    analytics = build_mentor_analytics(pend_subs_raw, graded_subs, len(pending_claims))
-    
-    overdue_subs = []
-    early_subs = []
-    for sub in (pend_subs_raw or []):
+    # Fetch all submissions with enrollment, program, and user details
+    all_subs_raw = supabase.table('submissions').select(
+        '*, enrollments(created_at, track_level, status, programs(title), users(full_name, email))'
+    ).order('created_at', desc=True).execute().data or []
+
+    ready_to_release_subs = []
+    active_cohort_subs = []
+    graded_subs = []
+
+    for sub in all_subs_raw:
+        cert = sub.get('certificate_url') or ''
         e = sub.get('enrollments') or {}
+        e_status = e.get('status', '')
+
+        # Check if already officially completed/graded & released
+        if cert.startswith('https://') or cert.startswith('failed:') or e_status in ['graded', 'failed']:
+            graded_subs.append(sub)
+            continue
+
+        # Sub is in review queue (either un-graded or pre-graded / staged)
+        raw_start = e.get('created_at')
         try:
-            start_dt = datetime.fromisoformat(e.get('created_at', '').replace('Z', '+00:00')) if e.get('created_at') else now
+            start_dt = datetime.fromisoformat(raw_start.replace('Z', '+00:00')).replace(tzinfo=None) if raw_start else now
         except:
             start_dt = now
-            
-        start_dt = start_dt.replace(tzinfo=None)
-        track = e.get('track_level', '').lower()
+
+        track = (e.get('track_level') or '').lower()
         duration_days = 90 if track == 'expert' else (60 if track == 'intermediate' else 30)
         end_dt = start_dt + timedelta(days=duration_days)
-        
-        if now > end_dt:
-            overdue_subs.append(sub)
+
+        u = e.get('users') or {}
+        p = e.get('programs') or {}
+        sub['student_name'] = u.get('full_name', 'Student Intern')
+        sub['student_email'] = u.get('email', 'N/A')
+        sub['program_title'] = p.get('title', 'Architecture Program')
+        sub['track_title'] = (e.get('track_level') or 'Standard').capitalize()
+        sub['end_date_str'] = end_dt.strftime('%d %b %Y')
+        sub['start_date_str'] = start_dt.strftime('%d %b %Y')
+        sub['is_pre_graded'] = (sub.get('score') is not None)
+        sub['days_left'] = max(0, (end_dt - now).days)
+        sub['days_overdue'] = max(0, (now - end_dt).days)
+
+        if now >= end_dt:
+            ready_to_release_subs.append(sub)
         else:
-            early_subs.append(sub)
+            active_cohort_subs.append(sub)
+
+    pending_subs = active_cohort_subs + ready_to_release_subs
+
+    claims = supabase.table('ambassador_claims').select('id, proof_link, notes, ambassador_id, users(full_name, email), ambassador_tasks(title, point_value)').eq('status', 'pending').execute().data
+    pending_claims = [{"id": c['id'], "ambassador_id": c['ambassador_id'], "ambassador_name": c['users']['full_name'], "ambassador_email": c['users']['email'], "task_title": c['ambassador_tasks']['title'], "point_value": c['ambassador_tasks']['point_value'], "proof_link": c['proof_link'], "notes": c['notes']} for c in (claims or [])]
+    analytics = build_mentor_analytics(pending_subs, graded_subs, len(pending_claims))
 
     u_id = session.get('user_id')
     _all = supabase.table('system_notifications').select('*').order('created_at', desc=True).limit(2000).execute()
@@ -302,9 +330,15 @@ def dashboard_mentor():
     return render_template('dashboard_mentor.html', user_name=session.get('name'), 
                            pending_enrollments=pending_enrollments,
                            next_batch_date_str=next_batch_date_str,
-                           pending_submissions=pend_subs_raw, 
-                           overdue_subs=overdue_subs, early_subs=early_subs,
-                           graded_submissions=graded_subs, pending_claims=pending_claims, analytics=analytics, sys_notifs=sys_notifs)
+                           pending_submissions=pending_subs, 
+                           ready_to_release_subs=ready_to_release_subs,
+                           active_cohort_subs=active_cohort_subs,
+                           overdue_subs=ready_to_release_subs,
+                           early_subs=active_cohort_subs,
+                           graded_submissions=graded_subs, 
+                           pending_claims=pending_claims, 
+                           analytics=analytics, 
+                           sys_notifs=sys_notifs)
 
 
 def build_mentor_analytics(pending_subs, graded_subs, pending_claims_count):

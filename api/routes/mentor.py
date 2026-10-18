@@ -19,12 +19,28 @@ def grade_submission():
     enrollment_id = request.form.get('enrollment_id')
     score = int(request.form.get('score'))
     feedback = request.form.get('feedback', 'No specific feedback.')
+    action_type = request.form.get('action_type', 'stage') # 'stage' (save marks) or 'release' (approve & send)
     
     enroll_data = supabase.table('enrollments').select('*, programs(title, short_description)').eq('enrollment_id', enrollment_id).execute().data[0]
     student = supabase.table('users').select('email', 'full_name').eq('id', enroll_data['user_id']).execute().data[0]
     
     if score >= 80:
-        db_updates = {"score": score, "certificate_url": f"https://www.virtuole.in/verify-credential?credential_id={enrollment_id}", "evaluated_at": datetime.utcnow().isoformat()}
+        if action_type == 'stage':
+            # Save marks without releasing certificate or sending completion email yet
+            db_updates = {
+                "score": score,
+                "evaluated_at": datetime.utcnow().isoformat()
+            }
+            supabase.table('submissions').update(db_updates).eq('id', sub_id).execute()
+            send_notification('mentor', session['user_id'], 'staged_evaluation', 'Marks Staged', f"Marks ({score}%) saved for {student['full_name']} ({enrollment_id}). Awaiting deadline release.")
+            return redirect(url_for('dashboard.dashboard_mentor', tab='queue', staged=1))
+
+        # Action is 'release' -> Issue credentials & email student immediately
+        db_updates = {
+            "score": score, 
+            "certificate_url": f"https://www.virtuole.in/verify-credential?credential_id={enrollment_id}", 
+            "evaluated_at": datetime.utcnow().isoformat()
+        }
         if score == 100:
             db_updates["lor_url"] = f"https://www.virtuole.in/verify-credential?credential_id={enrollment_id}"
             body_msg = f"Congratulations {student['full_name']}! You can view your Certificate and Elite LoR here: https://www.virtuole.in/verify-credential?credential_id={enrollment_id}"
@@ -33,10 +49,14 @@ def grade_submission():
             
         supabase.table('submissions').update(db_updates).eq('id', sub_id).execute()
         supabase.table('enrollments').update({"status": "graded"}).eq('enrollment_id', enrollment_id).execute()
-        send_system_email(student['email'], "Certification Passed - Virtuole", body_msg)
+        try:
+            send_system_email(student['email'], "Certification Passed - Virtuole", body_msg)
+        except Exception as mail_err:
+            print(f"Error emailing student: {mail_err}")
         
         send_notification('intern', enroll_data['user_id'], 'certification', 'Certified', f"Congratulations! You passed {enroll_data['programs']['title']} with a score of {score}.")
         send_notification('mentor', session['user_id'], 'certification', 'Intern Certified', f"You have certified {student['full_name']} for {enroll_data['programs']['title']}.")
+        return redirect(url_for('dashboard.dashboard_mentor', tab='queue', released=1))
     else:
         # Check if they are already in 'resubmit' status (this was their second try)
         if enroll_data.get('status') == 'resubmit':
@@ -49,7 +69,10 @@ def grade_submission():
             }).eq('id', sub_id).execute()
             
             failure_email_body = f"Dear {student['full_name']},\n\nYour resubmission scored {score}%. Feedback: \"{feedback}\"\nUnfortunately, this means you did not secure the passing grade of 80% and the credential cannot be issued."
-            send_system_email(student['email'], "Certification Failed", failure_email_body)
+            try:
+                send_system_email(student['email'], "Certification Failed", failure_email_body)
+            except:
+                pass
         else:
             # First failure. Give them 24 hours to resubmit.
             supabase.table('enrollments').update({
@@ -61,10 +84,144 @@ def grade_submission():
             supabase.table('submissions').delete().eq('id', sub_id).execute() 
             
             failure_email_body = f"Dear {student['full_name']},\n\nYour submission scored {score}%. Feedback: \"{feedback}\"\nYou have exactly 24 hours to resubmit your project in your dashboard."
-            send_system_email(student['email'], "ACTION REQUIRED: Submission Failed", failure_email_body)
+            try:
+                send_system_email(student['email'], "ACTION REQUIRED: Submission Failed", failure_email_body)
+            except:
+                pass
             send_notification('intern', enroll_data['user_id'], 'resubmit', 'Resubmission Required', f"Your submission for {enroll_data['programs']['title']} scored {score}/100. Resubmit within 24h.")
             
-    return redirect(url_for('dashboard.dashboard_mentor'))
+        return redirect(url_for('dashboard.dashboard_mentor', tab='queue'))
+
+
+@mentor_bp.route('/release-submission', methods=['POST'])
+@mentor_bp.route('/api/release-submission', methods=['POST'])
+def release_submission():
+    if str(session.get('role', '')).lower() != 'mentor':
+        if request.is_json: return jsonify({"success": False, "error": "Unauthorized"}), 401
+        return redirect('/login')
+
+    data = request.get_json(silent=True) if request.is_json else request.form
+    sub_id = data.get('submission_id')
+    enrollment_id = data.get('enrollment_id')
+
+    if not sub_id or not enrollment_id:
+        if request.is_json: return jsonify({"success": False, "error": "Missing parameters"}), 400
+        return redirect(url_for('dashboard.dashboard_mentor', tab='queue'))
+
+    sub_res = supabase.table('submissions').select('*').eq('id', sub_id).execute().data
+    if not sub_res:
+        if request.is_json: return jsonify({"success": False, "error": "Submission not found"}), 404
+        return redirect(url_for('dashboard.dashboard_mentor', tab='queue'))
+
+    sub = sub_res[0]
+    score = sub.get('score')
+    if score is None:
+        if request.is_json: return jsonify({"success": False, "error": "Submission has not been evaluated yet"}), 400
+        return redirect(url_for('dashboard.dashboard_mentor', tab='queue'))
+
+    enroll_data = supabase.table('enrollments').select('*, programs(title, short_description)').eq('enrollment_id', enrollment_id).execute().data[0]
+    student = supabase.table('users').select('email', 'full_name').eq('id', enroll_data['user_id']).execute().data[0]
+
+    db_updates = {
+        "certificate_url": f"https://www.virtuole.in/verify-credential?credential_id={enrollment_id}",
+        "evaluated_at": datetime.utcnow().isoformat()
+    }
+    if score == 100:
+        db_updates["lor_url"] = f"https://www.virtuole.in/verify-credential?credential_id={enrollment_id}"
+        body_msg = f"Congratulations {student['full_name']}! You can view your Certificate and Elite LoR here: https://www.virtuole.in/verify-credential?credential_id={enrollment_id}"
+    else:
+        body_msg = f"Congratulations {student['full_name']}! You can view your Certificate here: https://www.virtuole.in/verify-credential?credential_id={enrollment_id}"
+
+    supabase.table('submissions').update(db_updates).eq('id', sub_id).execute()
+    supabase.table('enrollments').update({"status": "graded"}).eq('enrollment_id', enrollment_id).execute()
+    try:
+        send_system_email(student['email'], "Certification Passed - Virtuole", body_msg)
+    except Exception as e:
+        print(f"Error emailing release certificate to {student['email']}: {e}")
+
+    send_notification('intern', enroll_data['user_id'], 'certification', 'Certified', f"Congratulations! You passed {enroll_data['programs']['title']} with a score of {score}.")
+    send_notification('mentor', session['user_id'], 'certification', 'Intern Certified', f"You have certified {student['full_name']} for {enroll_data['programs']['title']}.")
+
+    if request.is_json:
+        return jsonify({"success": True, "message": f"Successfully released credentials to {student['full_name']}."})
+
+    return redirect(url_for('dashboard.dashboard_mentor', tab='queue', released=1))
+
+
+@mentor_bp.route('/batch-release-submissions', methods=['POST'])
+@mentor_bp.route('/api/batch-release-submissions', methods=['POST'])
+def batch_release_submissions():
+    if str(session.get('role', '')).lower() != 'mentor':
+        if request.is_json: return jsonify({"success": False, "error": "Unauthorized"}), 401
+        return redirect('/login')
+
+    data = request.get_json(silent=True) if request.is_json else request.form
+    sub_ids = data.get('submission_ids')
+    if isinstance(sub_ids, str):
+        sub_ids = [s.strip() for s in sub_ids.split(',') if s.strip()]
+    elif not isinstance(sub_ids, list):
+        sub_ids = []
+
+    now = datetime.utcnow()
+    if not sub_ids:
+        all_subs = supabase.table('submissions').select('id, enrollment_id, score, certificate_url, enrollments(created_at, track_level)').gte('score', 80).execute().data or []
+        ready_ids = []
+        for s in all_subs:
+            cert = s.get('certificate_url') or ''
+            if cert.startswith('https://') or cert.startswith('failed:'):
+                continue
+            e = s.get('enrollments') or {}
+            raw_start = e.get('created_at')
+            try:
+                start_dt = datetime.fromisoformat(raw_start.replace('Z', '+00:00')).replace(tzinfo=None) if raw_start else now
+            except:
+                start_dt = now
+            duration_days, _ = parse_track_duration(e.get('track_level'))
+            end_dt = start_dt + timedelta(days=duration_days)
+            if now >= end_dt:
+                ready_ids.append(s['id'])
+        sub_ids = ready_ids
+
+    released_count = 0
+    for sid in sub_ids:
+        try:
+            sub_res = supabase.table('submissions').select('*').eq('id', sid).execute().data
+            if not sub_res: continue
+            sub = sub_res[0]
+            cert = sub.get('certificate_url') or ''
+            if cert.startswith('https://') or cert.startswith('failed:'): continue
+            score = sub.get('score')
+            if score is None or score < 80: continue
+
+            enrollment_id = sub['enrollment_id']
+            enroll_data = supabase.table('enrollments').select('*, programs(title, short_description)').eq('enrollment_id', enrollment_id).execute().data[0]
+            student = supabase.table('users').select('email', 'full_name').eq('id', enroll_data['user_id']).execute().data[0]
+
+            db_updates = {
+                "certificate_url": f"https://www.virtuole.in/verify-credential?credential_id={enrollment_id}",
+                "evaluated_at": now.isoformat()
+            }
+            if score == 100:
+                db_updates["lor_url"] = f"https://www.virtuole.in/verify-credential?credential_id={enrollment_id}"
+                body_msg = f"Congratulations {student['full_name']}! You can view your Certificate and Elite LoR here: https://www.virtuole.in/verify-credential?credential_id={enrollment_id}"
+            else:
+                body_msg = f"Congratulations {student['full_name']}! You can view your Certificate here: https://www.virtuole.in/verify-credential?credential_id={enrollment_id}"
+
+            supabase.table('submissions').update(db_updates).eq('id', sid).execute()
+            supabase.table('enrollments').update({"status": "graded"}).eq('enrollment_id', enrollment_id).execute()
+            try:
+                send_system_email(student['email'], "Certification Passed - Virtuole", body_msg)
+            except:
+                pass
+            send_notification('intern', enroll_data['user_id'], 'certification', 'Certified', f"Congratulations! You passed {enroll_data['programs']['title']} with a score of {score}.")
+            released_count += 1
+        except Exception as inner_e:
+            print(f"Error in batch release for sub {sid}: {inner_e}")
+
+    if request.is_json:
+        return jsonify({"success": True, "count": released_count, "message": f"Successfully approved and released {released_count} certificate(s)!"})
+
+    return redirect(url_for('dashboard.dashboard_mentor', tab='queue', released_batch=released_count))
 
 
 @mentor_bp.route('/evaluate-task', methods=['POST'])
