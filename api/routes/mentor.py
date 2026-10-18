@@ -87,21 +87,8 @@ def evaluate_task():
     return redirect(url_for('dashboard.dashboard_mentor'))
 
 
-@mentor_bp.route('/accept-enrollment', methods=['POST'])
-@mentor_bp.route('/api/accept-enrollment', methods=['POST'])
-def accept_enrollment():
-    if str(session.get('role', '')).lower() != 'mentor':
-        return redirect('/login')
-
-    enrollment_id = request.form.get('enrollment_id')
-    if not enrollment_id:
-        return redirect(url_for('dashboard.dashboard_mentor'))
-
-    enroll_query = supabase.table('enrollments').select('*, programs(*), users(*)').eq('enrollment_id', enrollment_id).execute()
-    if not enroll_query.data:
-        return redirect(url_for('dashboard.dashboard_mentor'))
-
-    e = enroll_query.data[0]
+def _process_single_enrollment_acceptance(e, mentor_user_id):
+    enrollment_id = e.get('enrollment_id')
     student = e.get('users') or {}
     prog = e.get('programs') or {}
 
@@ -142,13 +129,143 @@ def accept_enrollment():
 
     # Email offer letter to the intern
     if student.get('email'):
-        send_system_email(student['email'], f"Official Internship Offer Letter - Virtuole ({prog.get('title')})", html_offer, is_html=True)
+        try:
+            send_system_email(student['email'], f"Official Internship Offer Letter - Virtuole ({prog.get('title')})", html_offer, is_html=True)
+        except Exception as mail_err:
+            print(f"Error sending offer email to {student.get('email')}: {mail_err}")
 
     # In-app notifications
-    send_notification('intern', e.get('user_id'), 'enrollment_accepted', 'Enrollment Approved!', f"Your application for {prog.get('title')} has been accepted by your mentor! Your batch starts on {start_date_str}. Official offer letter has been emailed to you.")
-    send_notification('mentor', session.get('user_id'), 'enrollment_accepted', 'Request Approved', f"You accepted {student.get('full_name', 'Intern')} for {prog.get('title')}. Batch start: {start_date_str}.")
+    try:
+        send_notification('intern', e.get('user_id'), 'enrollment_accepted', 'Enrollment Approved!', f"Your application for {prog.get('title')} has been accepted by your mentor! Your batch starts on {start_date_str}. Official offer letter has been emailed to you.")
+        if mentor_user_id:
+            send_notification('mentor', mentor_user_id, 'enrollment_accepted', 'Request Approved', f"You accepted {student.get('full_name', 'Intern')} for {prog.get('title')}. Batch start: {start_date_str}.")
+    except Exception as notif_err:
+        print(f"Error sending notifications for {enrollment_id}: {notif_err}")
 
-    return redirect(url_for('dashboard.dashboard_mentor'))
+    return True
+
+
+@mentor_bp.route('/accept-enrollment', methods=['POST'])
+@mentor_bp.route('/api/accept-enrollment', methods=['POST'])
+def accept_enrollment():
+    if str(session.get('role', '')).lower() != 'mentor':
+        return redirect('/login')
+
+    enrollment_id = request.form.get('enrollment_id')
+    if not enrollment_id:
+        return redirect(url_for('dashboard.dashboard_mentor'))
+
+    enroll_query = supabase.table('enrollments').select('*, programs(*), users(*)').eq('enrollment_id', enrollment_id).execute()
+    if not enroll_query.data:
+        return redirect(url_for('dashboard.dashboard_mentor'))
+
+    _process_single_enrollment_acceptance(enroll_query.data[0], session.get('user_id'))
+    return redirect(url_for('dashboard.dashboard_mentor', tab='enrollments', batch_success=1))
+
+
+@mentor_bp.route('/batch-accept-enrollments', methods=['POST'])
+@mentor_bp.route('/api/batch-accept-enrollments', methods=['POST'])
+def batch_accept_enrollments():
+    if str(session.get('role', '')).lower() != 'mentor':
+        if request.is_json:
+            return jsonify({"success": False, "error": "Unauthorized"}), 401
+        return redirect('/login')
+
+    data = request.get_json(silent=True) if request.is_json else request.form
+    all_pending = False
+    id_list = []
+
+    if data:
+        all_pending = str(data.get('all_pending', '')).lower() in ['true', '1', 'yes']
+        raw_ids = data.get('enrollment_ids')
+        if isinstance(raw_ids, list):
+            id_list = [str(x).strip() for x in raw_ids if str(x).strip()]
+        elif isinstance(raw_ids, str):
+            id_list = [x.strip() for x in raw_ids.split(',') if x.strip()]
+
+    mentor_user_id = session.get('user_id')
+    processed_count = 0
+
+    if all_pending:
+        pending_query = supabase.table('enrollments').select('*, programs(*), users(*)').eq('status', 'pending').execute()
+        records = pending_query.data or []
+    elif id_list:
+        records_query = supabase.table('enrollments').select('*, programs(*), users(*)').in_('enrollment_id', id_list).execute()
+        records = records_query.data or []
+    else:
+        if request.is_json:
+            return jsonify({"success": False, "error": "No enrollments specified."}), 400
+        return redirect(url_for('dashboard.dashboard_mentor', tab='enrollments'))
+
+    for record in records:
+        try:
+            _process_single_enrollment_acceptance(record, mentor_user_id)
+            processed_count += 1
+        except Exception as e:
+            print(f"Error in batch processing enrollment {record.get('enrollment_id')}: {e}")
+
+    if request.is_json:
+        return jsonify({
+            "success": True,
+            "count": processed_count,
+            "message": f"Successfully approved {processed_count} intern enrollment request(s)."
+        })
+
+    return redirect(url_for('dashboard.dashboard_mentor', tab='enrollments', batch_success=processed_count))
+
+
+@mentor_bp.route('/batch-evaluate-tasks', methods=['POST'])
+@mentor_bp.route('/api/batch-evaluate-tasks', methods=['POST'])
+def batch_evaluate_tasks():
+    if str(session.get('role', '')).lower() != 'mentor':
+        if request.is_json:
+            return jsonify({"success": False, "error": "Unauthorized"}), 401
+        return redirect('/login')
+
+    data = request.get_json(silent=True) if request.is_json else request.form
+    action = data.get('action', 'approve')
+    all_pending = str(data.get('all_pending', '')).lower() in ['true', '1', 'yes']
+    claim_ids = data.get('claim_ids')
+    if isinstance(claim_ids, str):
+        claim_ids = [x.strip() for x in claim_ids.split(',') if x.strip()]
+    elif not isinstance(claim_ids, list):
+        claim_ids = []
+
+    if all_pending:
+        claims_query = supabase.table('ambassador_claims').select('id, ambassador_id, point_value, users(email, full_name)').eq('status', 'pending').execute()
+        claims = claims_query.data or []
+    elif claim_ids:
+        claims_query = supabase.table('ambassador_claims').select('id, ambassador_id, point_value, users(email, full_name)').in_('id', claim_ids).execute()
+        claims = claims_query.data or []
+    else:
+        if request.is_json:
+            return jsonify({"success": False, "error": "No claims specified."}), 400
+        return redirect(url_for('dashboard.dashboard_mentor', tab='gtm'))
+
+    updated_count = 0
+    for c in claims:
+        cid = c['id']
+        amb_id = c['ambassador_id']
+        pts = int(c.get('point_value') or 0)
+        try:
+            if action == 'approve':
+                supabase.table('ambassador_claims').update({"status": "approved"}).eq('id', cid).execute()
+                u_res = supabase.table('users').select('total_points').eq('id', amb_id).execute()
+                curr_pts = (u_res.data[0]['total_points'] if u_res.data else 0) or 0
+                supabase.table('users').update({"total_points": curr_pts + pts}).eq('id', amb_id).execute()
+                send_notification('ambassador', amb_id, 'points_added', 'Task Approved!', f"Great job! +{pts} Points added.")
+            else:
+                supabase.table('ambassador_claims').update({"status": "rejected"}).eq('id', cid).execute()
+                send_notification('ambassador', amb_id, 'task_rejected', 'Task Proof Rejected', "Your task proof could not be verified.")
+            updated_count += 1
+        except Exception as e:
+            print(f"Error updating claim {cid}: {e}")
+
+    if request.is_json:
+        return jsonify({"success": True, "count": updated_count})
+
+    return redirect(url_for('dashboard.dashboard_mentor', tab='gtm', claims_updated=updated_count))
+
 
 
 @mentor_bp.route('/reject-enrollment', methods=['POST'])

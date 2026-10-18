@@ -198,18 +198,19 @@ def admin_push_notification():
         title = data.get('title', '')
         description = data.get('description', '')
         image_url = data.get('image_url')
+        send_email = bool(data.get('send_email', False))
 
         if not title or not description:
             return jsonify({"success": False, "error": "Title and message are required."}), 400
 
-        # Determine which users to target
+        # Determine which users to target (include email and full_name for email broadcast)
         if 'all' in target_groups:
-            users_res = supabase.table('users').select('id, role').neq('role', 'coupon').execute()
+            users_res = supabase.table('users').select('id, role, email, full_name').neq('role', 'coupon').execute()
             users = users_res.data if users_res else []
         else:
             seen_ids = set()
             users = []
-            all_users_res = supabase.table('users').select('id, role').execute()
+            all_users_res = supabase.table('users').select('id, role, email, full_name').execute()
             all_users = all_users_res.data if all_users_res else []
             for u in all_users:
                 role = str(u.get('role', '')).lower()
@@ -218,9 +219,36 @@ def admin_push_notification():
                         users.append(u)
                         seen_ids.add(u['id'])
 
-        # Send a notification to each targeted user
+        # Send in-app notification to each targeted user
         sent_count = 0
+        email_count = 0
         errors = []
+
+        # Prepare HTML email if email dispatch is requested
+        email_html = ""
+        if send_email:
+            img_snippet = f'<div style="margin:20px 0; text-align:center;"><img src="{image_url}" alt="Banner" style="max-width:100%; border-radius:8px; border:1px solid #334155;"></div>' if image_url else ''
+            email_html = f"""
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0f172a; color: #f8fafc; border-radius: 14px; padding: 32px; border: 1px solid #334155;">
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <img src="https://www.virtuole.in/static/logo.png" alt="Virtuole" style="height: 42px;">
+                </div>
+                <div style="background: rgba(59, 130, 246, 0.12); border-left: 4px solid #3b82f6; padding: 12px 18px; border-radius: 6px; margin-bottom: 22px;">
+                    <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: #60a5fa; font-weight: 800;">Official Virtuole Broadcast</span>
+                </div>
+                <h2 style="color: #ffffff; margin: 0 0 14px 0; font-size: 20px;">{title}</h2>
+                <div style="color: #cbd5e1; font-size: 15px; line-height: 1.65; white-space: pre-wrap; margin-bottom: 24px;">{description}</div>
+                {img_snippet}
+                <div style="text-align: center; margin-top: 28px;">
+                    <a href="https://www.virtuole.in/login" style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: #ffffff; padding: 12px 30px; border-radius: 50px; text-decoration: none; font-weight: 700; font-size: 14px; display: inline-block;">Access Your Portal &rarr;</a>
+                </div>
+                <div style="margin-top: 36px; border-top: 1px solid #334155; padding-top: 20px; font-size: 12px; color: #64748b; text-align: center;">
+                    Virtuole Education Technologies &bull; Govt of India Registered MSME<br>
+                    Begusarai, Bihar &bull; Official Portal: <a href="https://www.virtuole.in" style="color:#60a5fa; text-decoration:none;">www.virtuole.in</a>
+                </div>
+            </div>
+            """
+
         for user in users:
             try:
                 metadata = {
@@ -247,17 +275,74 @@ def admin_push_notification():
                         "error": "The system_notifications table does not exist. Please create it in Supabase first."
                     }), 500
 
+            # Optional email dispatch
+            if send_email and user.get('email'):
+                try:
+                    send_system_email(user['email'], f"[Virtuole Announcement] {title}", email_html, is_html=True)
+                    email_count += 1
+                except Exception as mail_err:
+                    print(f"Failed to email broadcast to {user.get('email')}: {mail_err}")
+
         if sent_count == 0 and errors:
             return jsonify({"success": False, "error": f"Failed to send to any user. Database error: {errors[0]}"}), 500
 
-        msg = f"Notification sent to {sent_count} user(s)."
+        msg = f"Notification delivered to {sent_count} user account(s)."
+        if send_email:
+            msg += f" Dispatched {email_count} email announcement(s)."
         if errors:
-            msg += f" ({len(errors)} failed: {errors[0]})"
+            msg += f" ({len(errors)} failed)"
 
-        return jsonify({"success": True, "message": msg})
+        return jsonify({"success": True, "message": msg, "sent_count": sent_count, "email_count": email_count})
 
     except Exception as e:
         import traceback
         print(f"Push notification error: {traceback.format_exc()}")
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+@admin_bp.route('/admin/bulk-update-roles', methods=['POST'])
+@admin_bp.route('/api/admin/bulk-update-roles', methods=['POST'])
+def admin_bulk_update_roles():
+    if str(session.get('role', '')).lower() != 'admin':
+        if request.is_json:
+            return jsonify({"success": False, "error": "Unauthorized"}), 401
+        return redirect('/login')
+
+    data = request.get_json(silent=True) if request.is_json else request.form
+    new_role = data.get('new_role')
+    user_ids = data.get('user_ids')
+
+    if isinstance(user_ids, str):
+        user_ids = [x.strip() for x in user_ids.split(',') if x.strip()]
+    elif not isinstance(user_ids, list):
+        user_ids = []
+
+    if not new_role or not user_ids:
+        if request.is_json:
+            return jsonify({"success": False, "error": "Role and users are required."}), 400
+        return redirect(url_for('dashboard.dashboard_admin', tab='directory'))
+
+    allowed_roles = ['intern', 'ambassador', 'intern + ambassador', 'mentor', 'admin']
+    if new_role not in allowed_roles:
+        if request.is_json:
+            return jsonify({"success": False, "error": "Invalid role specified."}), 400
+        return redirect(url_for('dashboard.dashboard_admin', tab='directory'))
+
+    updated_count = 0
+    for uid in user_ids:
+        try:
+            supabase.table('users').update({"role": new_role}).eq('id', uid).execute()
+            updated_count += 1
+        except Exception as e:
+            print(f"Error bulk updating role for user {uid}: {e}")
+
+    if request.is_json:
+        return jsonify({
+            "success": True,
+            "count": updated_count,
+            "message": f"Successfully updated {updated_count} user(s) to '{new_role}'."
+        })
+
+    return redirect(url_for('dashboard.dashboard_admin', tab='directory', bulk_updated=updated_count))
+
 
