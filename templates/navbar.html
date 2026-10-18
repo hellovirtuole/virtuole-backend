@@ -36,14 +36,15 @@
         </div>
         
         <div class="dropdown">
-            <a href="#" class="nav-link {% if 'feedback' in request.path or 'terms' in request.path or 'privacy' in request.path or 'contact' in request.path %}active{% endif %}">Policies & Support ▾</a>
+            <a href="#" class="nav-link {% if 'feedback' in request.path or 'terms' in request.path or 'privacy' in request.path or 'refund' in request.path or 'shipping' in request.path or 'contact' in request.path %}active{% endif %}">Policies & Support ▾</a>
             <div class="dropdown-content">
-                <a href="/feedback">Feedback & Reviews</a>
                 <a href="/terms">Terms & Conditions</a>
                 <a href="/privacy">Privacy Policy</a>
-                <a href="/refund">Return Policy</a>
+                <a href="/refund">Refund & Cancellation</a>
+                <a href="/shipping">Shipping Policy</a>
                 <a href="/cookies">Cookies Policy</a>
-                <a href="/contact">Contact Support</a>
+                <a href="/contact">Contact Us</a>
+                <a href="/feedback">Feedback & Reviews</a>
             </div>
         </div>
         

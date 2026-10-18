@@ -138,6 +138,7 @@ def download_offer(enrollment_id):
     return html_content + "<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); }</script>"
 
 @public_bp.route('/contact')
+@public_bp.route('/contact-us')
 def contact_page():
     return render_template('contact.html')
 
@@ -190,11 +191,25 @@ def subscribe_newsletter():
     return redirect(url_for('auth.home'))
 
 @public_bp.route('/terms')
+@public_bp.route('/terms-and-conditions')
 def terms_page(): return render_template('terms.html')
+
 @public_bp.route('/refund')
+@public_bp.route('/refund-and-cancellation')
+@public_bp.route('/cancellation-and-refund')
+@public_bp.route('/return')
+@public_bp.route('/return-policy')
 def refund_page(): return render_template('refund.html')
+
 @public_bp.route('/privacy')
+@public_bp.route('/privacy-policy')
 def privacy_page(): return render_template('privacy.html')
+
+@public_bp.route('/shipping')
+@public_bp.route('/shipping-policy')
+@public_bp.route('/shipping-and-delivery')
+def shipping_page(): return render_template('shipping.html')
+
 @public_bp.route('/cookies')
 def cookies_page(): return render_template('cookies.html')
 @public_bp.route('/verify.html')
