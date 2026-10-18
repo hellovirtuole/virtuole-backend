@@ -81,9 +81,22 @@ def sitemap():
 
 @app.after_request
 def add_header(response):
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '-1'
+    path = request.path or ''
+    # Enable aggressive client caching for static files, fonts, and images (instant subsequent page loads)
+    is_static = (
+        path.startswith('/static') 
+        or path in ['/favicon.ico', '/favicon.png', '/logo.png']
+        or any(path.endswith(ext) for ext in ['.css', '.js', '.png', '.jpg', '.jpeg', '.svg', '.webp', '.ico', '.woff2', '.ttf'])
+    )
+    if is_static:
+        response.headers['Cache-Control'] = 'public, max-age=2592000, immutable'
+        response.headers.pop('Pragma', None)
+        response.headers.pop('Expires', None)
+    else:
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '-1'
+
     response.headers['X-Debug-Path'] = request.environ.get('PATH_INFO', 'none')
     response.headers['X-Debug-Original'] = request.environ.get('HTTP_X_INVOKE_PATH', 'none')
     return response
@@ -112,7 +125,9 @@ limiter.init_app(app)
 
 @app.route('/static/<path:filename>')
 def serve_static(filename):
-    return send_from_directory(os.path.join(base_dir, 'static'), filename)
+    res = send_from_directory(os.path.join(base_dir, 'static'), filename)
+    res.headers['Cache-Control'] = 'public, max-age=2592000, immutable'
+    return res
 
 # Cron Maintenance route
 

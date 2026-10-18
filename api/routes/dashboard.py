@@ -24,6 +24,17 @@ def dashboard_intern():
     try:
         user_role = str(session.get('role', '')).lower()
         if user_role not in ['intern', 'intern + ambassador']: return redirect('/login')
+
+        # Auto-reconcile PhonePe status if returning from payment redirect
+        return_txn_id = request.args.get('txn_id')
+        if return_txn_id:
+            try:
+                from api.utils.phonepe import check_phonepe_status, fulfill_payment_success
+                st = check_phonepe_status(return_txn_id)
+                if st.get("success"):
+                    fulfill_payment_success(return_txn_id)
+            except Exception as pe_err:
+                print(f"Auto-sync on return error for txn {return_txn_id}: {pe_err}")
     
         ambassador_active = False
         if user_role == 'intern + ambassador':
@@ -538,22 +549,21 @@ def dashboard_admin():
     except BaseException:
         sys_notifs = []
 
-    # Fetch data from Google Sheets webhook
-    import requests as _requests
-    sheet_webhook_url = os.environ.get('GOOGLE_SHEET_WEBHOOK')
-    sheet_feedback = []
-    sheet_ambassadors = []
-    sheet_webhook_set = bool(sheet_webhook_url)
-    if sheet_webhook_url:
-        try:
-            resp = _requests.get(sheet_webhook_url + '?action=read', timeout=5)
-            sheet_data = resp.json()
-            sheet_feedback = sheet_data.get('feedback', []) or []
-            sheet_ambassadors = sheet_data.get('ambassadors', []) or []
-        except BaseException as e:
-            print(f"Sheet fetch error: {e}")
+    # Fetch recent transactions for PhonePe live status & reconciliation hub
+    recent_transactions = []
+    try:
+        tx_resp = supabase.table('payments').select('id, user_id, transaction_id, amount, status, applied_promo, created_at').order('created_at', desc=True).limit(30).execute()
+        raw_txs = tx_resp.data or []
+        user_map = {u['id']: u for u in users}
+        for t in raw_txs:
+            u_info = user_map.get(t.get('user_id'), {})
+            t['user_name'] = u_info.get('full_name', 'Student')
+            t['user_email'] = u_info.get('email', '')
+        recent_transactions = raw_txs
+    except Exception as tx_err:
+        print(f"Error fetching recent transactions for admin: {tx_err}")
 
-    return render_template('dashboard_admin.html', user_name=session.get('name'), total_earnings=round(earnings, 2), total_enrolled=enrolled, total_certified=certified, pending_grading=pend_grading, offered_programs=progs, all_tasks=tasks, user_directory=users, coupons=coupons, all_ambassadors=all_ambassadors, grouped_ambassadors=grouped_ambassadors, ambassador_tiers=ambassador_tiers_asc, active_tab=active_tab, current_filter=timeframe, analytics=analytics, subscribers=subscribers, advanced_users=advanced_users, activity_feed=activity_feed, top_ambassadors=top_ambassadors, top_states=top_states, projected_revenue=round(projected_revenue, 2), sys_notifs=sys_notifs, sheet_feedback=sheet_feedback, sheet_ambassadors=sheet_ambassadors, sheet_webhook_set=sheet_webhook_set)
+    return render_template('dashboard_admin.html', user_name=session.get('name'), total_earnings=round(earnings, 2), total_enrolled=enrolled, total_certified=certified, pending_grading=pend_grading, offered_programs=progs, all_tasks=tasks, user_directory=users, coupons=coupons, all_ambassadors=all_ambassadors, grouped_ambassadors=grouped_ambassadors, ambassador_tiers=ambassador_tiers_asc, active_tab=active_tab, current_filter=timeframe, analytics=analytics, subscribers=subscribers, advanced_users=advanced_users, activity_feed=activity_feed, top_ambassadors=top_ambassadors, top_states=top_states, projected_revenue=round(projected_revenue, 2), sys_notifs=sys_notifs, sheet_feedback=sheet_feedback, sheet_ambassadors=sheet_ambassadors, sheet_webhook_set=sheet_webhook_set, recent_transactions=recent_transactions)
 
 
 @dashboard_bp.route('/admin/tiers', methods=['POST'])

@@ -6,6 +6,12 @@ import random, string, uuid, json, os, base64, hashlib, requests
 from datetime import datetime, timedelta
 from api.utils.notifications import send_notification
 from api.utils.batch import parse_track_duration, calculate_next_start_date
+from api.utils.phonepe import (
+    create_phonepe_pay_order, 
+    verify_phonepe_webhook_checksum, 
+    check_phonepe_status, 
+    fulfill_payment_success
+)
 
 intern_bp = Blueprint('intern', __name__)
 
@@ -141,83 +147,101 @@ def create_phonepe_payment():
             return jsonify({"payment_url": "/dashboard-intern"})
         return redirect("/dashboard-intern")
     
-    payload = {
-        "merchantId": os.getenv("PHONEPE_MERCHANT_ID"),
-        "merchantTransactionId": transaction_id,
-        "merchantUserId": safe_merchant_user_id,
-        "amount": amount_in_paise,
-        "redirectUrl": "https://www.virtuole.in/dashboard-intern", 
-        "redirectMode": "REDIRECT",
-        "callbackUrl": "https://www.virtuole.in/api/phonepe-webhook", 
-        "paymentInstrument": {"type": "PAY_PAGE"}
-    }
-    
-    base64_payload = base64.b64encode(json.dumps(payload).encode('utf-8')).decode('utf-8')
-    checksum = hashlib.sha256((base64_payload + "/pg/v1/pay" + os.getenv("PHONEPE_SALT_KEY")).encode('utf-8')).hexdigest() + "###" + os.getenv("PHONEPE_SALT_INDEX")
-    headers = {"Content-Type": "application/json", "X-VERIFY": checksum}
-    
-    try:
-        response = requests.post("https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay", json={"request": base64_payload}, headers=headers)
-        response_data = response.json()
-        
-        if response_data.get('success'):
-            supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": data.get('code_link'), "defense_link": data.get('defense_link')}).execute()
-            supabase.table('payments').insert({"user_id": session['user_id'], "transaction_id": transaction_id, "amount": amount_in_paise, "status": "pending", "applied_promo": applied_promo}).execute()
-            
-            payment_url = response_data['data']['instrumentResponse']['redirectInfo']['url']
-            if is_ajax:
-                return jsonify({"payment_url": payment_url})
-            else:
-                return redirect(payment_url)
-                
+    # Secure Redirect URL with txn_id for auto-reconciliation on return
+    redirect_url = f"https://www.virtuole.in/dashboard-intern?txn_id={transaction_id}"
+    callback_url = "https://www.virtuole.in/api/phonepe-webhook"
+
+    success, payment_url_or_err, _ = create_phonepe_pay_order(
+        merchant_txn_id=transaction_id,
+        merchant_user_id=safe_merchant_user_id,
+        amount_in_paise=amount_in_paise,
+        redirect_url=redirect_url,
+        callback_url=callback_url
+    )
+
+    if success:
+        # Save submission and pending payment record
+        supabase.table('submissions').insert({
+            "enrollment_id": enrollment_id, 
+            "code_link": data.get('code_link'), 
+            "defense_link": data.get('defense_link')
+        }).execute()
+        supabase.table('payments').insert({
+            "user_id": session['user_id'], 
+            "transaction_id": transaction_id, 
+            "amount": amount_in_paise, 
+            "status": "pending", 
+            "applied_promo": applied_promo
+        }).execute()
+
         if is_ajax:
-            return jsonify({"error": response_data.get('message', 'Gateway Error')}), 400
+            return jsonify({"payment_url": payment_url_or_err})
         else:
-            return "Gateway Error encountered.", 400
-            
-    except Exception as e:
-        if is_ajax:
-            return jsonify({"error": str(e)}), 500
-        else:
-            return f"Server Error: {str(e)}", 500
+            return redirect(payment_url_or_err)
+
+    if is_ajax:
+        return jsonify({"error": payment_url_or_err or "PhonePe Gateway Error"}), 400
+    else:
+        return f"Gateway Error encountered: {payment_url_or_err}", 400
+
 
 @intern_bp.route('/phonepe-webhook', methods=['POST'])
 @intern_bp.route('/api/phonepe-webhook', methods=['POST'])
 def phonepe_webhook():
-    decoded_response = json.loads(base64.b64decode(request.json.get('response')).decode('utf-8'))
-    if decoded_response['code'] == 'PAYMENT_SUCCESS':
-        transaction_id = decoded_response['data']['merchantTransactionId']
-        supabase.table('payments').update({"status": "paid"}).eq('transaction_id', transaction_id).execute()
-        
-        payment_data = supabase.table('payments').select('user_id, amount').eq('transaction_id', transaction_id).execute().data
-        if payment_data:
-            user_id = payment_data[0]['user_id']
-            amount = payment_data[0]['amount'] / 100
-            user_data = supabase.table('users').select('email, full_name').eq('id', user_id).execute().data
-            if user_data:
-                email = user_data[0]['email']
-                full_name = user_data[0]['full_name']
-                invoice_html = f"""
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #2b3481;">Payment Receipt</h2>
-                    <p>Dear {full_name},</p>
-                    <p>Your payment for the internship program has been successfully processed.</p>
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-                        <tr style="border-bottom: 1px solid #ddd;">
-                            <td style="padding: 10px 0;"><strong>Transaction ID:</strong></td>
-                            <td style="padding: 10px 0; text-align: right;">{transaction_id}</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #ddd;">
-                            <td style="padding: 10px 0;"><strong>Amount Paid:</strong></td>
-                            <td style="padding: 10px 0; text-align: right;">INR {amount:.2f}</td>
-                        </tr>
-                    </table>
-                    <p style="margin-top: 20px;">Thank you for choosing Virtuole. We are excited to have you on board!</p>
-                </div>
-                """
-                send_system_email(email, "Payment Invoice - Virtuole", invoice_html, is_html=True)
-                
+    payload_json = request.get_json(silent=True) or {}
+    raw_response_b64 = payload_json.get('response')
+    received_checksum = request.headers.get('X-VERIFY', '')
+
+    if not raw_response_b64:
+        return jsonify({"error": "Missing response payload"}), 400
+
+    # Strict signature verification to prevent spoofing
+    if not verify_phonepe_webhook_checksum(raw_response_b64, received_checksum):
+        print(f"[SECURITY ALERT] Invalid PhonePe webhook signature from {request.remote_addr}. Checksum mismatch.")
+        return jsonify({"error": "Invalid signature"}), 401
+
+    try:
+        decoded_response = json.loads(base64.b64decode(raw_response_b64).decode('utf-8'))
+        code = decoded_response.get('code')
+        transaction_id = decoded_response.get('data', {}).get('merchantTransactionId')
+
+        if code == 'PAYMENT_SUCCESS' and transaction_id:
+            fulfill_payment_success(transaction_id)
+            return jsonify({"status": "received", "result": "PAYMENT_SUCCESS"}), 200
+        elif transaction_id:
+            # Update to failed if declined
+            supabase.table('payments').update({
+                "status": "failed", 
+                "updated_at": datetime.utcnow().isoformat()
+            }).eq('transaction_id', transaction_id).execute()
+            return jsonify({"status": "received", "result": code}), 200
+
+    except Exception as e:
+        print(f"Error parsing PhonePe webhook: {e}")
+        return jsonify({"error": "Processing error"}), 500
+
     return jsonify({"status": "received"}), 200
+
+
+@intern_bp.route('/api/verify-payment/<transaction_id>', methods=['GET'])
+def verify_payment_status_endpoint(transaction_id):
+    """
+    On-demand status verification endpoint: Queries PhonePe Check Status API live
+    and fulfills payment if confirmed.
+    """
+    if not session.get('user_id'):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    status_res = check_phonepe_status(transaction_id)
+    if status_res.get("success"):
+        fulfill_payment_success(transaction_id)
+        return jsonify({"status": "paid", "message": "Transaction verified and completed successfully!"})
+    
+    return jsonify({
+        "status": status_res.get("code", "PENDING"),
+        "message": status_res.get("message", "Payment is still processing.")
+    })
+
 
 
 

@@ -346,3 +346,50 @@ def admin_bulk_update_roles():
     return redirect(url_for('dashboard.dashboard_admin', tab='directory', bulk_updated=updated_count))
 
 
+@admin_bp.route('/admin/sync-phonepe-transaction', methods=['POST'])
+@admin_bp.route('/api/admin/sync-phonepe-transaction', methods=['POST'])
+def admin_sync_phonepe_transaction():
+    if str(session.get('role', '')).lower() != 'admin':
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    data = request.get_json(silent=True) if request.is_json else request.form
+    if not data:
+        data = request.args
+    transaction_id = (data.get('transaction_id') or '').strip()
+
+    if not transaction_id:
+        return jsonify({"success": False, "error": "Merchant Transaction ID is required."}), 400
+
+    from api.utils.phonepe import check_phonepe_status, fulfill_payment_success
+
+    status_res = check_phonepe_status(transaction_id)
+    if status_res.get("success"):
+        fulfill_payment_success(transaction_id)
+        return jsonify({
+            "success": True,
+            "status": "paid",
+            "message": f"PhonePe confirmed transaction '{transaction_id}'. Marked as PAID and receipt dispatched!",
+            "data": status_res.get("data")
+        })
+
+    code = status_res.get("code") or "UNKNOWN"
+    msg = status_res.get("message") or "Gateway reported status not completed."
+
+    if code in ['PAYMENT_ERROR', 'PAYMENT_DECLINED']:
+        try:
+            supabase.table('payments').update({
+                "status": "failed",
+                "updated_at": datetime.utcnow().isoformat()
+            }).eq('transaction_id', transaction_id).execute()
+        except Exception:
+            pass
+
+    return jsonify({
+        "success": False,
+        "status": code,
+        "message": f"PhonePe response: {code} - {msg}",
+        "data": status_res.get("data")
+    })
+
+
+
