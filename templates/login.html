@@ -198,7 +198,9 @@
             if (promoInput && promoInput.value.trim()) {
                 sessionStorage.setItem('virtuole_oauth_promo', promoInput.value.trim().toUpperCase());
             }
-            window.location.href = '/login/oauth/' + provider;
+            const callbackUrl = window.location.origin + '/auth/callback';
+            const supabaseUrl = "https://fkrxuptprlhfedlyanzf.supabase.co";
+            window.location.href = `${supabaseUrl}/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(callbackUrl)}`;
         }
 
         function showForgotPassword() {

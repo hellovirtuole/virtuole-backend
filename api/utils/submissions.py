@@ -73,6 +73,10 @@ def parse_submission_deliverables(code_link_raw, defense_link_raw=None):
         d_url = defense_map.get(p_num)
         if not d_url and idx - 1 < len(defense_list):
             d_url = defense_list[idx - 1]
+        elif not d_url and len(defense_list) == 1:
+            d_url = defense_list[0]
+        elif not d_url and defense_raw and not defense_map:
+            d_url = defense_raw
 
         projects.append({
             'num': p_num,

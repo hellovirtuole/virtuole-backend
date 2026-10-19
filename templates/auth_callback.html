@@ -193,6 +193,8 @@
                     return;
                 }
 
+                const authCode = searchParams.get('code');
+
                 // 2. Check for tokens in Hash Fragment (Supabase implicit OAuth flow)
                 if (window.location.hash) {
                     const hash = window.location.hash.substring(1);
@@ -222,8 +224,8 @@
                     }
                 }
 
-                if (!accessToken) {
-                    showError("No authentication session detected. Please try signing in again.");
+                if (!accessToken && !authCode) {
+                    showError("No authentication token or authorization code detected. Please ensure your Google Cloud Console redirect URI is set to https://fkrxuptprlhfedlyanzf.supabase.co/auth/v1/callback and Supabase Redirect URLs contain your platform URL.");
                     return;
                 }
 
@@ -239,6 +241,7 @@
                     body: JSON.stringify({
                         access_token: accessToken,
                         refresh_token: refreshToken,
+                        code: authCode,
                         promo_code: promoCode
                     })
                 });

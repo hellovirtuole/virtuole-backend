@@ -436,7 +436,7 @@
                     <div id="project-block-1" class="project-deliverable-card" style="background:rgba(148,163,184,.05); border:1px solid rgba(148,163,184,.18); border-radius:var(--au-radius-sm); padding:16px; margin-bottom:16px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                             <strong style="color:var(--primary); font-size:0.92em; display:flex; align-items:center; gap:6px;">
-                                <span>📦</span> Project 1 Deliverables
+                                <span>📦</span> Project 1 Repository
                             </strong>
                             <span class="au-badge ok" style="font-size:0.7em; padding:2px 7px;">Required</span>
                         </div>
@@ -444,13 +444,9 @@
                             <label style="font-size:0.76em;">Project 1 Title / Domain (Optional)</label>
                             <input type="text" id="modal-project-title-1" placeholder="e.g. Core System Architecture (Optional)">
                         </div>
-                        <div class="au-form-group" style="margin-bottom:12px;">
+                        <div class="au-form-group" style="margin-bottom:0;">
                             <label style="font-size:0.76em;">Project 1 Source Code Link (GitHub / Drive) *</label>
                             <input type="url" id="modal-code-link-1" placeholder="https://github.com/..." required>
-                        </div>
-                        <div class="au-form-group" style="margin-bottom:0;">
-                            <label style="font-size:0.76em;">Project 1 Architecture Defense Write-up / Demo Link</label>
-                            <input type="url" id="modal-defense-link-1" placeholder="https://docs.google.com/... or YouTube link">
                         </div>
                     </div>
 
@@ -458,7 +454,7 @@
                     <div id="project-block-2" class="project-deliverable-card" style="display:none; background:rgba(148,163,184,.05); border:1px solid rgba(148,163,184,.18); border-radius:var(--au-radius-sm); padding:16px; margin-bottom:16px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                             <strong style="color:var(--primary); font-size:0.92em; display:flex; align-items:center; gap:6px;">
-                                <span>📦</span> Project 2 Deliverables
+                                <span>📦</span> Project 2 Repository
                             </strong>
                             <span class="au-badge warn" style="font-size:0.7em; padding:2px 7px;">Project 2</span>
                         </div>
@@ -466,13 +462,9 @@
                             <label style="font-size:0.76em;">Project 2 Title / Domain (Optional)</label>
                             <input type="text" id="modal-project-title-2" placeholder="e.g. Distributed Payment Gateway (Optional)">
                         </div>
-                        <div class="au-form-group" style="margin-bottom:12px;">
+                        <div class="au-form-group" style="margin-bottom:0;">
                             <label style="font-size:0.76em;">Project 2 Source Code Link (GitHub / Drive) *</label>
                             <input type="url" id="modal-code-link-2" placeholder="https://github.com/...">
-                        </div>
-                        <div class="au-form-group" style="margin-bottom:0;">
-                            <label style="font-size:0.76em;">Project 2 Architecture Defense Write-up / Demo Link</label>
-                            <input type="url" id="modal-defense-link-2" placeholder="https://docs.google.com/... or YouTube link">
                         </div>
                     </div>
 
@@ -480,7 +472,7 @@
                     <div id="project-block-3" class="project-deliverable-card" style="display:none; background:rgba(148,163,184,.05); border:1px solid rgba(148,163,184,.18); border-radius:var(--au-radius-sm); padding:16px; margin-bottom:16px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                             <strong style="color:var(--primary); font-size:0.92em; display:flex; align-items:center; gap:6px;">
-                                <span>📦</span> Project 3 Deliverables
+                                <span>📦</span> Project 3 Repository
                             </strong>
                             <span class="au-badge warn" style="font-size:0.7em; padding:2px 7px;">Project 3</span>
                         </div>
@@ -488,15 +480,25 @@
                             <label style="font-size:0.76em;">Project 3 Title / Domain (Optional)</label>
                             <input type="text" id="modal-project-title-3" placeholder="e.g. Analytics Data Pipeline (Optional)">
                         </div>
-                        <div class="au-form-group" style="margin-bottom:12px;">
+                        <div class="au-form-group" style="margin-bottom:0;">
                             <label style="font-size:0.76em;">Project 3 Source Code Link (GitHub / Drive) *</label>
                             <input type="url" id="modal-code-link-3" placeholder="https://github.com/...">
                         </div>
-                        <div class="au-form-group" style="margin-bottom:0;">
-                            <label style="font-size:0.76em;">Project 3 Architecture Defense Write-up / Demo Link</label>
-                            <input type="url" id="modal-defense-link-3" placeholder="https://docs.google.com/... or YouTube link">
-                        </div>
                     </div>
+                </div>
+
+                <!-- Single Unified Defense Document or Video Link for all projects -->
+                <div class="au-form-group" style="background:rgba(59,130,246,.06); border:1px solid rgba(59,130,246,.25); border-radius:var(--au-radius-sm); padding:16px; margin-bottom:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <strong style="color:#60a5fa; font-size:0.92em; display:flex; align-items:center; gap:6px;">
+                            <span>🛡️</span> Technical Defense Presentation or Document
+                        </strong>
+                        <span class="au-badge info" style="font-size:0.7em; padding:2px 7px;">Single Video / Doc</span>
+                    </div>
+                    <label style="font-size:0.78em; color:var(--text-muted); line-height:1.4; margin-bottom:8px; display:block;">
+                        Submit your single defense video walkthrough (YouTube / Loom / Google Drive) or architecture report (Google Docs / PDF) covering your work.
+                    </label>
+                    <input type="url" id="modal-single-defense-link" placeholder="https://youtube.com/watch?v=... or Google Drive / Docs link" class="au-input" style="font-size:0.9em;">
                 </div>
 
                 <div class="au-form-group"
@@ -656,11 +658,12 @@
             for (let i = 1; i <= 3; i++) {
                 const titleInput = document.getElementById(`modal-project-title-${i}`);
                 const codeInput = document.getElementById(`modal-code-link-${i}`);
-                const defInput = document.getElementById(`modal-defense-link-${i}`);
                 if (titleInput) titleInput.value = "";
                 if (codeInput) codeInput.value = "";
-                if (defInput) defInput.value = "";
             }
+
+            const singleDefInput = document.getElementById('modal-single-defense-link');
+            if (singleDefInput) singleDefInput.value = "";
 
             const hiddenCode = document.getElementById('modal-code-link');
             const hiddenDef = document.getElementById('modal-defense-link');
@@ -710,40 +713,32 @@
             const countSelect = document.getElementById('modal-project-count');
             const count = countSelect ? (parseInt(countSelect.value) || 1) : 1;
 
+            const singleDefense = (document.getElementById('modal-single-defense-link')?.value || '').trim();
+
             const projects = [];
             for (let i = 1; i <= count; i++) {
                 const title = (document.getElementById(`modal-project-title-${i}`)?.value || '').trim();
                 const code = (document.getElementById(`modal-code-link-${i}`)?.value || '').trim();
-                const defense = (document.getElementById(`modal-defense-link-${i}`)?.value || '').trim();
 
                 if (!code) {
                     alert(`Please provide the repository link for Project ${i}.`);
                     document.getElementById(`modal-code-link-${i}`)?.focus();
                     return;
                 }
-                projects.push({ num: i, title: title, code: code, defense: defense });
+                projects.push({ num: i, title: title, code: code, defense: singleDefense });
             }
 
             let formattedCodeLink = "";
-            let formattedDefenseLink = "";
-
             if (count === 1) {
                 formattedCodeLink = projects[0].code;
-                formattedDefenseLink = projects[0].defense;
             } else {
                 formattedCodeLink = projects.map(p => {
                     const label = p.title ? `Project ${p.num} (${p.title})` : `Project ${p.num}`;
                     return `${label}: ${p.code}`;
                 }).join('\n');
-
-                const defProjects = projects.filter(p => p.defense);
-                if (defProjects.length > 0) {
-                    formattedDefenseLink = defProjects.map(p => {
-                        const label = p.title ? `Project ${p.num} (${p.title})` : `Project ${p.num}`;
-                        return `${label}: ${p.defense}`;
-                    }).join('\n');
-                }
             }
+
+            const formattedDefenseLink = singleDefense;
 
             // Sync hidden inputs
             const hiddenCode = document.getElementById('modal-code-link');

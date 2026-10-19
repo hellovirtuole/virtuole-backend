@@ -133,9 +133,13 @@ def oauth_login(provider):
     if provider not in ['google', 'github']:
         return redirect(url_for('auth.login', error="Unsupported login provider."))
 
-    callback_url = url_for('auth.auth_callback', _external=True)
-    if request.headers.get('X-Forwarded-Proto') == 'https' and callback_url.startswith('http://'):
-        callback_url = 'https://' + callback_url[7:]
+    client_redirect = request.args.get('redirect_to')
+    if client_redirect and client_redirect.startswith(('http://', 'https://')):
+        callback_url = client_redirect
+    else:
+        req_host = request.headers.get('X-Forwarded-Host') or request.host
+        proto = 'https' if (request.headers.get('X-Forwarded-Proto') == 'https' or request.is_secure) else 'http'
+        callback_url = f"{proto}://{req_host}/auth/callback"
 
     base_url = (SUPABASE_URL or "https://fkrxuptprlhfedlyanzf.supabase.co").rstrip('/')
     oauth_url = f"{base_url}/auth/v1/authorize?provider={provider}&redirect_to={callback_url}"
@@ -156,19 +160,37 @@ def auth_callback():
 def oauth_session():
     data = request.get_json(silent=True) or {}
     access_token = data.get('access_token')
+    auth_code = data.get('code')
     promo_code = (data.get('promo_code') or '').strip().upper()
 
-    if not access_token:
-        return jsonify({"success": False, "error": "Access token is required."}), 400
+    if not access_token and not auth_code:
+        return jsonify({"success": False, "error": "Access token or auth code is required."}), 400
 
     if not supabase:
         return jsonify({"success": False, "error": "Database service is temporarily unavailable."}), 503
 
     try:
-        # Cryptographically verify the access token using Supabase Auth
-        user_response = supabase.auth.get_user(access_token)
-        if not user_response or not user_response.user:
-            return jsonify({"success": False, "error": "Invalid or expired session token."}), 401
+        sb_user = None
+
+        # 1. If code was returned (PKCE flow), exchange it for session
+        if not access_token and auth_code:
+            try:
+                ex_res = supabase.auth.exchange_code_for_session({"auth_code": auth_code})
+                if ex_res and ex_res.session:
+                    access_token = ex_res.session.access_token
+                if ex_res and ex_res.user:
+                    sb_user = ex_res.user
+            except Exception as ce:
+                print(f"Code exchange exception: {ce}")
+
+        # 2. Cryptographically verify the access token using Supabase Auth
+        if not sb_user and access_token:
+            user_response = supabase.auth.get_user(access_token)
+            if user_response and user_response.user:
+                sb_user = user_response.user
+
+        if not sb_user:
+            return jsonify({"success": False, "error": "Invalid or expired authentication session."}), 401
 
         sb_user = user_response.user
         email = sb_user.email
