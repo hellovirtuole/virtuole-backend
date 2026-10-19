@@ -1,6 +1,6 @@
 
 from flask import Blueprint, request, jsonify, render_template, session, redirect, url_for, send_from_directory
-from api.config import supabase, limiter, supabase_admin
+from api.config import supabase, limiter, supabase_admin, SUPABASE_URL, SUPABASE_KEY
 from api.utils.email import send_system_email, send_ambassador_email
 import random, string, uuid, json
 from datetime import datetime, timedelta
@@ -76,6 +76,9 @@ def register():
 @limiter.limit("10 per minute")
 def login():
     message = request.args.get('message')
+    error = request.args.get('error')
+    supabase_url = SUPABASE_URL or "https://fkrxuptprlhfedlyanzf.supabase.co"
+    supabase_key = SUPABASE_KEY or ""
 
     if request.method == 'POST':
         email = request.form.get('email')
@@ -88,7 +91,7 @@ def login():
             # 2. Grab profile from Database
             user_data_response = supabase.table('users').select('*').eq('email', email).execute()
             if not user_data_response.data:
-                return render_template('login.html', error="Profile data missing in the database.")
+                return render_template('login.html', error="Profile data missing in the database.", supabase_url=supabase_url, supabase_key=supabase_key)
             
             user_data = user_data_response.data[0]
             
@@ -119,10 +122,142 @@ def login():
         except Exception as e:
             error_str = str(e)
             if "Invalid login credentials" in error_str or "AuthApiError" in error_str:
-                return render_template('login.html', error="Incorrect email or password.")
-            return render_template('login.html', error=f"Login Error: {error_str}")
+                return render_template('login.html', error="Incorrect email or password.", supabase_url=supabase_url, supabase_key=supabase_key)
+            return render_template('login.html', error=f"Login Error: {error_str}", supabase_url=supabase_url, supabase_key=supabase_key)
             
-    return render_template('login.html', message=message)
+    return render_template('login.html', message=message, error=error, supabase_url=supabase_url, supabase_key=supabase_key)
+
+@auth_bp.route('/login/oauth/<provider>')
+def oauth_login(provider):
+    provider = provider.lower().strip()
+    if provider not in ['google', 'github']:
+        return redirect(url_for('auth.login', error="Unsupported login provider."))
+
+    callback_url = url_for('auth.auth_callback', _external=True)
+    if request.headers.get('X-Forwarded-Proto') == 'https' and callback_url.startswith('http://'):
+        callback_url = 'https://' + callback_url[7:]
+
+    base_url = (SUPABASE_URL or "https://fkrxuptprlhfedlyanzf.supabase.co").rstrip('/')
+    oauth_url = f"{base_url}/auth/v1/authorize?provider={provider}&redirect_to={callback_url}"
+    return redirect(oauth_url)
+
+@auth_bp.route('/auth/callback')
+def auth_callback():
+    error = request.args.get('error_description') or request.args.get('error')
+    if error:
+        return redirect(url_for('auth.login', error=f"Sign in canceled or failed: {error}"))
+
+    supabase_url = SUPABASE_URL or "https://fkrxuptprlhfedlyanzf.supabase.co"
+    supabase_key = SUPABASE_KEY or ""
+    return render_template('auth_callback.html', supabase_url=supabase_url, supabase_key=supabase_key)
+
+@auth_bp.route('/api/auth/oauth-session', methods=['POST'])
+@limiter.limit("20 per minute")
+def oauth_session():
+    data = request.get_json(silent=True) or {}
+    access_token = data.get('access_token')
+    promo_code = (data.get('promo_code') or '').strip().upper()
+
+    if not access_token:
+        return jsonify({"success": False, "error": "Access token is required."}), 400
+
+    if not supabase:
+        return jsonify({"success": False, "error": "Database service is temporarily unavailable."}), 503
+
+    try:
+        # Cryptographically verify the access token using Supabase Auth
+        user_response = supabase.auth.get_user(access_token)
+        if not user_response or not user_response.user:
+            return jsonify({"success": False, "error": "Invalid or expired session token."}), 401
+
+        sb_user = user_response.user
+        email = sb_user.email
+        if not email:
+            return jsonify({"success": False, "error": "Could not retrieve email from account."}), 400
+
+        user_metadata = sb_user.user_metadata or {}
+        full_name = (
+            user_metadata.get('full_name') or 
+            user_metadata.get('name') or 
+            user_metadata.get('user_name') or 
+            email.split('@')[0]
+        ).strip()
+
+        # Check if user already exists in public users table
+        user_data_response = supabase.table('users').select('*').eq('email', email).execute()
+
+        if user_data_response.data and len(user_data_response.data) > 0:
+            user_data = user_data_response.data[0]
+        else:
+            # New user registration via OAuth
+            public_id = f"VT-2026-{random.randint(1000, 9999)}"
+            new_user = {
+                "id": sb_user.id,
+                "full_name": full_name,
+                "email": email,
+                "public_id": public_id,
+                "role": "intern"
+            }
+            insert_res = supabase.table('users').insert(new_user).execute()
+            user_data = insert_res.data[0] if insert_res.data else new_user
+
+            if promo_code:
+                try:
+                    send_notification(
+                        'admin', None, 'promo_used',
+                        f"Conversion Logged: Code {promo_code}",
+                        f"A new student ({full_name}) registered via OAuth using promo code {promo_code}."
+                    )
+                except Exception as pe:
+                    print(f"OAuth Promo Notification Error: {pe}")
+
+            try:
+                send_system_email(
+                    email,
+                    "Welcome to Virtuole",
+                    f"Hello {full_name},\nYour public identity ID is {public_id}. Please log in to your dashboard to view offered programs and begin your internship."
+                )
+            except Exception as ee:
+                print(f"OAuth Welcome Email Error: {ee}")
+
+            try:
+                send_notification(
+                    'intern', sb_user.id, 'signup',
+                    'Welcome to Virtuole',
+                    f"Hello {full_name}, your public identity ID is {public_id}. Start exploring programs!"
+                )
+            except Exception as ne:
+                print(f"OAuth Welcome Notification Error: {ne}")
+
+        # Establish Flask session
+        session.permanent = True
+        session['user_id'] = user_data['id']
+        session['email'] = user_data['email']
+        session['name'] = user_data.get('full_name', full_name)
+        session['public_id'] = user_data.get('public_id')
+
+        user_role = str(user_data.get('role', 'intern')).strip().lower()
+        session['role'] = user_role
+        session.modified = True
+
+        # Role-based dashboard redirect
+        if user_role == 'admin' or email == "admin@virtuole.in":
+            redirect_url = url_for('dashboard.dashboard_admin')
+        elif user_role == 'mentor':
+            redirect_url = url_for('dashboard.dashboard_mentor')
+        elif user_role == 'ambassador':
+            redirect_url = url_for('dashboard.dashboard_ambassador')
+        else:
+            redirect_url = url_for('dashboard.dashboard_intern')
+
+        return jsonify({
+            "success": True,
+            "redirect_url": redirect_url
+        })
+
+    except Exception as e:
+        print(f"OAuth Session Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 400
 
 @auth_bp.route('/logout')
 @auth_bp.route('/api/logout')

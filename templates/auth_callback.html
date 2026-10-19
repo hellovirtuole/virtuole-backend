@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authenticating | Virtuole</title>
+    
+    {% include 'theme.html' %}
+    
+    <style>
+        .callback-wrapper {
+            flex: 1;
+            width: 100%;
+            max-width: 440px;
+            margin: 140px auto 80px;
+            padding: 0 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .callback-card {
+            text-align: center;
+            padding: 45px 32px;
+            box-sizing: border-box;
+            background: var(--card-bg, rgba(15, 23, 42, 0.65));
+            border: 1px solid var(--card-border, rgba(255, 255, 255, 0.12));
+            border-radius: 18px;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            background: rgba(56, 178, 172, 0.12);
+            border: 1px solid rgba(56, 178, 172, 0.35);
+            border-radius: 20px;
+            color: var(--primary, #38b2ac);
+            font-size: 0.82em;
+            font-weight: 600;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            margin-bottom: 22px;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary, #38b2ac);
+            box-shadow: 0 0 10px var(--primary, #38b2ac);
+            animation: pulse-ring 1.6s ease-out infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.9); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.5; }
+            100% { transform: scale(0.9); opacity: 1; }
+        }
+
+        .callback-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.85em;
+            font-weight: 700;
+            margin: 0 0 12px 0;
+            color: var(--text-main, #ffffff);
+            letter-spacing: -0.5px;
+        }
+
+        .callback-desc {
+            color: var(--text-muted, #94a3b8);
+            font-size: 0.96em;
+            line-height: 1.6;
+            margin: 0 auto;
+        }
+
+        .spinner-wrapper {
+            margin: 35px auto 25px;
+            position: relative;
+            width: 60px;
+            height: 60px;
+        }
+
+        .oauth-spinner {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.12);
+            border-top-color: var(--primary, #38b2ac);
+            border-right-color: #3b82f6;
+            animation: spin 0.9s cubic-bezier(0.6, 0.2, 0.4, 0.8) infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-container {
+            margin-top: 25px;
+            text-align: left;
+        }
+
+        .retry-btn {
+            display: block;
+            margin-top: 20px;
+            background: var(--text-main, #ffffff);
+            color: var(--bg-main, #0b1220);
+            font-weight: 700;
+            padding: 14px 24px;
+            border-radius: 8px;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.25s ease;
+        }
+
+        .retry-btn:hover {
+            background: var(--primary, #38b2ac);
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(56, 178, 172, 0.25);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+
+    <!-- Supabase JS Client for token extraction / code exchange -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    {% include 'navbar.html' %}
+
+    <div class="aurora-bg"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
+    <div class="glow-bg"></div>
+
+    <div class="callback-wrapper">
+        <div class="callback-card">
+            <div class="status-badge" id="status-badge">
+                <span class="pulse-dot"></span>
+                <span>Security Gateway</span>
+            </div>
+
+            <h1 class="callback-title" id="status-title">Authenticating</h1>
+            <p class="callback-desc" id="status-desc">Verifying your secure credentials with Virtuole...</p>
+
+            <div class="spinner-wrapper" id="spinner-wrap">
+                <div class="oauth-spinner"></div>
+            </div>
+
+            <div id="error-box" class="error-container hidden">
+                <div class="alert-error" id="error-text">⚠️ An error occurred during authentication.</div>
+                <a href="/login" class="retry-btn">Back to Sign In</a>
+            </div>
+        </div>
+    </div>
+
+    {% include 'footer.html' %}
+
+    <script>
+        const SUPABASE_URL = {{ supabase_url|tojson }};
+        const SUPABASE_KEY = {{ supabase_key|tojson }};
+
+        function showError(message) {
+            document.getElementById('spinner-wrap').classList.add('hidden');
+            document.getElementById('status-badge').style.borderColor = 'rgba(245, 101, 101, 0.4)';
+            document.getElementById('status-badge').style.color = '#f56565';
+            document.querySelector('.pulse-dot').style.background = '#f56565';
+            document.querySelector('.pulse-dot').style.boxShadow = '0 0 10px #f56565';
+            document.getElementById('status-title').innerText = "Sign In Failed";
+            document.getElementById('status-desc').innerText = "We could not establish your secure session.";
+            const errorBox = document.getElementById('error-box');
+            const errorText = document.getElementById('error-text');
+            errorText.innerText = "⚠️ " + message;
+            errorBox.classList.remove('hidden');
+        }
+
+        async function processOAuthSession() {
+            try {
+                let accessToken = null;
+                let refreshToken = null;
+
+                // 1. Check for errors in Query String
+                const searchParams = new URLSearchParams(window.location.search);
+                const queryError = searchParams.get('error_description') || searchParams.get('error');
+                if (queryError) {
+                    showError(queryError);
+                    return;
+                }
+
+                // 2. Check for tokens in Hash Fragment (Supabase implicit OAuth flow)
+                if (window.location.hash) {
+                    const hash = window.location.hash.substring(1);
+                    const hashParams = new URLSearchParams(hash);
+                    const hashError = hashParams.get('error_description') || hashParams.get('error');
+                    if (hashError) {
+                        showError(hashError);
+                        return;
+                    }
+                    accessToken = hashParams.get('access_token');
+                    refreshToken = hashParams.get('refresh_token');
+                }
+
+                // 3. Fallback: PKCE exchange or Supabase JS session resolution
+                if (!accessToken && window.supabase && SUPABASE_URL && SUPABASE_KEY) {
+                    try {
+                        const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                        const { data, error } = await sbClient.auth.getSession();
+                        if (error) {
+                            console.error("Supabase getSession error:", error);
+                        } else if (data && data.session) {
+                            accessToken = data.session.access_token;
+                            refreshToken = data.session.refresh_token;
+                        }
+                    } catch (sbErr) {
+                        console.warn("Supabase SDK session resolution error:", sbErr);
+                    }
+                }
+
+                if (!accessToken) {
+                    showError("No authentication session detected. Please try signing in again.");
+                    return;
+                }
+
+                // Retrieve promo code if user entered one prior to clicking OAuth
+                const promoCode = sessionStorage.getItem('virtuole_oauth_promo') || '';
+
+                // Establish Flask server session via cryptographic verification
+                const res = await fetch('/api/auth/oauth-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        access_token: accessToken,
+                        refresh_token: refreshToken,
+                        promo_code: promoCode
+                    })
+                });
+
+                const resData = await res.json();
+                if (res.ok && resData.success) {
+                    sessionStorage.removeItem('virtuole_oauth_promo');
+                    document.getElementById('status-title').innerText = "Authenticated!";
+                    document.getElementById('status-desc').innerText = "Access granted. Entering dashboard...";
+                    // Redirect to designated dashboard
+                    window.location.replace(resData.redirect_url || '/dashboard');
+                } else {
+                    showError(resData.error || "Failed to establish platform session.");
+                }
+
+            } catch (err) {
+                console.error("Fatal OAuth processing error:", err);
+                showError("A connection error occurred. Please verify your internet and try again.");
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', processOAuthSession);
+    </script>
+</body>
+</html>
