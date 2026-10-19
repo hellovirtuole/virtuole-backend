@@ -5,6 +5,7 @@ from api.utils.email import send_system_email, send_ambassador_email
 import random, string, uuid, json
 from datetime import datetime, timedelta
 from api.utils.batch import parse_track_duration
+from api.utils.submissions import parse_submission_deliverables
 
 public_bp = Blueprint('public', __name__)
 
@@ -346,6 +347,7 @@ def view_credential(enroll_id):
             
         submission = supabase.table('submissions').select('code_link').eq('enrollment_id', enroll_id).execute()
         repo_link = submission.data[0]['code_link'] if submission.data else None
+        parsed_projects = parse_submission_deliverables(repo_link, None)
         
         credential = {
             'id': enroll_data['enrollment_id'],
@@ -354,7 +356,9 @@ def view_credential(enroll_id):
             'track_level': enroll_data['track_level'],
             'score': enroll_data.get('final_score', '100'),
             'updated_at': enroll_data.get('updated_at', datetime.utcnow().isoformat()),
-            'repo_link': repo_link
+            'repo_link': parsed_projects[0]['code_link'] if parsed_projects else repo_link,
+            'projects': parsed_projects,
+            'has_multiple_projects': len(parsed_projects) > 1
         }
         return render_template('credential.html', credential=credential)
     except Exception as e:
@@ -371,7 +375,9 @@ def view_credential_by_user(public_id):
                 'track_level': 'elite',
                 'score': '100',
                 'updated_at': datetime.utcnow().isoformat(),
-                'repo_link': 'https://github.com/virtuole/sample-repo'
+                'repo_link': 'https://github.com/virtuole/sample-repo',
+                'projects': [{'num': 1, 'title': 'Project 1', 'code_link': 'https://github.com/virtuole/sample-repo', 'defense_link': ''}],
+                'has_multiple_projects': False
             }
             return render_template('credential.html', credential=credential)
             
@@ -391,6 +397,7 @@ def view_credential_by_user(public_id):
             
         submission = supabase.table('submissions').select('code_link').eq('enrollment_id', enroll_id).execute()
         repo_link = submission.data[0]['code_link'] if submission.data else None
+        parsed_projects = parse_submission_deliverables(repo_link, None)
         
         credential = {
             'id': enroll_data['enrollment_id'],
@@ -399,7 +406,9 @@ def view_credential_by_user(public_id):
             'track_level': enroll_data['track_level'],
             'score': enroll_data.get('final_score', '100'),
             'updated_at': enroll_data.get('updated_at', datetime.utcnow().isoformat()),
-            'repo_link': repo_link
+            'repo_link': parsed_projects[0]['code_link'] if parsed_projects else repo_link,
+            'projects': parsed_projects,
+            'has_multiple_projects': len(parsed_projects) > 1
         }
         return render_template('credential.html', credential=credential)
     except Exception as e:

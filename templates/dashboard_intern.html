@@ -394,24 +394,111 @@
     </div>
 
     <div class="au-modal" id="submitModal">
-        <div class="au-modal-card au-form">
+        <div class="au-modal-card au-form" style="max-width: 600px;">
             <button type="button" class="au-modal-close" onclick="closeModal('submitModal')">&times;</button>
-            <h3>Submit Architecture</h3>
-            <p style="color:var(--text-muted);font-size:.9em;margin:0 0 22px;">Your submission will be securely routed
-                to the grading matrix. You will be redirected to the secure gateway for the evaluation fee.</p>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                <span style="font-size:1.5em;">🚀</span>
+                <h3 style="margin:0;">Submit Architecture</h3>
+            </div>
+            <p style="color:var(--text-muted);font-size:.9em;margin:0 0 20px; line-height:1.5;">
+                Select how many projects you want to submit (1 to 3), provide your repository and defense links, and confirm your evaluation submission.
+            </p>
             <form id="submissionForm" onsubmit="handlePaymentSubmit(event)">
                 <div class="au-form-group">
                     <label>Unique Enrollment ID</label>
-                    <input type="text" id="modal-enrollment-id" readonly style="color:var(--primary);font-weight:700;">
+                    <input type="text" id="modal-enrollment-id" readonly style="color:var(--primary);font-weight:700; background:rgba(0,0,0,0.15);">
                 </div>
-                <div class="au-form-group">
-                    <label>Source Code Link (GitHub / Drive)</label>
-                    <input type="url" id="modal-code-link" placeholder="https://github.com/..." required>
+
+                <!-- Dropdown Menu to Select Number of Projects (1 to 3) -->
+                <div class="au-form-group" style="background:linear-gradient(135deg, rgba(45,212,191,0.08) 0%, rgba(59,130,246,0.08) 100%); padding:16px; border-radius:var(--au-radius-sm); border:1px solid rgba(45,212,191,0.25);">
+                    <label for="modal-project-count" style="display:flex; justify-content:space-between; align-items:center; color:var(--text-main); font-weight:700; margin-bottom:8px;">
+                        <span>How many projects are you submitting?</span>
+                        <span id="badge-project-count" class="au-badge ok" style="font-size:0.75rem; text-transform:none; padding:3px 8px;">1 Project Selected</span>
+                    </label>
+                    <select id="modal-project-count" onchange="onProjectCountChange(this.value)" class="au-input" style="font-weight:600; cursor:pointer;">
+                        <option value="1" selected>1 Project</option>
+                        <option value="2">2 Projects</option>
+                        <option value="3">3 Projects</option>
+                    </select>
+                    <div style="display:flex; gap:6px; align-items:center; margin-top:8px; font-size:0.8em; color:var(--text-muted);">
+                        <span>💡</span>
+                        <span id="project-count-hint">You are submitting 1 project deliverable for mentor audit.</span>
+                    </div>
                 </div>
-                <div class="au-form-group">
-                    <label>Architecture Defense Write-up (Link)</label>
-                    <input type="url" id="modal-defense-link" placeholder="https://docs.google.com/...">
+
+                <!-- Hidden inputs for backward compatibility -->
+                <input type="hidden" id="modal-code-link" name="code_link">
+                <input type="hidden" id="modal-defense-link" name="defense_link">
+
+                <!-- Dynamic Project Containers (1 to 3) -->
+                <div id="projects-deliverables-container">
+                    <!-- Project 1 (Always Visible) -->
+                    <div id="project-block-1" class="project-deliverable-card" style="background:rgba(148,163,184,.05); border:1px solid rgba(148,163,184,.18); border-radius:var(--au-radius-sm); padding:16px; margin-bottom:16px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                            <strong style="color:var(--primary); font-size:0.92em; display:flex; align-items:center; gap:6px;">
+                                <span>📦</span> Project 1 Deliverables
+                            </strong>
+                            <span class="au-badge ok" style="font-size:0.7em; padding:2px 7px;">Required</span>
+                        </div>
+                        <div class="au-form-group" style="margin-bottom:12px;">
+                            <label style="font-size:0.76em;">Project 1 Title / Domain (Optional)</label>
+                            <input type="text" id="modal-project-title-1" placeholder="e.g. Core System Architecture (Optional)">
+                        </div>
+                        <div class="au-form-group" style="margin-bottom:12px;">
+                            <label style="font-size:0.76em;">Project 1 Source Code Link (GitHub / Drive) *</label>
+                            <input type="url" id="modal-code-link-1" placeholder="https://github.com/..." required>
+                        </div>
+                        <div class="au-form-group" style="margin-bottom:0;">
+                            <label style="font-size:0.76em;">Project 1 Architecture Defense Write-up / Demo Link</label>
+                            <input type="url" id="modal-defense-link-1" placeholder="https://docs.google.com/... or YouTube link">
+                        </div>
+                    </div>
+
+                    <!-- Project 2 (Visible when 2 or 3 selected) -->
+                    <div id="project-block-2" class="project-deliverable-card" style="display:none; background:rgba(148,163,184,.05); border:1px solid rgba(148,163,184,.18); border-radius:var(--au-radius-sm); padding:16px; margin-bottom:16px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                            <strong style="color:var(--primary); font-size:0.92em; display:flex; align-items:center; gap:6px;">
+                                <span>📦</span> Project 2 Deliverables
+                            </strong>
+                            <span class="au-badge warn" style="font-size:0.7em; padding:2px 7px;">Project 2</span>
+                        </div>
+                        <div class="au-form-group" style="margin-bottom:12px;">
+                            <label style="font-size:0.76em;">Project 2 Title / Domain (Optional)</label>
+                            <input type="text" id="modal-project-title-2" placeholder="e.g. Distributed Payment Gateway (Optional)">
+                        </div>
+                        <div class="au-form-group" style="margin-bottom:12px;">
+                            <label style="font-size:0.76em;">Project 2 Source Code Link (GitHub / Drive) *</label>
+                            <input type="url" id="modal-code-link-2" placeholder="https://github.com/...">
+                        </div>
+                        <div class="au-form-group" style="margin-bottom:0;">
+                            <label style="font-size:0.76em;">Project 2 Architecture Defense Write-up / Demo Link</label>
+                            <input type="url" id="modal-defense-link-2" placeholder="https://docs.google.com/... or YouTube link">
+                        </div>
+                    </div>
+
+                    <!-- Project 3 (Visible when 3 selected) -->
+                    <div id="project-block-3" class="project-deliverable-card" style="display:none; background:rgba(148,163,184,.05); border:1px solid rgba(148,163,184,.18); border-radius:var(--au-radius-sm); padding:16px; margin-bottom:16px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                            <strong style="color:var(--primary); font-size:0.92em; display:flex; align-items:center; gap:6px;">
+                                <span>📦</span> Project 3 Deliverables
+                            </strong>
+                            <span class="au-badge warn" style="font-size:0.7em; padding:2px 7px;">Project 3</span>
+                        </div>
+                        <div class="au-form-group" style="margin-bottom:12px;">
+                            <label style="font-size:0.76em;">Project 3 Title / Domain (Optional)</label>
+                            <input type="text" id="modal-project-title-3" placeholder="e.g. Analytics Data Pipeline (Optional)">
+                        </div>
+                        <div class="au-form-group" style="margin-bottom:12px;">
+                            <label style="font-size:0.76em;">Project 3 Source Code Link (GitHub / Drive) *</label>
+                            <input type="url" id="modal-code-link-3" placeholder="https://github.com/...">
+                        </div>
+                        <div class="au-form-group" style="margin-bottom:0;">
+                            <label style="font-size:0.76em;">Project 3 Architecture Defense Write-up / Demo Link</label>
+                            <input type="url" id="modal-defense-link-3" placeholder="https://docs.google.com/... or YouTube link">
+                        </div>
+                    </div>
                 </div>
+
                 <div class="au-form-group"
                     style="background:rgba(139,92,246,.06);padding:16px;border-radius:var(--au-radius-sm);border:1px dashed rgba(139,92,246,.3);">
                     <label style="color:#b794f4;">Ambassador or Custom Promo Code</label>
@@ -509,6 +596,47 @@
         let currentBasePrice = 0;
         let appliedPromo = "";
 
+        function onProjectCountChange(countVal) {
+            const count = parseInt(countVal) || 1;
+            const badge = document.getElementById('badge-project-count');
+            const hint = document.getElementById('project-count-hint');
+
+            if (badge) {
+                badge.innerText = `${count} Project${count > 1 ? 's' : ''} Selected`;
+                badge.className = count > 1 ? 'au-badge warn' : 'au-badge ok';
+            }
+            if (hint) {
+                hint.innerText = count === 1 
+                    ? 'You are submitting 1 project deliverable for mentor audit.' 
+                    : `You are submitting ${count} project deliverables for mentor audit. All ${count} code repositories are required.`;
+            }
+
+            const block2 = document.getElementById('project-block-2');
+            const code2 = document.getElementById('modal-code-link-2');
+            const block3 = document.getElementById('project-block-3');
+            const code3 = document.getElementById('modal-code-link-3');
+
+            if (block2 && code2) {
+                if (count >= 2) {
+                    block2.style.display = 'block';
+                    code2.required = true;
+                } else {
+                    block2.style.display = 'none';
+                    code2.required = false;
+                }
+            }
+
+            if (block3 && code3) {
+                if (count >= 3) {
+                    block3.style.display = 'block';
+                    code3.required = true;
+                } else {
+                    block3.style.display = 'none';
+                    code3.required = false;
+                }
+            }
+        }
+
         function openSubmitModal(enrollmentId, price) {
             document.getElementById('modal-enrollment-id').value = enrollmentId;
             currentBasePrice = parseInt(price);
@@ -516,6 +644,29 @@
             document.getElementById('promo-input').value = "";
             document.getElementById('promo-msg').style.display = 'none';
             appliedPromo = "";
+
+            // Reset project count to 1 by default
+            const countSelect = document.getElementById('modal-project-count');
+            if (countSelect) {
+                countSelect.value = "1";
+                onProjectCountChange(1);
+            }
+
+            // Clear inputs for all 3 projects
+            for (let i = 1; i <= 3; i++) {
+                const titleInput = document.getElementById(`modal-project-title-${i}`);
+                const codeInput = document.getElementById(`modal-code-link-${i}`);
+                const defInput = document.getElementById(`modal-defense-link-${i}`);
+                if (titleInput) titleInput.value = "";
+                if (codeInput) codeInput.value = "";
+                if (defInput) defInput.value = "";
+            }
+
+            const hiddenCode = document.getElementById('modal-code-link');
+            const hiddenDef = document.getElementById('modal-defense-link');
+            if (hiddenCode) hiddenCode.value = "";
+            if (hiddenDef) hiddenDef.value = "";
+
             document.getElementById('submitModal').classList.add('open');
         }
 
@@ -555,13 +706,61 @@
             event.preventDefault();
             const payBtn = document.getElementById('payButton');
             const currentDisplayedPrice = document.getElementById('modal-price').innerText;
+
+            const countSelect = document.getElementById('modal-project-count');
+            const count = countSelect ? (parseInt(countSelect.value) || 1) : 1;
+
+            const projects = [];
+            for (let i = 1; i <= count; i++) {
+                const title = (document.getElementById(`modal-project-title-${i}`)?.value || '').trim();
+                const code = (document.getElementById(`modal-code-link-${i}`)?.value || '').trim();
+                const defense = (document.getElementById(`modal-defense-link-${i}`)?.value || '').trim();
+
+                if (!code) {
+                    alert(`Please provide the repository link for Project ${i}.`);
+                    document.getElementById(`modal-code-link-${i}`)?.focus();
+                    return;
+                }
+                projects.push({ num: i, title: title, code: code, defense: defense });
+            }
+
+            let formattedCodeLink = "";
+            let formattedDefenseLink = "";
+
+            if (count === 1) {
+                formattedCodeLink = projects[0].code;
+                formattedDefenseLink = projects[0].defense;
+            } else {
+                formattedCodeLink = projects.map(p => {
+                    const label = p.title ? `Project ${p.num} (${p.title})` : `Project ${p.num}`;
+                    return `${label}: ${p.code}`;
+                }).join('\n');
+
+                const defProjects = projects.filter(p => p.defense);
+                if (defProjects.length > 0) {
+                    formattedDefenseLink = defProjects.map(p => {
+                        const label = p.title ? `Project ${p.num} (${p.title})` : `Project ${p.num}`;
+                        return `${label}: ${p.defense}`;
+                    }).join('\n');
+                }
+            }
+
+            // Sync hidden inputs
+            const hiddenCode = document.getElementById('modal-code-link');
+            const hiddenDef = document.getElementById('modal-defense-link');
+            if (hiddenCode) hiddenCode.value = formattedCodeLink;
+            if (hiddenDef) hiddenDef.value = formattedDefenseLink;
+
             payBtn.innerText = "Generating Secure Gateway...";
             payBtn.disabled = true;
+
             const payload = {
                 enrollment_id: document.getElementById('modal-enrollment-id').value,
-                code_link: document.getElementById('modal-code-link').value,
-                defense_link: document.getElementById('modal-defense-link').value,
-                promo_code: appliedPromo
+                code_link: formattedCodeLink,
+                defense_link: formattedDefenseLink,
+                promo_code: appliedPromo,
+                project_count: count,
+                projects_data: projects
             };
             try {
                 const response = await fetch('/create-payment', {

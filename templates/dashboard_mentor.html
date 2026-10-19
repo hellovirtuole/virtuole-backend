@@ -280,22 +280,48 @@
                     </div>
 
                     <div style="margin-bottom:18px;display:flex;flex-direction:column;gap:8px;">
-                        {% if sub.code_link %}
-                        <a href="{{ sub.code_link }}" target="_blank" class="interactive-link">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
-                            View Code Repository &nearr;
-                        </a>
-                        {% endif %}
-                        {% if sub.defense_link %}
-                        <a href="{{ sub.defense_link }}" target="_blank" class="interactive-link">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                            View Defense Write-up &nearr;
-                        </a>
+                        {% if sub.projects_list and sub.projects_list | length > 1 %}
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;">
+                                <span style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); font-weight:700;">Submitted Deliverables ({{ sub.projects_list | length }})</span>
+                                <span class="au-badge ok" style="font-size:0.7rem; padding:1px 6px;">Multi-Project</span>
+                            </div>
+                            {% for p in sub.projects_list %}
+                            <div style="padding:8px 10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:8px;">
+                                <div style="font-size:0.8rem; font-weight:700; color:var(--primary); margin-bottom:4px;">
+                                    📦 {{ p.title }}
+                                </div>
+                                <div style="display:flex; gap:12px; flex-wrap:wrap; font-size:0.8rem;">
+                                    {% if p.code_link %}
+                                    <a href="{{ p.code_link }}" target="_blank" class="interactive-link" style="font-size:0.78rem;">
+                                        Code Repo &nearr;
+                                    </a>
+                                    {% endif %}
+                                    {% if p.defense_link %}
+                                    <a href="{{ p.defense_link }}" target="_blank" class="interactive-link" style="font-size:0.78rem; color:#a78bfa;">
+                                        Defense Doc &nearr;
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            {% if sub.primary_code_link %}
+                            <a href="{{ sub.primary_code_link }}" target="_blank" class="interactive-link">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                                View Code Repository &nearr;
+                            </a>
+                            {% endif %}
+                            {% if sub.primary_defense_link %}
+                            <a href="{{ sub.primary_defense_link }}" target="_blank" class="interactive-link">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                View Defense Write-up &nearr;
+                            </a>
+                            {% endif %}
                         {% endif %}
                     </div>
 
                     <div style="display:flex; flex-direction:column; gap:8px; margin-top:auto;">
-                        <button type="button" class="au-btn-ghost sm" style="width:100%; font-size:0.8rem; padding:8px 6px;" onclick="openSubmissionPreviewModal('{{ sub.enrollment_id }}', '{{ sub.code_link }}', '{{ sub.defense_link }}')">👁️ In-App Preview</button>
+                        <button type="button" class="au-btn-ghost sm" style="width:100%; font-size:0.8rem; padding:8px 6px;" onclick="openSubmissionPreviewModal('{{ sub.enrollment_id }}', '{{ sub.primary_code_link }}', '{{ sub.primary_defense_link }}')">👁️ In-App Preview</button>
                         {% if sub.is_pre_graded %}
                             <div style="display:flex; gap:8px;">
                                 <form action="/release-submission" method="POST" style="margin:0; flex:1;" onsubmit="var b=this.querySelector('button'); b.disabled=true; b.innerHTML='⏳ Sending...';">
@@ -305,10 +331,10 @@
                                         ⚡ Approve &amp; Send Certificate
                                     </button>
                                 </form>
-                                <button type="button" class="au-btn-ghost sm" style="font-size:0.78rem; padding:8px 10px;" onclick="openGradeModal('{{ sub.id }}', '{{ sub.enrollment_id }}', '{{ sub.code_link }}', '{{ sub.defense_link }}', '{{ sub.score }}', 'release')">✏️ Edit</button>
+                                <button type="button" class="au-btn-ghost sm" style="font-size:0.78rem; padding:8px 10px;" onclick="openGradeModal('{{ sub.id }}', '{{ sub.enrollment_id }}', '{{ sub.primary_code_link }}', '{{ sub.primary_defense_link }}', '{{ sub.score }}', 'release')">✏️ Edit</button>
                             </div>
                         {% else %}
-                            <button type="button" class="au-btn sm" style="width:100%; font-size:0.8rem; padding:8px 6px;" onclick="openGradeModal('{{ sub.id }}', '{{ sub.enrollment_id }}', '{{ sub.code_link }}', '{{ sub.defense_link }}', '', 'release')">
+                            <button type="button" class="au-btn sm" style="width:100%; font-size:0.8rem; padding:8px 6px;" onclick="openGradeModal('{{ sub.id }}', '{{ sub.enrollment_id }}', '{{ sub.primary_code_link }}', '{{ sub.primary_defense_link }}', '', 'release')">
                                 📝 Evaluate &amp; Send Now
                             </button>
                         {% endif %}
@@ -373,33 +399,59 @@
                     </div>
 
                     <div style="margin-bottom:18px;display:flex;flex-direction:column;gap:8px;">
-                        {% if sub.code_link %}
-                        <a href="{{ sub.code_link }}" target="_blank" class="interactive-link">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
-                            View Code Repository &nearr;
-                        </a>
-                        {% endif %}
-                        {% if sub.defense_link %}
-                        <a href="{{ sub.defense_link }}" target="_blank" class="interactive-link">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                            View Defense Write-up &nearr;
-                        </a>
+                        {% if sub.projects_list and sub.projects_list | length > 1 %}
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;">
+                                <span style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); font-weight:700;">Submitted Deliverables ({{ sub.projects_list | length }})</span>
+                                <span class="au-badge ok" style="font-size:0.7rem; padding:1px 6px;">Multi-Project</span>
+                            </div>
+                            {% for p in sub.projects_list %}
+                            <div style="padding:8px 10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:8px;">
+                                <div style="font-size:0.8rem; font-weight:700; color:var(--primary); margin-bottom:4px;">
+                                    📦 {{ p.title }}
+                                </div>
+                                <div style="display:flex; gap:12px; flex-wrap:wrap; font-size:0.8rem;">
+                                    {% if p.code_link %}
+                                    <a href="{{ p.code_link }}" target="_blank" class="interactive-link" style="font-size:0.78rem;">
+                                        Code Repo &nearr;
+                                    </a>
+                                    {% endif %}
+                                    {% if p.defense_link %}
+                                    <a href="{{ p.defense_link }}" target="_blank" class="interactive-link" style="font-size:0.78rem; color:#a78bfa;">
+                                        Defense Doc &nearr;
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            {% if sub.primary_code_link %}
+                            <a href="{{ sub.primary_code_link }}" target="_blank" class="interactive-link">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                                View Code Repository &nearr;
+                            </a>
+                            {% endif %}
+                            {% if sub.primary_defense_link %}
+                            <a href="{{ sub.primary_defense_link }}" target="_blank" class="interactive-link">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                View Defense Write-up &nearr;
+                            </a>
+                            {% endif %}
                         {% endif %}
                     </div>
 
                     <div style="display:flex; flex-direction:column; gap:8px; margin-top:auto;">
-                        <button type="button" class="au-btn-ghost sm" style="width:100%; font-size:0.8rem; padding:8px 6px;" onclick="openSubmissionPreviewModal('{{ sub.enrollment_id }}', '{{ sub.code_link }}', '{{ sub.defense_link }}')">👁️ In-App Preview</button>
+                        <button type="button" class="au-btn-ghost sm" style="width:100%; font-size:0.8rem; padding:8px 6px;" onclick="openSubmissionPreviewModal('{{ sub.enrollment_id }}', '{{ sub.primary_code_link }}', '{{ sub.primary_defense_link }}')">👁️ In-App Preview</button>
                         {% if sub.is_pre_graded %}
                             <div style="display:flex; gap:8px;">
-                                <button type="button" class="au-btn sm" style="flex:1; font-size:0.8rem; padding:8px 6px; background:linear-gradient(135deg,#3b82f6,#2563eb);" onclick="openGradeModal('{{ sub.id }}', '{{ sub.enrollment_id }}', '{{ sub.code_link }}', '{{ sub.defense_link }}', '{{ sub.score }}', 'stage')">
+                                <button type="button" class="au-btn sm" style="flex:1; font-size:0.8rem; padding:8px 6px; background:linear-gradient(135deg,#3b82f6,#2563eb);" onclick="openGradeModal('{{ sub.id }}', '{{ sub.enrollment_id }}', '{{ sub.primary_code_link }}', '{{ sub.primary_defense_link }}', '{{ sub.score }}', 'stage')">
                                     ✏️ Update Marks ({{ sub.score }}%)
                                 </button>
-                                <button type="button" class="au-btn-ghost sm" style="font-size:0.75rem; padding:8px 10px;" title="Approve and issue certificate now ahead of deadline" onclick="openGradeModal('{{ sub.id }}', '{{ sub.enrollment_id }}', '{{ sub.code_link }}', '{{ sub.defense_link }}', '{{ sub.score }}', 'release')">
+                                <button type="button" class="au-btn-ghost sm" style="font-size:0.75rem; padding:8px 10px;" title="Approve and issue certificate now ahead of deadline" onclick="openGradeModal('{{ sub.id }}', '{{ sub.enrollment_id }}', '{{ sub.primary_code_link }}', '{{ sub.primary_defense_link }}', '{{ sub.score }}', 'release')">
                                     ⚡ Release Now
                                 </button>
                             </div>
                         {% else %}
-                            <button type="button" class="au-btn sm" style="width:100%; font-size:0.8rem; padding:8px 6px;" onclick="openGradeModal('{{ sub.id }}', '{{ sub.enrollment_id }}', '{{ sub.code_link }}', '{{ sub.defense_link }}', '', 'stage')">
+                            <button type="button" class="au-btn sm" style="width:100%; font-size:0.8rem; padding:8px 6px;" onclick="openGradeModal('{{ sub.id }}', '{{ sub.enrollment_id }}', '{{ sub.primary_code_link }}', '{{ sub.primary_defense_link }}', '', 'stage')">
                                 📝 Check &amp; Save Marks (Pre-Grade)
                             </button>
                         {% endif %}
@@ -509,18 +561,28 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <div style="display:flex;flex-direction:column;gap:10px;padding:6px 0;">
-                                    {% if sub.code_link %}
-                                    <a href="{{ sub.code_link }}" target="_blank" class="interactive-link" style="font-size:0.85em;">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
-                                        Code
-                                    </a>
-                                    {% endif %}
-                                    {% if sub.defense_link %}
-                                    <a href="{{ sub.defense_link }}" target="_blank" class="interactive-link" style="font-size:0.85em;">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                                        Defense
-                                    </a>
+                                <div style="display:flex;flex-direction:column;gap:8px;padding:6px 0;">
+                                    {% if sub.projects_list and sub.projects_list | length > 1 %}
+                                        {% for p in sub.projects_list %}
+                                        <div style="font-size:0.8em; margin-bottom:2px;">
+                                            <span style="font-weight:700; color:var(--primary);">📦 {{ p.title }}:</span>
+                                            {% if p.code_link %}<a href="{{ p.code_link }}" target="_blank" class="interactive-link" style="margin-left:4px; font-size:0.85em;">Code &nearr;</a>{% endif %}
+                                            {% if p.defense_link %}<a href="{{ p.defense_link }}" target="_blank" class="interactive-link" style="margin-left:6px; font-size:0.85em; color:#a78bfa;">Defense &nearr;</a>{% endif %}
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        {% if sub.primary_code_link %}
+                                        <a href="{{ sub.primary_code_link }}" target="_blank" class="interactive-link" style="font-size:0.85em;">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                                            Code
+                                        </a>
+                                        {% endif %}
+                                        {% if sub.primary_defense_link %}
+                                        <a href="{{ sub.primary_defense_link }}" target="_blank" class="interactive-link" style="font-size:0.85em;">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                            Defense
+                                        </a>
+                                        {% endif %}
                                     {% endif %}
                                 </div>
                             </td>

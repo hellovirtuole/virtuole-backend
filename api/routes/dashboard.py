@@ -6,6 +6,7 @@ import random, string, uuid, json, os
 from datetime import datetime, timedelta
 from api.routes.ambassador import parse_shipping_address
 from api.utils.batch import calculate_next_start_date, parse_track_duration
+from api.utils.submissions import parse_submission_deliverables
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
@@ -270,6 +271,12 @@ def dashboard_mentor():
     graded_subs = []
 
     for sub in all_subs_raw:
+        parsed_projects = parse_submission_deliverables(sub.get('code_link'), sub.get('defense_link'))
+        sub['projects_list'] = parsed_projects
+        sub['project_count'] = len(parsed_projects)
+        sub['primary_code_link'] = parsed_projects[0]['code_link'] if parsed_projects else (sub.get('code_link') or '')
+        sub['primary_defense_link'] = parsed_projects[0]['defense_link'] if parsed_projects else (sub.get('defense_link') or '')
+
         cert = sub.get('certificate_url') or ''
         e = sub.get('enrollments') or {}
         e_status = e.get('status', '')
