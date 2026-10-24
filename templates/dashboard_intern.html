@@ -346,9 +346,9 @@
         <div class="au-modal-card au-form">
             <button type="button" class="au-modal-close" onclick="closeModal('enrollModal')">&times;</button>
             <h3>Program Registration</h3>
-            <p style="color:var(--text-muted);font-size:.9em;margin:0 0 22px;">Submit your academic details to request mentor approval for this internship.</p>
+            <p style="color:var(--text-muted);font-size:.9em;margin:0 0 22px;">Confirm your academic details to start your virtual internship.</p>
             <form action="/enroll" method="POST"
-                onsubmit="var btn = this.querySelector('button[type=submit]'); btn.disabled=true; btn.innerText='Submitting Request...';">
+                onsubmit="var btn = this.querySelector('button[type=submit]'); btn.disabled=true; btn.innerText='Enrolling...';">
                 <input type="hidden" id="enroll-program-name" name="program_id">
                 <div class="au-form-group"><label>Institution / College Name</label><input type="text"
                         name="college_name" value="{{ profile_details.get('college_name', '') }}" readonly
@@ -385,9 +385,9 @@
                         accept all Terms and Conditions, rules, and platform policies.</label>
                 </div>
 
-                <button type="submit" class="au-btn" style="width:100%;">Request Mentor Approval (Free)</button>
+                <button type="submit" class="au-btn" style="width:100%;">Confirm &amp; Enroll Now (Free)</button>
                 <p style="font-size: 0.8em; color: var(--text-muted); margin-top: 10px; line-height: 1.4; text-align: center;">
-                    * Applications are reviewed by mentors. When approved, your internship commences on the next upcoming cohort date (1st, 10th, or 20th), and your official Offer Letter will be emailed immediately.
+                    * Your internship commences immediately upon enrollment. Your official Offer Letter with verified credentials will be generated and emailed instantly.
                 </p>
             </form>
         </div>

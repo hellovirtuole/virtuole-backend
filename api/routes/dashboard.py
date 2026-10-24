@@ -49,16 +49,35 @@ def dashboard_intern():
                     pass
                 
         u_id = session['user_id']
+        now = datetime.utcnow()
+
+        # Auto-activate any legacy/pending enrollments for this user so they immediately appear in Active Programs
+        try:
+            supabase.table('enrollments').update({
+                'status': 'active',
+                'start_date': now.isoformat()
+            }).eq('user_id', u_id).eq('status', 'pending').execute()
+        except Exception:
+            try:
+                supabase.table('enrollments').update({'status': 'active'}).eq('user_id', u_id).eq('status', 'pending').execute()
+            except Exception:
+                pass
+
         active_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).in_('status', ['active', 'resubmit']).execute().data or []
         pending_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).eq('status', 'pending').order('created_at', desc=True).execute().data or []
         active_projects = []
-        now = datetime.utcnow()
         next_batch_date = calculate_next_start_date(now)
         next_batch_date_str = next_batch_date.strftime("%B %d, %Y")
 
         pending_projects = []
         for pe in pending_enrolls:
             p = pe.get('programs') or {}
+            if not p and pe.get('program_id'):
+                try:
+                    p_res = supabase.table('programs').select('*').eq('id', pe['program_id']).execute()
+                    if p_res and p_res.data: p = p_res.data[0]
+                except Exception:
+                    pass
             _, track_display = parse_track_duration(pe.get('track_level'))
             pending_projects.append({
                 'program_title': p.get('title', 'Architecture Internship'),
@@ -131,12 +150,21 @@ def dashboard_intern():
             remaining_days = max(0, (end_dt - now).days)
             remaining_hours = max(0, int((end_dt - now).total_seconds() / 3600))
 
+            prog = e.get('programs') or {}
+            if not prog and e.get('program_id'):
+                try:
+                    p_res = supabase.table('programs').select('*').eq('id', e['program_id']).execute()
+                    if p_res and p_res.data:
+                        prog = p_res.data[0]
+                except Exception:
+                    pass
+
             track = e.get('track_level', '').lower()
             if track.startswith('custom_'):
-                specs_link = e['programs'].get('custom_specs', '#')
-                amount_due = e['programs'].get('custom_price', 0)
+                specs_link = prog.get('custom_specs', '#')
+                amount_due = prog.get('custom_price', 0)
             elif track.isdigit():
-                tracks_json = e['programs'].get('tracks') or []
+                tracks_json = prog.get('tracks') or []
                 matched = next((t for t in tracks_json if str(t.get('months')) == track), None)
                 if matched:
                     specs_link = matched.get('specs', '#')
@@ -145,12 +173,12 @@ def dashboard_intern():
                     specs_link = '#'
                     amount_due = 0
             else:
-                specs_link = e['programs'].get(f"specs_{track}", '#')
-                amount_due = e['programs'].get(f"price_{track}", 0)
+                specs_link = prog.get(f"specs_{track}", '#')
+                amount_due = prog.get(f"price_{track}", 0)
 
             active_projects.append({
-                'program_title': e['programs']['title'], 
-                'description': e['programs']['short_description'], 
+                'program_title': prog.get('title', 'Architecture Internship'), 
+                'description': prog.get('short_description', ''), 
                 'track_level': track_display, 
                 'enrollment_id': e['enrollment_id'], 
                 'specs_link': specs_link, 
