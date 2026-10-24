@@ -8,7 +8,13 @@ load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://fkrxuptprlhfedlyanzf.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+SUPABASE_SERVICE_ROLE_KEY = (
+    os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    or os.getenv("SUPABASE_SERVICE_KEY")
+    or os.getenv("SUPABASE_SECRET_KEY")
+    or os.getenv("SUPABASE_SECRET")
+    or os.getenv("SERVICE_ROLE_KEY")
+)
 
 if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
     supabase_admin: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)

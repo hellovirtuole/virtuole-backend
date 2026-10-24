@@ -51,26 +51,23 @@ def dashboard_intern():
         u_id = session['user_id']
         now = datetime.utcnow()
 
-        active_enrolls = []
+        all_user_enrolls = []
         try:
-            active_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).in_('status', ['active', 'resubmit']).execute().data or []
+            all_res = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).order('created_at', desc=True).execute()
+            all_user_enrolls = all_res.data or []
         except Exception:
             try:
-                active_enrolls = supabase.table('enrollments').select('*').eq('user_id', u_id).in_('status', ['active', 'resubmit']).execute().data or []
-            except Exception:
-                active_enrolls = []
-
-        pending_enrolls = []
-        try:
-            pending_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).eq('status', 'pending').order('created_at', desc=True).execute().data or []
-        except Exception:
-            try:
-                pending_enrolls = supabase.table('enrollments').select('*').eq('user_id', u_id).eq('status', 'pending').order('created_at', desc=True).execute().data or []
+                all_res = supabase.table('enrollments').select('*').eq('user_id', u_id).order('created_at', desc=True).execute()
+                all_user_enrolls = all_res.data or []
             except Exception:
                 try:
-                    pending_enrolls = supabase.table('enrollments').select('*').eq('user_id', u_id).eq('status', 'pending').execute().data or []
+                    all_res = supabase.table('enrollments').select('*').eq('user_id', u_id).execute()
+                    all_user_enrolls = all_res.data or []
                 except Exception:
-                    pending_enrolls = []
+                    all_user_enrolls = []
+
+        active_enrolls = [e for e in all_user_enrolls if str(e.get('status', '')).strip().lower() in ['active', 'resubmit']]
+        pending_enrolls = [e for e in all_user_enrolls if str(e.get('status', '')).strip().lower() == 'pending']
 
         active_projects = []
         next_batch_date = calculate_next_start_date(now)
@@ -243,7 +240,7 @@ def dashboard_intern():
                 completed_projects.append({'score': e.get('final_score', 100), 'program_title': e['programs']['title'], 'track_level': track_display, 'enrollment_id': e['enrollment_id'], 'evaluated_date': e.get('updated_at', '').split('T')[0] if e.get('updated_at') else 'Pending', 'certificate_url': None, 'lor_url': None})
 
         # Determine the default active tab: Explore if no active programs, otherwise Workspace.
-        requested_tab = request.args.get('active_tab')
+        requested_tab = request.args.get('active_tab') or request.args.get('tab')
         default_tab = requested_tab if requested_tab else ('workspace' if (active_projects or pending_projects) else 'explore')
 
         _all = supabase.table('system_notifications').select('*').order('created_at', desc=True).limit(2000).execute()
@@ -275,10 +272,10 @@ def dashboard_mentor():
     # Fetch pending enrollment requests
     pend_enrolls_raw = []
     try:
-        pend_enrolls_raw = supabase.table('enrollments').select('*, programs(title, short_description), users(full_name, email, promo_code)').eq('status', 'pending').order('created_at', desc=True).execute().data or []
+        pend_enrolls_raw = supabase.table('enrollments').select('*, programs(title, short_description), users(full_name, email, promo_code)').in_('status', ['pending', 'Pending', 'PENDING']).order('created_at', desc=True).execute().data or []
     except Exception:
         try:
-            pend_enrolls_raw = supabase.table('enrollments').select('*').eq('status', 'pending').order('created_at', desc=True).execute().data or []
+            pend_enrolls_raw = supabase.table('enrollments').select('*').in_('status', ['pending', 'Pending', 'PENDING']).order('created_at', desc=True).execute().data or []
         except Exception:
             pend_enrolls_raw = []
 

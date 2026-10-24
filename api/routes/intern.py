@@ -311,70 +311,68 @@ def api_enroll():
         start_date_str = start_dt.strftime("%B %d, %Y")
 
         # Check if already enrolled or requested for this program
-        existing = []
+        all_user_enrolls = []
         try:
-            ex_res = supabase.table('enrollments').select('id, enrollment_id, status, track_level').eq('user_id', user_id).eq('program_id', clean_prog_id).execute()
-            existing = ex_res.data if ex_res and ex_res.data else []
-        except Exception:
-            existing = []
+            u_res = supabase.table('enrollments').select('*').eq('user_id', user_id).execute()
+            all_user_enrolls = u_res.data or []
+        except Exception as e:
+            print(f"api_enroll: error fetching user enrollments: {e}")
 
-        if not existing:
-            try:
-                ex_res = supabase.table('enrollments').select('id, enrollment_id, status, track_level').eq('user_id', user_id).eq('program_id', str(program_id)).execute()
-                existing = ex_res.data if ex_res and ex_res.data else []
-            except Exception:
-                existing = []
+        # Check if an enrollment for this program already exists for this user
+        target_ex = None
+        for e in all_user_enrolls:
+            if str(e.get('program_id')) in [str(clean_prog_id), str(program_id)]:
+                target_ex = e
+                break
 
-        has_pending = any(ex.get('status') == 'pending' for ex in existing)
-        if has_pending:
-            return redirect(url_for('dashboard.dashboard_intern', active_tab='workspace'))
+        if target_ex:
+            # An enrollment already exists for this program!
+            # Ensure it is moved to 'pending' status for mentor review
+            curr_status = str(target_ex.get('status', '')).strip().lower()
+            if curr_status == 'pending':
+                # Already pending mentor review!
+                return redirect(url_for('dashboard.dashboard_intern', active_tab='workspace', requested=1))
 
-        re_applied = False
-        if existing:
-            # If user has an existing record that is active/resubmit but not yet submitted for grading,
-            # allow them to re-request mentor review so it moves to pending status
-            for ex in existing:
-                if ex.get('status') in ['active', 'resubmit']:
-                    has_submission = False
+            target_eid = target_ex.get('enrollment_id') or enrollment_id
+            enrollment_id = target_eid
+            db_id = target_ex.get('id')
+
+            up_payload = {
+                'status': 'pending',
+                'track_level': track_level
+            }
+            if college_name: up_payload['college_name'] = college_name
+            if course_name: up_payload['course_name'] = course_name
+            if session_year: up_payload['session_year'] = session_year
+
+            # Update directly by primary key 'id'
+            updated = False
+            if db_id:
+                try:
+                    supabase.table('enrollments').update(up_payload).eq('id', db_id).execute()
+                    updated = True
+                except Exception as up_err:
+                    print(f"api_enroll: update by id failed ({up_err}), trying base fields...")
                     try:
-                        sub_res = supabase.table('submissions').select('id').eq('enrollment_id', ex['enrollment_id']).execute()
-                        has_submission = bool(sub_res and sub_res.data)
-                    except Exception:
-                        has_submission = False
+                        supabase.table('enrollments').update({'status': 'pending', 'track_level': track_level}).eq('id', db_id).execute()
+                        updated = True
+                    except Exception as up_err2:
+                        print(f"api_enroll: update by id base fields failed: {up_err2}")
 
-                    if not has_submission:
-                        target_eid = ex.get('enrollment_id')
-                        enrollment_id = target_eid or enrollment_id
-                        try:
-                            supabase.table('enrollments').update({
-                                'status': 'pending',
-                                'track_level': track_level
-                            }).eq('enrollment_id', target_eid).execute()
-                            re_applied = True
-                        except Exception as up_err:
-                            print(f"api_enroll: error updating by enrollment_id: {up_err}")
-                            if ex.get('id'):
-                                try:
-                                    supabase.table('enrollments').update({
-                                        'status': 'pending',
-                                        'track_level': track_level
-                                    }).eq('id', ex['id']).execute()
-                                    re_applied = True
-                                except Exception as up_err2:
-                                    print(f"api_enroll: error updating by id: {up_err2}")
-
-                        try:
-                            supabase.table('enrollments').update({
-                                'start_date': start_dt.isoformat()
-                            }).eq('enrollment_id', enrollment_id).execute()
-                        except Exception:
-                            pass
-
-            if not re_applied and any(ex.get('status') in ['submitted', 'graded', 'certified', 'completed'] for ex in existing):
-                return redirect(url_for('dashboard.dashboard_intern', active_tab='workspace'))
-
-        if not existing or (not re_applied and not any(ex.get('status') == 'pending' for ex in existing)):
-            # Prepare base payload guaranteed to match standard enrollments table schema (no start_date in base)
+            # Also update by 'enrollment_id' as fallback
+            if not updated and target_eid:
+                try:
+                    supabase.table('enrollments').update(up_payload).eq('enrollment_id', target_eid).execute()
+                    updated = True
+                except Exception as up_eid_err:
+                    print(f"api_enroll: update by eid failed ({up_eid_err}), trying base fields...")
+                    try:
+                        supabase.table('enrollments').update({'status': 'pending', 'track_level': track_level}).eq('enrollment_id', target_eid).execute()
+                        updated = True
+                    except Exception as up_eid_err2:
+                        print(f"api_enroll: update by eid base fields failed: {up_eid_err2}")
+        else:
+            # New enrollment! Insert new record with status = 'pending'
             base_payload = {
                 "enrollment_id": enrollment_id,
                 "user_id": user_id,
@@ -388,7 +386,6 @@ def api_enroll():
             if course_name: full_payload["course_name"] = course_name
             if session_year: full_payload["session_year"] = session_year
 
-            # Try inserting full payload; if schema columns don't exist in Supabase, fallback cleanly
             try:
                 supabase.table('enrollments').insert(full_payload).execute()
             except Exception as full_err:
@@ -404,12 +401,6 @@ def api_enroll():
                     except Exception as alt_err:
                         print(f"api_enroll: insert alt_payload failed: {alt_err}")
                         raise alt_err
-
-            # Safely attempt to set start_date if column exists in the table
-            try:
-                supabase.table('enrollments').update({'start_date': start_dt.isoformat()}).eq('enrollment_id', enrollment_id).execute()
-            except Exception:
-                pass
 
         # Sync academic details to users.profile_details
         if college_name or course_name or session_year:
@@ -461,13 +452,13 @@ def api_enroll():
         except Exception as email_err:
             print(f"api_enroll: email warning: {email_err}")
 
-        return redirect(url_for('dashboard.dashboard_intern', active_tab='workspace'))
+        return redirect(url_for('dashboard.dashboard_intern', active_tab='workspace', requested=1))
 
     except Exception as fatal_e:
         import traceback
         traceback.print_exc()
         print(f"api_enroll fatal error caught: {fatal_e}")
-        return redirect(url_for('dashboard.dashboard_intern', active_tab='workspace'))
+        return redirect(url_for('dashboard.dashboard_intern', active_tab='workspace', error=str(fatal_e)))
 
 
 @intern_bp.route('/submit-project', methods=['POST'])

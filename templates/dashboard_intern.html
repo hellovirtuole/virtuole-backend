@@ -29,6 +29,19 @@
             <h1 class="dash-greeting">Hello, {{ user_name | default("Intern") }}</h1>
             <p class="dash-sub">Manage your active projects, track upcoming batch start dates, and submit architectures.</p>
 
+            {% if request.args.get('requested') %}
+            <div style="background: rgba(45, 212, 191, 0.12); border: 1px solid rgba(45, 212, 191, 0.4); color: #2dd4bf; padding: 14px 18px; border-radius: 10px; margin: 15px 0 20px; display: flex; align-items: center; gap: 10px; font-size: 0.92rem;">
+                <span style="font-size: 1.3rem;">🎉</span>
+                <span><strong>Enrollment Application Submitted!</strong> Your request has been sent for mentor review. Tracking status is displayed below under "Applications Under Mentor Review".</span>
+            </div>
+            {% endif %}
+            {% if request.args.get('error') %}
+            <div style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444; padding: 14px 18px; border-radius: 10px; margin: 15px 0 20px; display: flex; align-items: center; gap: 10px; font-size: 0.92rem;">
+                <span style="font-size: 1.3rem;">⚠️</span>
+                <span><strong>Enrollment Notice:</strong> {{ request.args.get('error') }}</span>
+            </div>
+            {% endif %}
+
             {% if pending_projects and pending_projects | length > 0 %}
             <div class="dash-section-title" style="margin-top:8px; color: #f59e0b; display: flex; align-items: center; gap: 8px;">
                 <span>⏳ Applications Under Mentor Review</span>
@@ -137,10 +150,16 @@
                         <h4 class="au-panel-title">{{ program.title }}</h4>
                         <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{
                             program.short_description }}</p>
-                        <button class="au-btn sm"
+                        <button type="button" class="au-btn sm btn-enroll-card"
                             style="margin-top:auto;width:100%; background: var(--primary); background-image: none; color: #fff; border: none;"
-                            onclick='openEnrollModal({{ program.id | tojson }}, {{ program.title | tojson }}, {{ program.tracks | tojson }}, {{ program.allow_custom_timeline | default(false) | tojson }}, {{ program.custom_min_months | default(1) }}, {{ program.max_custom_months | default(12) }}, {{ program.custom_price | default(0) }})'>Enroll
-                            Now</button>
+                            data-program-id="{{ program.id }}"
+                            data-program-title="{{ program.title | e }}"
+                            data-tracks="{{ (program.tracks | tojson) | forceescape }}"
+                            data-allow-custom="{{ 'true' if program.allow_custom_timeline else 'false' }}"
+                            data-min-custom="{{ program.custom_min_months | default(1) }}"
+                            data-max-custom="{{ program.max_custom_months | default(12) }}"
+                            data-custom-price="{{ program.custom_price | default(0) }}"
+                            onclick="handleEnrollButtonClick(this)">Enroll Now</button>
                     </div>
                 </div>
                 {% endfor %}
@@ -523,6 +542,22 @@
     <script>
         /* Modal helpers (switchView + theme handled by dashboard_nav.html) */
         function closeModal(modalId) { document.getElementById(modalId).classList.remove('open'); }
+
+        function handleEnrollButtonClick(btn) {
+            var programId = btn.getAttribute('data-program-id');
+            var programTitle = btn.getAttribute('data-program-title');
+            var tracks = [];
+            try {
+                tracks = JSON.parse(btn.getAttribute('data-tracks') || '[]');
+            } catch (e) {
+                tracks = [];
+            }
+            var allowCustom = btn.getAttribute('data-allow-custom') === 'true';
+            var minCustom = parseInt(btn.getAttribute('data-min-custom') || '1', 10);
+            var maxCustom = parseInt(btn.getAttribute('data-max-custom') || '12', 10);
+            var customPrice = parseInt(btn.getAttribute('data-custom-price') || '0', 10);
+            openEnrollModal(programId, programTitle, tracks, allowCustom, minCustom, maxCustom, customPrice);
+        }
 
         function openEnrollModal(programId, programTitle, tracks, allowCustom, minCustom, maxCustom, customPrice) {
             document.getElementById('enroll-program-name').value = programId;
