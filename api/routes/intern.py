@@ -343,21 +343,32 @@ def api_enroll():
                         has_submission = False
 
                     if not has_submission:
+                        target_eid = ex.get('enrollment_id')
+                        enrollment_id = target_eid or enrollment_id
                         try:
                             supabase.table('enrollments').update({
                                 'status': 'pending',
-                                'enrollment_id': enrollment_id,
                                 'track_level': track_level
-                            }).eq('id', ex['id']).execute()
+                            }).eq('enrollment_id', target_eid).execute()
                             re_applied = True
-                            try:
-                                supabase.table('enrollments').update({
-                                    'start_date': start_dt.isoformat()
-                                }).eq('id', ex['id']).execute()
-                            except Exception:
-                                pass
                         except Exception as up_err:
-                            print(f"api_enroll: error updating active enrollment to pending: {up_err}")
+                            print(f"api_enroll: error updating by enrollment_id: {up_err}")
+                            if ex.get('id'):
+                                try:
+                                    supabase.table('enrollments').update({
+                                        'status': 'pending',
+                                        'track_level': track_level
+                                    }).eq('id', ex['id']).execute()
+                                    re_applied = True
+                                except Exception as up_err2:
+                                    print(f"api_enroll: error updating by id: {up_err2}")
+
+                        try:
+                            supabase.table('enrollments').update({
+                                'start_date': start_dt.isoformat()
+                            }).eq('enrollment_id', enrollment_id).execute()
+                        except Exception:
+                            pass
 
             if not re_applied and any(ex.get('status') in ['submitted', 'graded', 'certified', 'completed'] for ex in existing):
                 return redirect(url_for('dashboard.dashboard_intern', active_tab='workspace'))

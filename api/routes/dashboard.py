@@ -67,7 +67,10 @@ def dashboard_intern():
             try:
                 pending_enrolls = supabase.table('enrollments').select('*').eq('user_id', u_id).eq('status', 'pending').order('created_at', desc=True).execute().data or []
             except Exception:
-                pending_enrolls = []
+                try:
+                    pending_enrolls = supabase.table('enrollments').select('*').eq('user_id', u_id).eq('status', 'pending').execute().data or []
+                except Exception:
+                    pending_enrolls = []
 
         active_projects = []
         next_batch_date = calculate_next_start_date(now)

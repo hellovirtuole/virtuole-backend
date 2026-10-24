@@ -36,7 +36,7 @@
             </div>
             <div class="au-grid" style="margin-bottom: 30px;">
                 {% for p in pending_projects %}
-                <div class="au-card reveal" style="padding: 24px; border: 1px solid rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.03); display: flex; flex-direction: column;">
+                <div class="au-card reveal in" style="padding: 24px; border: 1px solid rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.03); display: flex; flex-direction: column;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
                         <h4 class="au-panel-title" style="margin: 0; font-size: 1.1em;">{{ p.program_title }}</h4>
                         <span class="au-badge warn" style="flex-shrink: 0;">⏳ Under Review</span>
@@ -350,20 +350,17 @@
             <button type="button" class="au-modal-close" onclick="closeModal('enrollModal')">&times;</button>
             <h3>Program Registration</h3>
             <p style="color:var(--text-muted);font-size:.9em;margin:0 0 22px;">Submit your academic details to request mentor approval for this internship.</p>
-            <form action="/enroll" method="POST"
-                onsubmit="var btn = this.querySelector('button[type=submit]'); btn.innerText='Submitting Request...'; setTimeout(function(){ btn.disabled=true; }, 50);">
+            <form action="/enroll" method="POST" id="enrollForm"
+                onsubmit="var btn = document.getElementById('enrollSubmitBtn'); if(btn){ btn.innerText='Submitting Request...'; }">
                 <input type="hidden" id="enroll-program-name" name="program_id">
                 <div class="au-form-group"><label>Institution / College Name</label><input type="text"
-                        name="college_name" value="{{ profile_details.get('college_name', '') }}" readonly
-                        style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.1);"></div>
+                        name="college_name" value="{{ profile_details.get('college_name', '') }}" {% if profile_details.get('college_name') %}readonly style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.1);"{% endif %} placeholder="e.g. University Institute of Technology"></div>
                 <div class="au-form-group"><label>Academic Course</label><input type="text" name="course_name"
-                        value="{{ profile_details.get('course_name', '') }}" readonly
-                        style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.1);"></div>
+                        value="{{ profile_details.get('course_name', '') }}" {% if profile_details.get('course_name') %}readonly style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.1);"{% endif %} placeholder="e.g. B.Tech / B.Arch / BCA"></div>
                 <div class="au-form-group"><label>Academic Session / Year</label><input type="text" name="session_year"
-                        value="{{ profile_details.get('session_year', '') }}" readonly
-                        style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.1);"></div>
+                        value="{{ profile_details.get('session_year', '') }}" {% if profile_details.get('session_year') %}readonly style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.1);"{% endif %} placeholder="e.g. 2023 - 2027"></div>
                 <p style="font-size: 0.8em; color: var(--au-gold); margin-top: -10px; margin-bottom: 15px;">(Academic
-                    details are synced from your Profile)</p>
+                    details are synced with your Profile)</p>
                 <div class="au-form-group">
                     <label>Select Duration</label>
                     <div id="dynamic-tracks-btn-container"
@@ -381,14 +378,14 @@
                 </div>
                 <div class="au-form-group"
                     style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px;">
-                    <input type="checkbox" id="enroll_terms" name="terms_agree" required
+                    <input type="checkbox" id="enroll_terms" name="terms_agree" checked
                         style="width: auto; margin-top: 2px;">
                     <label for="enroll_terms"
-                        style="font-size: 0.85em; text-transform: none; line-height: 1.4; color: var(--text-muted);">I
+                        style="font-size: 0.85em; text-transform: none; line-height: 1.4; color: var(--text-muted); cursor: pointer;">I
                         accept all Terms and Conditions, rules, and platform policies.</label>
                 </div>
 
-                <button type="submit" class="au-btn" style="width:100%;">Request Mentor Approval (Free)</button>
+                <button type="submit" id="enrollSubmitBtn" class="au-btn" style="width:100%;">Request Mentor Approval (Free)</button>
                 <p style="font-size: 0.8em; color: var(--text-muted); margin-top: 10px; line-height: 1.4; text-align: center;">
                     * Applications are reviewed by mentors. When approved, your internship commences on the next upcoming cohort date (1st, 10th, or 20th), and your official Offer Letter will be emailed immediately.
                 </p>
