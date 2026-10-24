@@ -351,7 +351,7 @@
             <h3>Program Registration</h3>
             <p style="color:var(--text-muted);font-size:.9em;margin:0 0 22px;">Submit your academic details to request mentor approval for this internship.</p>
             <form action="/enroll" method="POST"
-                onsubmit="var btn = this.querySelector('button[type=submit]'); btn.disabled=true; btn.innerText='Submitting Request...';">
+                onsubmit="var btn = this.querySelector('button[type=submit]'); btn.innerText='Submitting Request...'; setTimeout(function(){ btn.disabled=true; }, 50);">
                 <input type="hidden" id="enroll-program-name" name="program_id">
                 <div class="au-form-group"><label>Institution / College Name</label><input type="text"
                         name="college_name" value="{{ profile_details.get('college_name', '') }}" readonly
@@ -377,7 +377,7 @@
                     </div>
                     <div id="track-details" style="font-size: 0.9em; color: var(--text-muted); margin-bottom: 10px;">
                         Select a duration to see details.</div>
-                    <input type="hidden" name="track_level" id="hidden-track-level" required>
+                    <input type="hidden" name="track_level" id="hidden-track-level" value="1">
                 </div>
                 <div class="au-form-group"
                     style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px;">

@@ -51,8 +51,24 @@ def dashboard_intern():
         u_id = session['user_id']
         now = datetime.utcnow()
 
-        active_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).in_('status', ['active', 'resubmit']).execute().data or []
-        pending_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).eq('status', 'pending').order('created_at', desc=True).execute().data or []
+        active_enrolls = []
+        try:
+            active_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).in_('status', ['active', 'resubmit']).execute().data or []
+        except Exception:
+            try:
+                active_enrolls = supabase.table('enrollments').select('*').eq('user_id', u_id).in_('status', ['active', 'resubmit']).execute().data or []
+            except Exception:
+                active_enrolls = []
+
+        pending_enrolls = []
+        try:
+            pending_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).eq('status', 'pending').order('created_at', desc=True).execute().data or []
+        except Exception:
+            try:
+                pending_enrolls = supabase.table('enrollments').select('*').eq('user_id', u_id).eq('status', 'pending').order('created_at', desc=True).execute().data or []
+            except Exception:
+                pending_enrolls = []
+
         active_projects = []
         next_batch_date = calculate_next_start_date(now)
         next_batch_date_str = next_batch_date.strftime("%B %d, %Y")
@@ -254,12 +270,43 @@ def dashboard_mentor():
     next_batch_date_str = next_batch_date.strftime("%B %d, %Y")
 
     # Fetch pending enrollment requests
-    pend_enrolls_raw = supabase.table('enrollments').select('*, programs(title, short_description), users(full_name, email, promo_code)').eq('status', 'pending').order('created_at', desc=True).execute().data or []
+    pend_enrolls_raw = []
+    try:
+        pend_enrolls_raw = supabase.table('enrollments').select('*, programs(title, short_description), users(full_name, email, promo_code)').eq('status', 'pending').order('created_at', desc=True).execute().data or []
+    except Exception:
+        try:
+            pend_enrolls_raw = supabase.table('enrollments').select('*').eq('status', 'pending').order('created_at', desc=True).execute().data or []
+        except Exception:
+            pend_enrolls_raw = []
+
     pending_enrollments = []
     for pe in pend_enrolls_raw:
         duration_days, track_display = parse_track_duration(pe.get('track_level'))
         u = pe.get('users') or {}
         p = pe.get('programs') or {}
+
+        # Fallback if users relation was not joined
+        if not u and pe.get('user_id'):
+            try:
+                u_res = supabase.table('users').select('full_name, email, promo_code').eq('id', pe['user_id']).execute()
+                if u_res and u_res.data:
+                    u = u_res.data[0]
+            except Exception:
+                pass
+
+        # Fallback if programs relation was not joined
+        if not p and pe.get('program_id'):
+            try:
+                clean_pid = int(pe['program_id']) if str(pe['program_id']).isdigit() else pe['program_id']
+                p_res = supabase.table('programs').select('title, short_description').eq('id', clean_pid).execute()
+                if p_res and p_res.data:
+                    p = p_res.data[0]
+                else:
+                    p_res = supabase.table('programs').select('title, short_description').eq('id', str(pe['program_id'])).execute()
+                    if p_res and p_res.data:
+                        p = p_res.data[0]
+            except Exception:
+                pass
 
         req_dt_str = 'Recent'
         if pe.get('created_at'):

@@ -335,11 +335,26 @@ def accept_enrollment():
     if not enrollment_id:
         return redirect(url_for('dashboard.dashboard_mentor'))
 
-    enroll_query = supabase.table('enrollments').select('*, programs(*), users(*)').eq('enrollment_id', enrollment_id).execute()
-    if not enroll_query.data:
+    enroll_record = None
+    try:
+        enroll_query = supabase.table('enrollments').select('*, programs(*), users(*)').eq('enrollment_id', enrollment_id).execute()
+        if enroll_query and enroll_query.data:
+            enroll_record = enroll_query.data[0]
+    except Exception:
+        pass
+
+    if not enroll_record:
+        try:
+            enroll_query = supabase.table('enrollments').select('*').eq('enrollment_id', enrollment_id).execute()
+            if enroll_query and enroll_query.data:
+                enroll_record = enroll_query.data[0]
+        except Exception:
+            pass
+
+    if not enroll_record:
         return redirect(url_for('dashboard.dashboard_mentor'))
 
-    _process_single_enrollment_acceptance(enroll_query.data[0], session.get('user_id'))
+    _process_single_enrollment_acceptance(enroll_record, session.get('user_id'))
     return redirect(url_for('dashboard.dashboard_mentor', tab='enrollments', batch_success=1))
 
 
@@ -366,12 +381,27 @@ def batch_accept_enrollments():
     mentor_user_id = session.get('user_id')
     processed_count = 0
 
+    records = []
     if all_pending:
-        pending_query = supabase.table('enrollments').select('*, programs(*), users(*)').eq('status', 'pending').execute()
-        records = pending_query.data or []
+        try:
+            pending_query = supabase.table('enrollments').select('*, programs(*), users(*)').eq('status', 'pending').execute()
+            records = pending_query.data or []
+        except Exception:
+            try:
+                pending_query = supabase.table('enrollments').select('*').eq('status', 'pending').execute()
+                records = pending_query.data or []
+            except Exception:
+                records = []
     elif id_list:
-        records_query = supabase.table('enrollments').select('*, programs(*), users(*)').in_('enrollment_id', id_list).execute()
-        records = records_query.data or []
+        try:
+            records_query = supabase.table('enrollments').select('*, programs(*), users(*)').in_('enrollment_id', id_list).execute()
+            records = records_query.data or []
+        except Exception:
+            try:
+                records_query = supabase.table('enrollments').select('*').in_('enrollment_id', id_list).execute()
+                records = records_query.data or []
+            except Exception:
+                records = []
     else:
         if request.is_json:
             return jsonify({"success": False, "error": "No enrollments specified."}), 400

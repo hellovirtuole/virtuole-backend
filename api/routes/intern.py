@@ -306,23 +306,64 @@ def api_enroll():
         if not prog:
             prog = {"title": "Virtual Internship Program", "short_description": "Virtual Internship Mandate"}
 
-        # Check if already enrolled or requested
+        next_batch_dt = calculate_next_start_date(now)
+        start_dt = next_batch_dt
+        start_date_str = start_dt.strftime("%B %d, %Y")
+
+        # Check if already enrolled or requested for this program
         existing = []
         try:
-            ex_res = supabase.table('enrollments').select('id, enrollment_id, status').eq('user_id', user_id).eq('program_id', clean_prog_id).eq('track_level', track_level).in_('status', ['pending', 'active', 'submitted', 'resubmit']).execute()
-            existing = ex_res.data if ex_res else []
-        except Exception as ex_err:
-            try:
-                ex_res = supabase.table('enrollments').select('id, enrollment_id, status').eq('user_id', user_id).eq('program_id', str(program_id)).eq('track_level', track_level).in_('status', ['pending', 'active', 'submitted', 'resubmit']).execute()
-                existing = ex_res.data if ex_res else []
-            except Exception:
-                pass
+            ex_res = supabase.table('enrollments').select('id, enrollment_id, status, track_level').eq('user_id', user_id).eq('program_id', clean_prog_id).execute()
+            existing = ex_res.data if ex_res and ex_res.data else []
+        except Exception:
+            existing = []
 
-        if existing:
-            # If application is already submitted and pending or active, avoid duplicates
+        if not existing:
+            try:
+                ex_res = supabase.table('enrollments').select('id, enrollment_id, status, track_level').eq('user_id', user_id).eq('program_id', str(program_id)).execute()
+                existing = ex_res.data if ex_res and ex_res.data else []
+            except Exception:
+                existing = []
+
+        has_pending = any(ex.get('status') == 'pending' for ex in existing)
+        if has_pending:
             return redirect(url_for('dashboard.dashboard_intern', active_tab='workspace'))
-        else:
-            # Prepare base payload with pending status awaiting mentor review
+
+        re_applied = False
+        if existing:
+            # If user has an existing record that is active/resubmit but not yet submitted for grading,
+            # allow them to re-request mentor review so it moves to pending status
+            for ex in existing:
+                if ex.get('status') in ['active', 'resubmit']:
+                    has_submission = False
+                    try:
+                        sub_res = supabase.table('submissions').select('id').eq('enrollment_id', ex['enrollment_id']).execute()
+                        has_submission = bool(sub_res and sub_res.data)
+                    except Exception:
+                        has_submission = False
+
+                    if not has_submission:
+                        try:
+                            supabase.table('enrollments').update({
+                                'status': 'pending',
+                                'enrollment_id': enrollment_id,
+                                'track_level': track_level
+                            }).eq('id', ex['id']).execute()
+                            re_applied = True
+                            try:
+                                supabase.table('enrollments').update({
+                                    'start_date': start_dt.isoformat()
+                                }).eq('id', ex['id']).execute()
+                            except Exception:
+                                pass
+                        except Exception as up_err:
+                            print(f"api_enroll: error updating active enrollment to pending: {up_err}")
+
+            if not re_applied and any(ex.get('status') in ['submitted', 'graded', 'certified', 'completed'] for ex in existing):
+                return redirect(url_for('dashboard.dashboard_intern', active_tab='workspace'))
+
+        if not existing or (not re_applied and not any(ex.get('status') == 'pending' for ex in existing)):
+            # Prepare base payload guaranteed to match standard enrollments table schema (no start_date in base)
             base_payload = {
                 "enrollment_id": enrollment_id,
                 "user_id": user_id,
@@ -352,6 +393,12 @@ def api_enroll():
                     except Exception as alt_err:
                         print(f"api_enroll: insert alt_payload failed: {alt_err}")
                         raise alt_err
+
+            # Safely attempt to set start_date if column exists in the table
+            try:
+                supabase.table('enrollments').update({'start_date': start_dt.isoformat()}).eq('enrollment_id', enrollment_id).execute()
+            except Exception:
+                pass
 
         # Sync academic details to users.profile_details
         if college_name or course_name or session_year:
