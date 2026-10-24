@@ -329,14 +329,32 @@
         <!-- Ribbon -->
         <div class="ribbon"></div>
         
-        <!-- The Custom Stamp Image -->
+        <!-- The Custom Stamp -->
         <div class="seal">
-            <img src="YOUR_STAMP_IMAGE_URL_HERE.png" alt="Your Stamp">
+            <svg viewBox="0 0 140 140" width="140" height="140" style="display:block; transform: rotate(-5deg); opacity: 0.92; user-select: none;">
+                <circle cx="70" cy="70" r="66" fill="none" stroke="#b91c1c" stroke-width="2.8"/>
+                <circle cx="70" cy="70" r="61" fill="none" stroke="#b91c1c" stroke-width="1.2"/>
+                <circle cx="70" cy="70" r="41" fill="none" stroke="#b91c1c" stroke-width="1.2"/>
+                <defs>
+                    <path id="t-arc-cert" d="M 22,70 A 48,48 0 1,1 118,70" fill="none"/>
+                    <path id="b-arc-cert" d="M 19,70 A 51,51 0 0,0 121,70" fill="none"/>
+                </defs>
+                <text fill="#b91c1c" font-size="11.5" font-family="'Montserrat', Arial, sans-serif" font-weight="900" letter-spacing="3.5">
+                    <textPath href="#t-arc-cert" startOffset="50%" text-anchor="middle">VIRTUOLE</textPath>
+                </text>
+                <text fill="#b91c1c" font-size="9" font-family="'Montserrat', Arial, sans-serif" font-weight="800" letter-spacing="1.8">
+                    <textPath href="#b-arc-cert" startOffset="50%" text-anchor="middle">VIRTUOLE INTERNSHIP</textPath>
+                </text>
+                <line x1="43" y1="54" x2="97" y2="54" stroke="#b91c1c" stroke-width="1.2"/>
+                <text x="70" y="67" fill="#b91c1c" font-size="12.5" font-family="'Montserrat', Arial, sans-serif" font-weight="900" letter-spacing="1.5" text-anchor="middle">OFFICIAL</text>
+                <text x="70" y="78" fill="#b91c1c" font-size="8.5" font-family="'Montserrat', Arial, sans-serif" font-weight="800" letter-spacing="2.5" text-anchor="middle">SEAL</text>
+                <line x1="43" y1="84" x2="97" y2="84" stroke="#b91c1c" stroke-width="1.2"/>
+            </svg>
         </div>
 
         <!-- MSME Logo (Image) -->
         <div class="msme-logo">
-            <img src="YOUR_MSME_LOGO_URL_HERE.png" style="height: 100%; width: auto;" alt="MSME Logo">
+            <img src="YOUR_MSME_LOGO_URL_HERE.png" style="height: 100%; width: auto;" alt="MSME Logo" onerror="this.style.display='none'">
         </div>
 
         <!-- Content -->
