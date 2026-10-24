@@ -51,18 +51,6 @@ def dashboard_intern():
         u_id = session['user_id']
         now = datetime.utcnow()
 
-        # Auto-activate any legacy/pending enrollments for this user so they immediately appear in Active Programs
-        try:
-            supabase.table('enrollments').update({
-                'status': 'active',
-                'start_date': now.isoformat()
-            }).eq('user_id', u_id).eq('status', 'pending').execute()
-        except Exception:
-            try:
-                supabase.table('enrollments').update({'status': 'active'}).eq('user_id', u_id).eq('status', 'pending').execute()
-            except Exception:
-                pass
-
         active_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).in_('status', ['active', 'resubmit']).execute().data or []
         pending_enrolls = supabase.table('enrollments').select('*, programs(*)').eq('user_id', u_id).eq('status', 'pending').order('created_at', desc=True).execute().data or []
         active_projects = []
@@ -74,14 +62,20 @@ def dashboard_intern():
             p = pe.get('programs') or {}
             if not p and pe.get('program_id'):
                 try:
-                    p_res = supabase.table('programs').select('*').eq('id', pe['program_id']).execute()
-                    if p_res and p_res.data: p = p_res.data[0]
+                    clean_pid = int(pe['program_id']) if str(pe['program_id']).isdigit() else pe['program_id']
+                    p_res = supabase.table('programs').select('*').eq('id', clean_pid).execute()
+                    if p_res and p_res.data:
+                        p = p_res.data[0]
+                    else:
+                        p_res = supabase.table('programs').select('*').eq('id', str(pe['program_id'])).execute()
+                        if p_res and p_res.data:
+                            p = p_res.data[0]
                 except Exception:
                     pass
             _, track_display = parse_track_duration(pe.get('track_level'))
             pending_projects.append({
                 'program_title': p.get('title', 'Architecture Internship'),
-                'description': p.get('short_description', ''),
+                'description': p.get('short_description', 'Virtual Architecture Internship Mandate'),
                 'track_level': track_display,
                 'enrollment_id': pe['enrollment_id'],
                 'status': 'pending',

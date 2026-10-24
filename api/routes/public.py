@@ -117,7 +117,27 @@ def download_offer(enrollment_id):
 
     e = enroll_data[0]
     if e.get('status') == 'pending':
-        return "Offer Letter is currently unavailable. Your enrollment request is awaiting mentor approval.", 403
+        return render_template('offer.html', pending=True)
+
+    prog = e.get('programs') or {}
+    if not prog and e.get('program_id'):
+        try:
+            clean_pid = int(e['program_id']) if str(e['program_id']).isdigit() else e['program_id']
+            p_res = supabase.table('programs').select('*').eq('id', clean_pid).execute()
+            if p_res and p_res.data:
+                prog = p_res.data[0]
+            else:
+                p_res = supabase.table('programs').select('*').eq('id', str(e['program_id'])).execute()
+                if p_res and p_res.data:
+                    prog = p_res.data[0]
+        except Exception:
+            pass
+
+    if not prog:
+        prog = {"title": "Virtual Architecture Internship", "short_description": "Virtual Architecture Internship Mandate"}
+
+    user_info = e.get('users') or {}
+    student_name = user_info.get('full_name') or session.get('name', 'Intern')
 
     raw_start = e.get('start_date') or e.get('created_at')
     try:
@@ -133,7 +153,7 @@ def download_offer(enrollment_id):
     end_date = end_dt.strftime("%B %d, %Y")
     issue_date = datetime.utcnow().strftime("%B %d, %Y")
 
-    html_content = render_template('docs/offer_letter.html', name=e['users']['full_name'], date=raw_date, issue_date=issue_date, program_title=e['programs']['title'], track_level=track_display, duration=track_display, enroll_id=enrollment_id, project_details=e['programs']['short_description'], duration_days=duration_days, end_date=end_date)
+    html_content = render_template('docs/offer_letter.html', name=student_name, date=raw_date, issue_date=issue_date, program_title=prog['title'], track_level=track_display, duration=track_display, enroll_id=enrollment_id, project_details=prog.get('short_description', 'Virtual Architecture Internship Mandate'), duration_days=duration_days, end_date=end_date)
 
     # Auto-Print dialog script
     return html_content + "<script>window.onload = function() { setTimeout(function(){ window.print(); }, 500); }</script>"

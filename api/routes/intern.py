@@ -319,36 +319,19 @@ def api_enroll():
                 pass
 
         if existing:
-            # If an existing enrollment was created in pending status, activate it right now!
-            has_pending = False
-            for ex in existing:
-                if ex.get('status') == 'pending':
-                    has_pending = True
-                    enrollment_id = ex.get('enrollment_id') or enrollment_id
-                    try:
-                        supabase.table('enrollments').update({
-                            'status': 'active',
-                            'start_date': start_dt.isoformat()
-                        }).eq('id', ex['id']).execute()
-                    except Exception:
-                        try:
-                            supabase.table('enrollments').update({'status': 'active'}).eq('id', ex['id']).execute()
-                        except Exception:
-                            pass
-            if not has_pending:
-                return redirect(url_for('dashboard.dashboard_intern', active_tab='workspace'))
+            # If application is already submitted and pending or active, avoid duplicates
+            return redirect(url_for('dashboard.dashboard_intern', active_tab='workspace'))
         else:
-            # Prepare base payload guaranteed to match standard enrollments table schema with active status
+            # Prepare base payload with pending status awaiting mentor review
             base_payload = {
                 "enrollment_id": enrollment_id,
                 "user_id": user_id,
                 "program_id": clean_prog_id,
                 "track_level": track_level,
-                "status": "active"
+                "status": "pending"
             }
 
             full_payload = dict(base_payload)
-            full_payload["start_date"] = start_dt.isoformat()
             if college_name: full_payload["college_name"] = college_name
             if course_name: full_payload["course_name"] = course_name
             if session_year: full_payload["session_year"] = session_year
@@ -391,31 +374,34 @@ def api_enroll():
             except Exception as prof_err:
                 print(f"api_enroll: profile details sync warning: {prof_err}")
 
-        # Generate official offer letter with verifiable red stamp
+        # Send in-app notification to intern and mentors
         try:
-            html_offer = render_template(
-                'docs/offer_letter.html',
-                name=session.get('name', 'Intern'),
-                date=start_date_str,
-                issue_date=issue_date_str,
-                program_title=prog.get('title', 'Virtual Architecture Program'),
-                track_level=track_display,
-                duration=track_display,
-                enroll_id=enrollment_id,
-                project_details=prog.get('short_description', 'Virtual Architecture Internship Mandate'),
-                duration_days=duration_days,
-                end_date=end_date_str
-            )
-            if session.get('email'):
-                send_system_email(session['email'], f"Official Internship Offer Letter - Virtuole ({prog.get('title')})", html_offer, is_html=True)
-        except Exception as email_err:
-            print(f"api_enroll: email warning: {email_err}")
-
-        # Send in-app notification to intern
-        try:
-            send_notification('intern', user_id, 'enrollment_success', 'Enrollment Confirmed!', f'You are officially enrolled in {prog["title"]} ({track_display}). Your tracking ID is {enrollment_id}.')
+            send_notification('intern', user_id, 'enrollment_request', 'Enrollment Request Submitted', f'Your application for {prog["title"]} ({track_display}) has been sent for mentor approval.')
+            send_notification('mentor', None, 'new_enrollment_request', 'New Enrollment Request', f'{session.get("name", "An intern")} requested enrollment in {prog["title"]} (ID: {enrollment_id}).')
         except Exception as notif_err:
             print(f"api_enroll: notification warning: {notif_err}")
+
+        # Send confirmation email to applicant that request is under review
+        try:
+            next_batch = calculate_next_start_date(datetime.utcnow()).strftime("%B %d, %Y")
+            req_email_html = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1e293b;">
+                <h2 style="color: #2563eb;">Enrollment Request Received</h2>
+                <p>Dear {session.get('name', 'Intern')},</p>
+                <p>Thank you for applying to the <strong>{prog['title']}</strong> program ({track_display}) at Virtuole.</p>
+                <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin: 0 0 8px;"><strong>Enrollment Tracking ID:</strong> {enrollment_id}</p>
+                    <p style="margin: 0 0 8px;"><strong>Status:</strong> Under Mentor Review</p>
+                    <p style="margin: 0;"><strong>Projected Batch Start:</strong> {next_batch}</p>
+                </div>
+                <p>Our mentorship team is currently reviewing your application. As soon as a mentor accepts your request, your official Internship Offer Letter will be generated with your confirmed start date and emailed to you directly.</p>
+                <p style="margin-top: 30px; font-size: 13px; color: #64748b;">Virtuole Engineering Platform | support@virtuole.in</p>
+            </div>
+            """
+            if session.get('email'):
+                send_system_email(session['email'], f"Enrollment Request Under Review - {prog['title']}", req_email_html, is_html=True)
+        except Exception as email_err:
+            print(f"api_enroll: email warning: {email_err}")
 
         return redirect(url_for('dashboard.dashboard_intern', active_tab='workspace'))
 

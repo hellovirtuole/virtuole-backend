@@ -47,9 +47,12 @@
                         <div style="margin-bottom: 4px;"><strong>Tracking ID:</strong> <span style="font-family: monospace;">{{ p.enrollment_id }}</span></div>
                         <div style="color: #2dd4bf; margin-top: 6px; font-weight: 600;">📅 Projected Batch Start: {{ p.projected_start_date }}</div>
                     </div>
+                    <div style="background: rgba(245, 158, 11, 0.08); border-left: 3px solid #f59e0b; padding: 10px 12px; border-radius: 0 6px 6px 0; margin-bottom: 16px; font-size: .84em; color: var(--text-main);">
+                        🔒 <strong>Awaiting Mentor Approval:</strong> Project architecture submission and official Offer Letter download will unlock automatically once a mentor reviews and approves your application.
+                    </div>
                     <div style="font-size: .82em; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-top: auto;">
                         <span>ℹ️</span>
-                        <span>Your enrollment request is with our mentors. Once accepted, your official Offer Letter and start date will be confirmed.</span>
+                        <span>Your application has been received by our mentorship committee. You will receive an email confirmation upon approval.</span>
                     </div>
                 </div>
                 {% endfor %}
@@ -346,9 +349,9 @@
         <div class="au-modal-card au-form">
             <button type="button" class="au-modal-close" onclick="closeModal('enrollModal')">&times;</button>
             <h3>Program Registration</h3>
-            <p style="color:var(--text-muted);font-size:.9em;margin:0 0 22px;">Confirm your academic details to start your virtual internship.</p>
+            <p style="color:var(--text-muted);font-size:.9em;margin:0 0 22px;">Submit your academic details to request mentor approval for this internship.</p>
             <form action="/enroll" method="POST"
-                onsubmit="var btn = this.querySelector('button[type=submit]'); btn.disabled=true; btn.innerText='Enrolling...';">
+                onsubmit="var btn = this.querySelector('button[type=submit]'); btn.disabled=true; btn.innerText='Submitting Request...';">
                 <input type="hidden" id="enroll-program-name" name="program_id">
                 <div class="au-form-group"><label>Institution / College Name</label><input type="text"
                         name="college_name" value="{{ profile_details.get('college_name', '') }}" readonly
@@ -385,9 +388,9 @@
                         accept all Terms and Conditions, rules, and platform policies.</label>
                 </div>
 
-                <button type="submit" class="au-btn" style="width:100%;">Confirm &amp; Enroll Now (Free)</button>
+                <button type="submit" class="au-btn" style="width:100%;">Request Mentor Approval (Free)</button>
                 <p style="font-size: 0.8em; color: var(--text-muted); margin-top: 10px; line-height: 1.4; text-align: center;">
-                    * Your internship commences immediately upon enrollment. Your official Offer Letter with verified credentials will be generated and emailed instantly.
+                    * Applications are reviewed by mentors. When approved, your internship commences on the next upcoming cohort date (1st, 10th, or 20th), and your official Offer Letter will be emailed immediately.
                 </p>
             </form>
         </div>

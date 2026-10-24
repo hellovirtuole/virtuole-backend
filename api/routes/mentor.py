@@ -247,7 +247,30 @@ def evaluate_task():
 def _process_single_enrollment_acceptance(e, mentor_user_id):
     enrollment_id = e.get('enrollment_id')
     student = e.get('users') or {}
+    if not student and e.get('user_id'):
+        try:
+            u_res = supabase.table('users').select('*').eq('id', e['user_id']).execute()
+            if u_res and u_res.data:
+                student = u_res.data[0]
+        except Exception:
+            pass
+
     prog = e.get('programs') or {}
+    if not prog and e.get('program_id'):
+        try:
+            clean_pid = int(e['program_id']) if str(e['program_id']).isdigit() else e['program_id']
+            p_res = supabase.table('programs').select('*').eq('id', clean_pid).execute()
+            if p_res and p_res.data:
+                prog = p_res.data[0]
+            else:
+                p_res = supabase.table('programs').select('*').eq('id', str(e['program_id'])).execute()
+                if p_res and p_res.data:
+                    prog = p_res.data[0]
+        except Exception:
+            pass
+
+    if not prog:
+        prog = {"title": "Virtual Architecture Internship", "short_description": "Virtual Architecture Internship Mandate"}
 
     now = datetime.utcnow()
     # Batch date calculation: upcoming 1st, 10th, or 20th
