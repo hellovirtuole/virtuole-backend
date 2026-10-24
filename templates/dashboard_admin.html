@@ -67,11 +67,11 @@
             <div class="au-stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
                 <div class="au-stat s-violet reveal">
                     <h4>Total Platform Revenue</h4>
-                    <p class="num grad">&#8377;{{ total_earnings | default("0.00") }}</p>
+                    <p class="num grad">₹{{ total_earnings | default("0.00") }}</p>
                 </div>
                 <div class="au-stat s-gold reveal d1">
                     <h4>30-Day Projections</h4>
-                    <p class="num" style="color:var(--au-gold);">&#8377;{{ projected_revenue | default("0.00") }}</p>
+                    <p class="num" style="color:var(--au-gold);">₹{{ projected_revenue | default("0.00") }}</p>
                     <div style="font-size:0.75em; color:var(--text-muted); margin-top:4px;">Based on 7-day average</div>
                 </div>
                 <div class="au-stat s-blue reveal d2">
@@ -126,7 +126,7 @@
                     <div class="au-chart-wrap"><canvas id="growthChart"></canvas></div>
                 </div>
                 <div class="au-chart-card wide">
-                    <div class="au-chart-head"><h4>Revenue &mdash; Last 30 Days</h4><span class="au-chart-badge">&#8377; paid</span></div>
+                    <div class="au-chart-head"><h4>Revenue &mdash; Last 30 Days</h4><span class="au-chart-badge">₹ paid</span></div>
                     <div class="au-chart-wrap"><canvas id="revenueChart"></canvas></div>
                 </div>
                 <div class="au-chart-card wide">
@@ -294,7 +294,7 @@
                                 <input type="number" name="max_custom_months" value="12">
                             </div>
                             <div style="flex: 1; min-width: 120px;">
-                                <label style="font-size: 0.85em;">Price (&#8377;)</label>
+                                <label style="font-size: 0.85em;">Price (₹)</label>
                                 <input type="number" name="custom_price" value="599">
                             </div>
                             <div style="flex: 1; min-width: 250px;">
@@ -329,14 +329,14 @@
                             {% for track in program.tracks %}
                             <div style="display:flex; justify-content:space-between; align-items:center;">
                                 <a href="{{ track.specs }}" target="_blank" style="color:var(--primary);text-decoration:none;">View {{ track.months }}M Specs</a>
-                                <span style="font-size:0.9em; color:var(--text-muted);">&#8377;{{ track.price }}</span>
+                                <span style="font-size:0.9em; color:var(--text-muted);">₹{{ track.price }}</span>
                             </div>
                             {% endfor %}
                         {% else %}
                             <!-- Fallback for old programs without dynamic tracks -->
-                            {% if program.offer_1m != False %}<a href="{{ program.specs_beginner }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 1M Specs (&#8377;{{ program.price_beginner }})</a>{% endif %}
-                            {% if program.offer_2m != False %}<a href="{{ program.specs_intermediate }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 2M Specs (&#8377;{{ program.price_intermediate }})</a>{% endif %}
-                            {% if program.offer_3m != False %}<a href="{{ program.specs_expert }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 3M Specs (&#8377;{{ program.price_expert }})</a>{% endif %}
+                            {% if program.offer_1m != False %}<a href="{{ program.specs_beginner }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 1M Specs (₹{{ program.price_beginner }})</a>{% endif %}
+                            {% if program.offer_2m != False %}<a href="{{ program.specs_intermediate }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 2M Specs (₹{{ program.price_intermediate }})</a>{% endif %}
+                            {% if program.offer_3m != False %}<a href="{{ program.specs_expert }}" target="_blank" style="color:var(--primary);text-decoration:none;">View 3M Specs (₹{{ program.price_expert }})</a>{% endif %}
                         {% endif %}
                     </div>
                     <p style="color:var(--text-muted);font-size:.94em;line-height:1.6;margin:12px 0 20px;">{{ program.short_description }}</p>
@@ -425,7 +425,7 @@
                     </div>
                     {% if amb.swag_dispatched %}
                         <div style="display:flex;align-items:center;gap:10px;">
-                            <span class="au-badge success">Γ£à Sent via Courier</span>
+                            <span class="au-badge success">✓ Sent via Courier</span>
                         </div>
                     {% else %}
                         <form class="au-form" action="/admin/mark-swag-sent" method="POST" style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;">
@@ -622,8 +622,16 @@
                                     Manual Offline
                                 {% endif %}
                             </td>
-                            <td>{{ c.usage_count }}</td>
-                            <td style="color:#10b981; font-weight:bold;">&#8377;{{ "%.2f"|format(c.revenue_generated) }}</td>
+                            <td>
+                                {% if c.usage_count > 0 %}
+                                <button type="button" class="au-btn-ghost sm" style="padding:3px 10px; font-weight:600; cursor:pointer; color:var(--primary); border-color:var(--primary-glow);" onclick='openReferralsModal({{ c.referred_users | tojson | safe }}, "{{ c.full_name | escape }} ({{ c.promo_code }})")'>
+                                    {{ c.usage_count }} View
+                                </button>
+                                {% else %}
+                                0
+                                {% endif %}
+                            </td>
+                            <td style="color:#10b981; font-weight:bold;">₹{{ "%.2f"|format(c.revenue_generated) }}</td>
                             <td>
                                 <form action="/admin/delete-coupon" method="POST" style="margin:0;" onsubmit="return confirm('Are you sure you want to take this coupon offline?');">
                                     <input type="hidden" name="promo_code" value="{{ c.promo_code }}">
@@ -667,7 +675,15 @@
                                 <td>{{ a.college_name or 'N/A' }}</td>
                                 <td><span class="au-pill">{{ a.promo_code }}</span></td>
                                 <td style="color:var(--primary); font-weight:bold;">{{ a.total_points or 0 }}</td>
-                                <td>{{ a.referral_count }}</td>
+                                <td>
+                                    {% if a.referral_count > 0 %}
+                                    <button type="button" class="au-btn-ghost sm" style="padding:3px 10px; font-weight:600; cursor:pointer; color:var(--primary); border-color:var(--primary-glow);" onclick='openReferralsModal({{ a.referred_users | tojson | safe }}, "{{ a.full_name | escape }} ({{ a.promo_code }})")'>
+                                        {{ a.referral_count }} View
+                                    </button>
+                                    {% else %}
+                                    0
+                                    {% endif %}
+                                </td>
                                 <td style="font-size:0.9em; color:var(--text-muted);">
                                     {% if a.ambassador_expiry %}
                                         {{ a.ambassador_expiry.split('T')[0] }}
@@ -679,7 +695,8 @@
                             {% else %}
                             <tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No ambassadors enrolled yet.</td></tr>
                             {% endfor %}
-                       </table>
+                        </tbody>
+                    </table>
             </div>
 
             <!-- ===================== AMBASSADOR TIERS ===================== -->
@@ -1749,13 +1766,13 @@
         // 1. Cumulative growth &mdash; dual axis (enrollments + revenue)
         (function () {
             const c = document.getElementById('growthChart'); if (!c) return;
-            if (!AU.hasData(A.growth_enroll) && !AU.hasData(A.growth_revenue)) return AU.empty(c);
+            if (!A.growth_labels || A.growth_labels.length === 0) return AU.empty(c, 'No growth history yet.');
             const ctx = c.getContext('2d');
             charts.push(new Chart(ctx, {
                 type: 'line',
                 data: { labels: A.growth_labels, datasets: [
                     { label: 'Total Users', data: A.growth_enroll, borderColor: C.BLUE, backgroundColor: AU.fill(ctx, C.BLUE), fill: true, tension: .4, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, yAxisID: 'y' },
-                    { label: 'Total Revenue (&#8377;)', data: A.growth_revenue, borderColor: C.TEAL, backgroundColor: 'transparent', tension: .4, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, yAxisID: 'y1' }
+                    { label: 'Total Revenue (₹)', data: A.growth_revenue, borderColor: C.TEAL, backgroundColor: 'transparent', tension: .4, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, yAxisID: 'y1' }
                 ] },
                 options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
                     plugins: { legend: { position: 'top' } },
@@ -1768,11 +1785,11 @@
         // 2. Revenue (area line)
         (function () {
             const c = document.getElementById('revenueChart'); if (!c) return;
-            if (!AU.hasData(A.revenue_values)) return AU.empty(c);
+            if (!A.revenue_labels || A.revenue_labels.length === 0) return AU.empty(c, 'No revenue records available.');
             const ctx = c.getContext('2d');
             charts.push(new Chart(ctx, {
                 type: 'line',
-                data: { labels: A.revenue_labels, datasets: [{ label: 'Revenue (&#8377;)', data: A.revenue_values, borderColor: C.TEAL, backgroundColor: AU.fill(ctx, C.TEAL), fill: true, tension: .4, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5 }] },
+                data: { labels: A.revenue_labels, datasets: [{ label: 'Revenue (₹)', data: A.revenue_values, borderColor: C.TEAL, backgroundColor: AU.fill(ctx, C.TEAL), fill: true, tension: .4, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5 }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } }, y: { grid: GRID(), beginAtZero: true } } }
             }));
         })();
@@ -1780,7 +1797,7 @@
         // 3. Enrollments (area line)
         (function () {
             const c = document.getElementById('enrollChart'); if (!c) return;
-            if (!AU.hasData(A.enroll_values)) return AU.empty(c);
+            if (!A.enroll_labels || A.enroll_labels.length === 0) return AU.empty(c, 'No enrollment records available.');
             const ctx = c.getContext('2d');
             charts.push(new Chart(ctx, {
                 type: 'line',
@@ -1792,7 +1809,7 @@
         // 4. Role distribution (doughnut)
         (function () {
             const c = document.getElementById('roleChart'); if (!c) return;
-            if (!AU.hasData(A.role_values)) return AU.empty(c);
+            if (!AU.hasData(A.role_values)) return AU.empty(c, 'No users registered yet.');
             charts.push(new Chart(c.getContext('2d'), {
                 type: 'doughnut',
                 data: { labels: A.role_labels, datasets: [{ data: A.role_values, backgroundColor: C.CYCLE, borderColor: 'rgba(0,0,0,0)', borderWidth: 3, hoverOffset: 8 }] },
@@ -1803,7 +1820,7 @@
         // 5. Certification outcomes (bar)
         (function () {
             const c = document.getElementById('outcomeChart'); if (!c) return;
-            if (!AU.hasData(A.outcome_values)) return AU.empty(c);
+            if (!AU.hasData(A.outcome_values)) return AU.empty(c, 'No submissions evaluated yet.');
             charts.push(new Chart(c.getContext('2d'), {
                 type: 'bar',
                 data: { labels: A.outcome_labels, datasets: [{ data: A.outcome_values, backgroundColor: [C.GREEN, C.RED, C.GOLD], borderRadius: 8, maxBarThickness: 70 }] },
@@ -1814,7 +1831,7 @@
         // 6. Program popularity (horizontal bar)
         (function () {
             const c = document.getElementById('programChart'); if (!c) return;
-            if (!AU.hasData(A.program_values)) return AU.empty(c);
+            if (!AU.hasData(A.program_values)) return AU.empty(c, 'No enrollments yet.');
             charts.push(new Chart(c.getContext('2d'), {
                 type: 'bar',
                 data: { labels: A.program_labels, datasets: [{ label: 'Enrollments', data: A.program_values, backgroundColor: AU.barGrad(c), borderRadius: 6, maxBarThickness: 34 }] },
@@ -1825,12 +1842,12 @@
         // 7. Coupon ROI Tracker (bar)
         (function () {
             const c = document.getElementById('couponChart'); if (!c) return;
-            const c_labels = [{% for cp in coupons %}"{{ cp.promo_code }}"{% if not loop.last %},{% endif %}{% endfor %}];
-            const c_values = [{% for cp in coupons %}{{ cp.revenue_generated | default(0) }}{% if not loop.last %},{% endif %}{% endfor %}];
-            if (!AU.hasData(c_values)) return AU.empty(c);
+            const c_labels = (A.coupon_labels && A.coupon_labels.length > 0) ? A.coupon_labels : [{% for cp in coupons %}"{{ cp.promo_code }}"{% if not loop.last %},{% endif %}{% endfor %}];
+            const c_values = (A.coupon_values && A.coupon_values.length > 0) ? A.coupon_values : [{% for cp in coupons %}{{ cp.revenue_generated | default(0) }}{% if not loop.last %},{% endif %}{% endfor %}];
+            if (!c_labels || c_labels.length === 0) return AU.empty(c, 'No promo codes or campaign coupons created yet.');
             charts.push(new Chart(c.getContext('2d'), {
                 type: 'bar',
-                data: { labels: c_labels, datasets: [{ label: 'Revenue (&#8377;)', data: c_values, backgroundColor: AU.barGrad(c), borderRadius: 6, maxBarThickness: 50 }] },
+                data: { labels: c_labels, datasets: [{ label: 'Revenue (₹)', data: c_values, backgroundColor: AU.barGrad(c), borderRadius: 6, maxBarThickness: 50 }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: GRID(), beginAtZero: true } } }
             }));
         })();
@@ -1851,7 +1868,7 @@
     <!-- ===================== REFERRALS MODAL ===================== -->
     <div class="au-modal" id="referralsModal">
         <div class="au-modal-content" style="max-width: 800px;">
-            <button class="au-modal-close" onclick="closeModal('referralsModal')">Γ£ò</button>
+            <button class="au-modal-close" onclick="closeModal('referralsModal')">&times;</button>
             <h2 style="font-family:'Montserrat',sans-serif; margin-bottom:8px; color:var(--text-main);" id="referralsModalTitle">Referred Users</h2>
             <p style="color:var(--text-muted); font-size:0.9em; margin-bottom:20px;">List of all users who successfully enrolled using this promo code.</p>
             
@@ -1926,7 +1943,7 @@
                             <input type="number" name="max_custom_months" id="ep_max_custom_months">
                         </div>
                         <div style="flex: 1; min-width: 120px;">
-                            <label style="font-size: 0.85em;">Price (&#8377;)</label>
+                            <label style="font-size: 0.85em;">Price (₹)</label>
                             <input type="number" name="custom_price" id="ep_custom_price">
                         </div>
                         <div style="flex: 1; min-width: 250px;">
@@ -2085,7 +2102,7 @@
                                 <input type="number" name="track_months[]" required>
                             </div>
                             <div style="flex:1; min-width:100px;">
-                                <label style="font-size:0.85em;">Price (&#8377;)</label>
+                                <label style="font-size:0.85em;">Price (₹)</label>
                                 <input type="number" name="track_price[]" required>
                             </div>
                             <div style="flex:2; min-width:200px;">
@@ -2196,7 +2213,7 @@
                                 <input type="number" name="track_months[]" value="${m}" required>
                             </div>
                             <div style="flex:1; min-width:100px;">
-                                <label style="font-size:0.85em;">Price (&#8377;)</label>
+                                <label style="font-size:0.85em;">Price (₹)</label>
                                 <input type="number" name="track_price[]" value="${p}" required>
                             </div>
                             <div style="flex:2; min-width:200px;">

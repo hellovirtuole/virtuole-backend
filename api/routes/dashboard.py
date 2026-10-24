@@ -397,47 +397,87 @@ def dashboard_admin():
     }
     cutoff = cutoffs.get(timeframe)
 
-    def _window(query):
-        # Apply the created_at window when a timeframe is selected.
-        return query.gte('created_at', cutoff.isoformat()) if cutoff else query
+    def _in_cutoff(item):
+        if not cutoff: return True
+        ca = item.get('created_at')
+        if not ca: return False
+        try:
+            dt = datetime.fromisoformat(str(ca).replace('Z', '+00:00')).replace(tzinfo=None)
+            return dt >= cutoff
+        except Exception:
+            return False
+
+    progs = []
+    tasks = []
+    users = []
+    if supabase:
+        try:
+            progs = supabase.table('programs').select('*').execute().data or []
+            for p in progs:
+                p['image_url'] = fix_gdrive_url(p.get('image_url'))
+        except Exception as e:
+            print(f"Error fetching programs: {e}")
+            progs = []
+        try:
+            tasks = supabase.table('ambassador_tasks').select('*').execute().data or []
+        except Exception as e:
+            print(f"Error fetching tasks: {e}")
+            tasks = []
+        try:
+            users = supabase.table('users').select('*').execute().data or []
+        except Exception as e:
+            print(f"Error fetching users: {e}")
+            users = []
 
     try:
-        earnings = sum([p['amount'] / 100 for p in _window(supabase.table('payments').select('amount').eq('status', 'paid')).execute().data])
-        enrolled = len(_window(supabase.table('enrollments').select('id')).execute().data)
-        certified = len(_window(supabase.table('submissions').select('id').gte('score', 80)).execute().data)
-        pend_grading = len(_window(supabase.table('submissions').select('id').is_('score', 'null')).execute().data)
-    except Exception:
-        # Fall back to all-time totals if a table has no created_at column.
-        earnings = sum([p['amount'] / 100 for p in supabase.table('payments').select('amount').eq('status', 'paid').execute().data])
-        enrolled = len(supabase.table('enrollments').select('id').execute().data)
-        certified = len(supabase.table('submissions').select('id').gte('score', 80).execute().data)
-        pend_grading = len(supabase.table('submissions').select('id').is_('score', 'null').execute().data)
+        all_payments = supabase.table('payments').select('*').execute().data or [] if supabase else []
+    except Exception as e:
+        print(f"Error fetching payments: {e}")
+        all_payments = []
 
-    progs = supabase.table('programs').select('*').execute().data
-    for p in progs:
-        p['image_url'] = fix_gdrive_url(p.get('image_url'))
-        
-    tasks = supabase.table('ambassador_tasks').select('*').execute().data
-    users = supabase.table('users').select('*').execute().data
+    paid_payments = [
+        p for p in all_payments
+        if str(p.get('status', '')).strip().lower() in ['paid', 'success', 'completed']
+    ]
+
+    try:
+        enrollments = supabase.table('enrollments').select('*').execute().data or [] if supabase else []
+    except Exception as e:
+        print(f"Error fetching enrollments: {e}")
+        enrollments = []
+
+    try:
+        submissions = supabase.table('submissions').select('*').execute().data or [] if supabase else []
+    except Exception as e:
+        print(f"Error fetching submissions: {e}")
+        submissions = []
+
+    filtered_paid = [p for p in paid_payments if _in_cutoff(p)]
+    filtered_enrolls = [e for e in enrollments if _in_cutoff(e)]
+    filtered_subs = [s for s in submissions if _in_cutoff(s)]
+
+    earnings = sum([(p.get('amount') or 0) / 100.0 for p in filtered_paid])
+    enrolled = len(filtered_enrolls)
+    certified = len([s for s in filtered_subs if (s.get('score') or 0) >= 80])
+    pend_grading = len([s for s in filtered_subs if s.get('score') is None])
 
     # Calculate coupon statistics
-    coupons = [u for u in users if u['role'] == 'coupon']
-    all_payments = supabase.table('payments').select('amount, applied_promo, user_id, created_at').eq('status', 'paid').execute().data
-    
+    coupons = [u for u in users if u.get('role') == 'coupon']
     for c in coupons:
-        c_payments = [p for p in all_payments if p.get('applied_promo') == c['promo_code']]
+        c_code = (c.get('promo_code') or '').strip().upper()
+        c_payments = [p for p in paid_payments if (p.get('applied_promo') or '').strip().upper() == c_code]
         c['usage_count'] = len(c_payments)
-        c['revenue_generated'] = sum([p['amount']/100 for p in c_payments])
+        c['revenue_generated'] = sum([(p.get('amount') or 0) / 100.0 for p in c_payments])
         
         referred = []
         for p in c_payments:
-            user_match = next((u for u in users if u['id'] == p.get('user_id')), None)
+            user_match = next((u for u in users if u.get('id') == p.get('user_id')), None)
             if user_match:
                 s_details = parse_shipping_address(user_match.get('shipping_address', ''))
                 referred.append({
                     "name": user_match.get('full_name') or 'Unknown',
                     "email": user_match.get('email') or 'Unknown',
-                    "date": p.get('created_at', '').split('T')[0] if p.get('created_at') else '',
+                    "date": (p.get('created_at') or '')[:10],
                     "college": s_details.get('college_name') or 'Unknown'
                 })
         c['referred_users'] = referred
@@ -445,18 +485,21 @@ def dashboard_admin():
     # Calculate ambassador statistics
     all_ambassadors = [u for u in users if str(u.get('role', '')).lower() in ['ambassador', 'intern + ambassador']]
     for a in all_ambassadors:
-        a_payments = [p for p in all_payments if p.get('applied_promo') == a['promo_code']]
+        a_code = (a.get('promo_code') or '').strip().upper()
+        a_payments = [p for p in paid_payments if (p.get('applied_promo') or '').strip().upper() == a_code]
         a['referral_count'] = len(a_payments)
+        a_s_details = parse_shipping_address(a.get('shipping_address', ''))
+        a['college_name'] = a.get('college_name') or a_s_details.get('college_name') or 'N/A'
         
         referred = []
         for p in a_payments:
-            user_match = next((u for u in users if u['id'] == p.get('user_id')), None)
+            user_match = next((u for u in users if u.get('id') == p.get('user_id')), None)
             if user_match:
                 s_details = parse_shipping_address(user_match.get('shipping_address', ''))
                 referred.append({
                     "name": user_match.get('full_name') or 'Unknown',
                     "email": user_match.get('email') or 'Unknown',
-                    "date": p.get('created_at', '').split('T')[0] if p.get('created_at') else '',
+                    "date": (p.get('created_at') or '')[:10],
                     "college": s_details.get('college_name') or 'Unknown'
                 })
         a['referred_users'] = referred
@@ -465,34 +508,46 @@ def dashboard_admin():
     # GRAPHICAL ANALYTICS DATA (Chart.js-ready, JSON-serializable)
     # Built defensively so a missing column never breaks the dashboard.
     # -----------------------------------------------------------------
-    analytics = build_admin_analytics(progs, users)
+    analytics = build_admin_analytics(
+        progs, users, 
+        paid_payments=paid_payments, 
+        enrollments=enrollments, 
+        coupons=coupons, 
+        all_ambassadors=all_ambassadors, 
+        submissions=submissions
+    )
 
     # Fetch Dynamic Tiers
-    amb_tiers_resp = supabase.table('ambassador_tiers').select('*').order('points_required', desc=True).execute()
-    ambassador_tiers = amb_tiers_resp.data if amb_tiers_resp and amb_tiers_resp.data else [
-        {"id": 0, "tier_level": 4, "name": "Star Ambassador", "points_required": 3000, "give_certificate": True, "give_lor": True, "benefits_text": "Elite Swag Kit (Mechanical Keyboard & Desk Mat)\nDirect Paid Internship Offer at Virtuole HQ"},
-        {"id": 0, "tier_level": 3, "name": "Community Lead", "points_required": 1500, "give_certificate": False, "give_lor": False, "benefits_text": "Premium Virtuole Developer Hoodie"},
-        {"id": 0, "tier_level": 2, "name": "Campus Advocate", "points_required": 500, "give_certificate": False, "give_lor": False, "benefits_text": "Exclusive Virtuole Tech Graphic T-Shirt"},
-        {"id": 0, "tier_level": 1, "name": "Kickstart", "points_required": 0, "give_certificate": False, "give_lor": False, "benefits_text": "Virtuole branded Lanyard and Die-Cut Stickers"}
-    ]
+    ambassador_tiers = []
+    if supabase:
+        try:
+            amb_tiers_resp = supabase.table('ambassador_tiers').select('*').order('points_required', desc=True).execute()
+            ambassador_tiers = amb_tiers_resp.data or []
+        except Exception as e:
+            print(f"Error fetching tiers: {e}")
+            ambassador_tiers = []
+    if not ambassador_tiers:
+        ambassador_tiers = [
+            {"id": 0, "tier_level": 4, "name": "Star Ambassador", "points_required": 3000, "give_certificate": True, "give_lor": True, "benefits_text": "Elite Swag Kit (Mechanical Keyboard & Desk Mat)\nDirect Paid Internship Offer at Virtuole HQ"},
+            {"id": 0, "tier_level": 3, "name": "Community Lead", "points_required": 1500, "give_certificate": False, "give_lor": False, "benefits_text": "Premium Virtuole Developer Hoodie"},
+            {"id": 0, "tier_level": 2, "name": "Campus Advocate", "points_required": 500, "give_certificate": False, "give_lor": False, "benefits_text": "Exclusive Virtuole Tech Graphic T-Shirt"},
+            {"id": 0, "tier_level": 1, "name": "Kickstart", "points_required": 0, "give_certificate": False, "give_lor": False, "benefits_text": "Virtuole branded Lanyard and Die-Cut Stickers"}
+        ]
     
     # Fetch subscribers
-    try:
-        subscribers = supabase.table('subscribers').select('*').order('created_at', desc=True).execute().data
-    except Exception:
-        subscribers = []
+    subscribers = []
+    if supabase:
+        try:
+            subscribers = supabase.table('subscribers').select('*').order('created_at', desc=True).execute().data or []
+        except Exception:
+            subscribers = []
         
-    try:
-        enrollments = supabase.table('enrollments').select('*').execute().data
-    except Exception:
-        enrollments = []
-        
-    prog_dict = {p['id']: p for p in progs}
+    prog_dict = {p.get('id'): p for p in progs if p.get('id')}
     advanced_users = []
     
     for u in users:
         s_details = parse_shipping_address(u.get('shipping_address', ''))
-        u_enrolls = [e for e in enrollments if e['user_id'] == u['id']]
+        u_enrolls = [e for e in enrollments if e.get('user_id') == u.get('id')]
         
         base_data = {
             "name": u.get('full_name') or '',
@@ -514,7 +569,7 @@ def dashboard_admin():
         else:
             for e in u_enrolls:
                 d = base_data.copy()
-                d["program"] = prog_dict.get(e['program_id'], {}).get('title', 'Unknown')
+                d["program"] = prog_dict.get(e.get('program_id'), {}).get('title', 'Unknown')
                 d["track"] = str(e.get('track_level', ''))
                 advanced_users.append(d)
 
@@ -534,7 +589,7 @@ def dashboard_admin():
         date_str = u.get('created_at')
         if not date_str: continue
         try:
-            dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+            dt = datetime.fromisoformat(str(date_str).replace('Z', '+00:00'))
             activity_feed.append({
                 "type": "signup",
                 "title": "New User Registration",
@@ -548,10 +603,10 @@ def dashboard_admin():
         date_str = e.get('created_at')
         if not date_str: continue
         try:
-            dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-            user = next((x for x in users if x['id'] == e['user_id']), None)
-            u_name = user['full_name'] if user else 'A user'
-            prog_title = prog_dict.get(e['program_id'], {}).get('title', 'a program')
+            dt = datetime.fromisoformat(str(date_str).replace('Z', '+00:00'))
+            user = next((x for x in users if x.get('id') == e.get('user_id')), None)
+            u_name = user['full_name'] if user and user.get('full_name') else 'A user'
+            prog_title = prog_dict.get(e.get('program_id'), {}).get('title', 'a program')
             activity_feed.append({
                 "type": "enrollment",
                 "title": "New Enrollment",
@@ -567,28 +622,33 @@ def dashboard_admin():
     top_ambassadors = sorted(all_ambassadors, key=lambda x: x.get('total_points') or 0, reverse=True)[:10]
 
     state_counts = {}
-    for u in advanced_users:
-        st = u.get('state')
+    for u in users:
+        s_details = parse_shipping_address(u.get('shipping_address', ''))
+        st = s_details.get('state')
         if st and str(st).strip() and str(st).strip().lower() != 'unknown':
             state_counts[st] = state_counts.get(st, 0) + 1
     top_states = sorted(state_counts.items(), key=lambda x: x[1], reverse=True)[:5]
 
-    projected_revenue = 0
-    try:
-        seven_days_ago = (datetime.utcnow() - timedelta(days=7)).isoformat()
-        recent_payments = supabase.table('payments').select('amount').eq('status', 'paid').gte('created_at', seven_days_ago).execute().data
-        if recent_payments:
-            recent_revenue = sum([p['amount'] / 100 for p in recent_payments])
-            projected_revenue = (recent_revenue / 7) * 30
-    except Exception:
-        pass
+    seven_days_ago = now - timedelta(days=7)
+    recent_revenue = 0.0
+    for p in paid_payments:
+        ca = p.get('created_at')
+        if not ca: continue
+        try:
+            dt = datetime.fromisoformat(str(ca).replace('Z', '+00:00')).replace(tzinfo=None)
+            if dt >= seven_days_ago:
+                recent_revenue += (p.get('amount') or 0) / 100.0
+        except Exception:
+            pass
+    projected_revenue = (recent_revenue / 7.0) * 30.0 if recent_revenue else 0.0
 
     sys_notifs = []
-    try:
-        result = supabase.table('system_notifications').select('*').order('created_at', desc=True).limit(20).execute()
-        sys_notifs = result.data or []
-    except BaseException:
-        sys_notifs = []
+    if supabase:
+        try:
+            result = supabase.table('system_notifications').select('*').order('created_at', desc=True).limit(20).execute()
+            sys_notifs = result.data or []
+        except BaseException:
+            sys_notifs = []
 
     # Fetch data from Google Sheets webhook
     import requests as _requests
@@ -600,24 +660,78 @@ def dashboard_admin():
         try:
             resp = _requests.get(sheet_webhook_url + '?action=read', timeout=5)
             sheet_data = resp.json()
-            sheet_feedback = sheet_data.get('feedback', []) or []
-            sheet_ambassadors = sheet_data.get('ambassadors', []) or []
+            raw_feedback = sheet_data.get('feedback', []) or []
+            raw_ambassadors = sheet_data.get('ambassadors', []) or []
+            for r in raw_feedback:
+                if isinstance(r, (list, tuple)) and len(r) >= 5:
+                    sheet_feedback.append(list(r[:5]))
+                elif isinstance(r, dict):
+                    sheet_feedback.append([
+                        r.get('date', ''), r.get('name', ''), r.get('email', ''),
+                        r.get('subject', ''), r.get('message', '')
+                    ])
+            for r in raw_ambassadors:
+                if isinstance(r, (list, tuple)) and len(r) >= 5:
+                    sheet_ambassadors.append(list(r[:5]))
+                elif isinstance(r, dict):
+                    sheet_ambassadors.append([
+                        r.get('date', ''), r.get('name', ''), r.get('email', ''),
+                        r.get('college', ''), r.get('motivation', '')
+                    ])
         except BaseException as e:
             print(f"Sheet fetch error: {e}")
 
+    # Fallback to Supabase system_notifications if sheet data is empty
+    if not sheet_feedback and supabase:
+        try:
+            fb_notifs = supabase.table('system_notifications').select('*').eq('type', 'feedback').order('created_at', desc=True).limit(50).execute().data or []
+            for n in fb_notifs:
+                meta = n.get('metadata') or {}
+                dt_str = (n.get('created_at') or '')[:10]
+                sheet_feedback.append([
+                    dt_str,
+                    meta.get('name') or n.get('title', '').replace('New Feedback: ', ''),
+                    meta.get('email') or '',
+                    meta.get('subject') or n.get('title', ''),
+                    meta.get('message') or n.get('description', '')
+                ])
+        except Exception as e:
+            print(f"Fallback feedback fetch error: {e}")
+
+    if not sheet_ambassadors and supabase:
+        try:
+            amb_notifs = supabase.table('system_notifications').select('*').eq('type', 'ambassador').order('created_at', desc=True).limit(50).execute().data or []
+            for n in amb_notifs:
+                meta = n.get('metadata') or {}
+                dt_str = (n.get('created_at') or '')[:10]
+                sheet_ambassadors.append([
+                    dt_str,
+                    meta.get('name') or n.get('title', '').replace('New Ambassador Application: ', ''),
+                    meta.get('email') or '',
+                    meta.get('college') or n.get('description', '').replace('College: ', ''),
+                    meta.get('motivation') or ''
+                ])
+        except Exception as e:
+            print(f"Fallback ambassador fetch error: {e}")
+
     # Fetch recent transactions for PhonePe live status & reconciliation hub
     recent_transactions = []
-    try:
-        tx_resp = supabase.table('payments').select('id, user_id, transaction_id, amount, status, applied_promo, created_at').order('created_at', desc=True).limit(30).execute()
-        raw_txs = tx_resp.data or []
-        user_map = {u['id']: u for u in users}
+    if supabase:
+        try:
+            tx_resp = supabase.table('payments').select('*').order('created_at', desc=True).limit(30).execute()
+            raw_txs = tx_resp.data or []
+        except Exception:
+            try:
+                tx_resp = supabase.table('payments').select('*').limit(30).execute()
+                raw_txs = tx_resp.data or []
+            except Exception:
+                raw_txs = []
+        user_map = {u.get('id'): u for u in users if u.get('id')}
         for t in raw_txs:
             u_info = user_map.get(t.get('user_id'), {})
             t['user_name'] = u_info.get('full_name', 'Student')
             t['user_email'] = u_info.get('email', '')
         recent_transactions = raw_txs
-    except Exception as tx_err:
-        print(f"Error fetching recent transactions for admin: {tx_err}")
 
     return render_template('dashboard_admin.html', user_name=session.get('name'), total_earnings=round(earnings, 2), total_enrolled=enrolled, total_certified=certified, pending_grading=pend_grading, offered_programs=progs, all_tasks=tasks, user_directory=users, coupons=coupons, all_ambassadors=all_ambassadors, grouped_ambassadors=grouped_ambassadors, ambassador_tiers=ambassador_tiers_asc, active_tab=active_tab, current_filter=timeframe, analytics=analytics, subscribers=subscribers, advanced_users=advanced_users, activity_feed=activity_feed, top_ambassadors=top_ambassadors, top_states=top_states, projected_revenue=round(projected_revenue, 2), sys_notifs=sys_notifs, sheet_feedback=sheet_feedback, sheet_ambassadors=sheet_ambassadors, sheet_webhook_set=sheet_webhook_set, recent_transactions=recent_transactions)
 
@@ -739,20 +853,10 @@ def api_admin_delete_coupon():
     return redirect(url_for('dashboard.dashboard_admin', tab='coupons'))
 
 
-def build_admin_analytics(programs, users):
+def build_admin_analytics(programs, users, paid_payments=None, enrollments=None, coupons=None, all_ambassadors=None, submissions=None):
     """Aggregate live Supabase data into Chart.js-ready series for the admin
     Platform Analytics tab. Every block is wrapped so an absent table/column
-    degrades to empty data instead of 500-ing the whole dashboard."""
-    empty = {
-        "revenue_labels": [], "revenue_values": [],
-        "enroll_labels": [], "enroll_values": [],
-        "role_labels": [], "role_values": [],
-        "outcome_labels": ["Certified (≥80)", "Failed (<80)", "Pending"], "outcome_values": [0, 0, 0],
-        "program_labels": [], "program_values": [],
-    }
-    if not supabase:
-        return empty
-
+    degrades gracefully."""
     now = datetime.utcnow()
 
     # ---- 30-day daily buckets for revenue + enrollments (line/area) ----
@@ -761,25 +865,34 @@ def build_admin_analytics(programs, users):
     revenue_by_day = {k: 0.0 for k in day_keys}
     enroll_by_day = {k: 0 for k in day_keys}
 
-    try:
-        thirty_days_ago = (now - timedelta(days=30)).isoformat()
-        paid = supabase.table('payments').select('amount, created_at').eq('status', 'paid').gte('created_at', thirty_days_ago).execute().data
-        for p in paid:
-            key = (p.get('created_at') or '')[:10]
-            if key in revenue_by_day:
-                revenue_by_day[key] += (p.get('amount') or 0) / 100.0
-    except Exception:
-        pass
+    if paid_payments is None:
+        if supabase:
+            try:
+                raw_paid = supabase.table('payments').select('amount, created_at, status, applied_promo').execute().data or []
+                paid_payments = [p for p in raw_paid if str(p.get('status', '')).strip().lower() in ['paid', 'success', 'completed']]
+            except Exception:
+                paid_payments = []
+        else:
+            paid_payments = []
 
-    try:
-        thirty_days_ago = (now - timedelta(days=30)).isoformat()
-        enrolls = supabase.table('enrollments').select('created_at, program_id').gte('created_at', thirty_days_ago).execute().data
-        for e in enrolls:
-            key = (e.get('created_at') or '')[:10]
-            if key in enroll_by_day:
-                enroll_by_day[key] += 1
-    except Exception:
-        pass
+    for p in (paid_payments or []):
+        key = str(p.get('created_at') or '')[:10]
+        if key in revenue_by_day:
+            revenue_by_day[key] += (p.get('amount') or 0) / 100.0
+
+    if enrollments is None:
+        if supabase:
+            try:
+                enrollments = supabase.table('enrollments').select('id, created_at, program_id').execute().data or []
+            except Exception:
+                enrollments = []
+        else:
+            enrollments = []
+
+    for e in (enrollments or []):
+        key = str(e.get('created_at') or '')[:10]
+        if key in enroll_by_day:
+            enroll_by_day[key] += 1
 
     # ---- Role distribution (doughnut) ----
     role_counts = {}
@@ -791,44 +904,38 @@ def build_admin_analytics(programs, users):
 
     # ---- Certification outcomes (bar) ----
     certified = failed = pending = 0
-    try:
-        subs = supabase.table('submissions').select('score').execute().data
-        for s in subs:
-            score = s.get('score')
-            if score is None:
-                pending += 1
-            elif score >= 80:
-                certified += 1
-            else:
-                failed += 1
-    except Exception:
-        pass
+    if submissions is None:
+        if supabase:
+            try:
+                submissions = supabase.table('submissions').select('score').execute().data or []
+            except Exception:
+                submissions = []
+        else:
+            submissions = []
+
+    for s in submissions:
+        score = s.get('score')
+        if score is None:
+            pending += 1
+        elif score >= 80:
+            certified += 1
+        else:
+            failed += 1
 
     # ---- Program popularity: enrollments per program (horizontal bar) ----
     prog_titles = {p['id']: p.get('title', 'Untitled') for p in (programs or [])}
     prog_counts = {p['id']: 0 for p in (programs or [])}
-    try:
-        all_enrolls = supabase.table('enrollments').select('program_id').execute().data
-        for e in all_enrolls:
-            pid = e.get('program_id')
-            if pid in prog_counts:
-                prog_counts[pid] += 1
-    except Exception:
-        pass
+    for e in enrollments:
+        pid = e.get('program_id')
+        if pid in prog_counts:
+            prog_counts[pid] += 1
     ranked = sorted(prog_counts.items(), key=lambda kv: kv[1], reverse=True)[:8]
 
     # ---- Cumulative growth: running totals of enrollments + revenue ----
-    # Baseline = everything before the 30-day window, so the trend starts from
-    # the true platform total rather than zero.
-    base_enroll = 0
-    base_revenue = 0.0
-    try:
-        thirty_days_ago = (now - timedelta(days=30)).isoformat()
-        base_enroll = len(supabase.table('enrollments').select('id').lt('created_at', thirty_days_ago).execute().data)
-        base_paid = supabase.table('payments').select('amount').eq('status', 'paid').lt('created_at', thirty_days_ago).execute().data
-        base_revenue = sum([(p.get('amount') or 0) / 100.0 for p in base_paid])
-    except Exception:
-        pass
+    oldest_30d_key = day_keys[0]
+    base_enroll = sum([1 for e in enrollments if str(e.get('created_at') or '')[:10] < oldest_30d_key])
+    base_revenue = sum([(p.get('amount') or 0) / 100.0 for p in paid_payments if str(p.get('created_at') or '')[:10] < oldest_30d_key])
+
     cum_enroll, cum_revenue = [], []
     run_e, run_r = base_enroll, base_revenue
     for k in day_keys:
@@ -836,6 +943,30 @@ def build_admin_analytics(programs, users):
         run_r += revenue_by_day[k]
         cum_enroll.append(run_e)
         cum_revenue.append(round(run_r, 2))
+
+    # ---- Coupon ROI Tracker ----
+    promo_revenue = {}
+    for c in (coupons or []):
+        code = (c.get('promo_code') or '').strip().upper()
+        if code:
+            promo_revenue[code] = round(float(c.get('revenue_generated') or 0.0), 2)
+
+    for a in (all_ambassadors or []):
+        code = (a.get('promo_code') or '').strip().upper()
+        if code:
+            a_rev = sum([(p.get('amount') or 0) / 100.0 for p in paid_payments if (p.get('applied_promo') or '').strip().upper() == code])
+            if a_rev > 0 or code not in promo_revenue:
+                promo_revenue[code] = max(promo_revenue.get(code, 0.0), round(a_rev, 2))
+
+    for p in paid_payments:
+        code = (p.get('applied_promo') or '').strip().upper()
+        if code and code not in promo_revenue:
+            p_rev = sum([(px.get('amount') or 0) / 100.0 for px in paid_payments if (px.get('applied_promo') or '').strip().upper() == code])
+            promo_revenue[code] = round(p_rev, 2)
+
+    sorted_promos = sorted(promo_revenue.items(), key=lambda kv: kv[1], reverse=True)[:15]
+    coupon_labels = [kv[0] for kv in sorted_promos]
+    coupon_values = [kv[1] for kv in sorted_promos]
 
     return {
         "revenue_labels": day_labels,
@@ -851,6 +982,8 @@ def build_admin_analytics(programs, users):
         "growth_labels": day_labels,
         "growth_enroll": cum_enroll,
         "growth_revenue": cum_revenue,
+        "coupon_labels": coupon_labels,
+        "coupon_values": coupon_values,
     }
 
 @dashboard_bp.route('/dashboard-ambassador')
