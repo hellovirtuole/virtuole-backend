@@ -529,6 +529,13 @@
             document.querySelector('#enrollModal h3').innerText = 'Enroll: ' + programTitle;
 
             window.currentTracks = tracks || [];
+            if (!Array.isArray(window.currentTracks) || window.currentTracks.length === 0) {
+                window.currentTracks = [
+                    { months: 1, price: 0 },
+                    { months: 2, price: 0 },
+                    { months: 3, price: 0 }
+                ];
+            }
             window.customConfig = { allow: allowCustom, min: minCustom, max: maxCustom, price: customPrice };
 
             const container = document.getElementById('dynamic-tracks-btn-container');
@@ -556,10 +563,17 @@
                 container.appendChild(btn);
             }
 
-            document.getElementById('hidden-track-level').value = '';
             document.getElementById('custom_months_input').value = '';
             document.getElementById('custom-duration-container').style.display = 'none';
-            document.getElementById('track-details').innerText = 'Select a duration to see details.';
+
+            // Auto-select the first track button by default so track_level is never empty
+            const firstBtn = container.querySelector('.track-btn');
+            if (firstBtn && window.currentTracks.length > 0) {
+                selectTrack(window.currentTracks[0].months.toString(), firstBtn, window.currentTracks[0].price);
+            } else {
+                document.getElementById('hidden-track-level').value = '1';
+                document.getElementById('track-details').innerText = '1 Month Duration';
+            }
 
             document.getElementById('enrollModal').classList.add('open');
         }
