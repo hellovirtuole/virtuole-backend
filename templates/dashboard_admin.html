@@ -1250,21 +1250,21 @@
             </div>
         </div>
 
-        <!-- ===================== PHONEPE GATEWAY & RECONCILIATION HUB ===================== -->
+        <!-- ===================== PAYMENT GATEWAY & RECONCILIATION HUB ===================== -->
         <div id="phonepe_sync-view" class="view-section">
-            <h1 class="dash-greeting">PhonePe Gateway &amp; Reconciliation Hub</h1>
-            <p class="dash-sub">Monitor live PhonePe gateway status, query Hermès status API in real time, and manually reconcile user payments.</p>
+            <h1 class="dash-greeting">Payment Gateway &amp; Reconciliation Hub</h1>
+            <p class="dash-sub">Monitor live Razorpay &amp; PhonePe gateway status, query transactions in real time, and manually reconcile user payments.</p>
 
             <div class="au-panel reveal" style="margin-bottom: 24px; padding: 20px 24px; background: linear-gradient(135deg, rgba(16,185,129,0.06) 0%, rgba(59,130,246,0.06) 100%); border: 1px solid rgba(16,185,129,0.25);">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
                     <div>
-                        <h4 style="margin:0 0 4px; color:var(--text-main); font-size:1.1rem;">PhonePe Hermès Integration Diagnostics</h4>
+                        <h4 style="margin:0 0 4px; color:var(--text-main); font-size:1.1rem;">Razorpay &amp; PhonePe Gateway Diagnostics</h4>
                         <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-top:8px; font-size:0.86rem; color:var(--text-muted);">
-                            <span>Gateway Environment: <strong style="color:#10b981;">Hermès Production Ready</strong></span>
+                            <span>Active Gateway: <strong style="color:#10b981;">Razorpay Unified Checkout</strong></span>
                             <span>&bull;</span>
-                            <span>Webhook X-VERIFY Checksum: <strong style="color:#10b981;">Strict Enforcement (Active)</strong></span>
+                            <span>Webhook HMAC Signature: <strong style="color:#10b981;">Strict Enforcement (Active)</strong></span>
                             <span>&bull;</span>
-                            <span>Status Query API: <strong style="color:#3b82f6;">/pg/v1/status/{mid}/{txnId}</strong></span>
+                            <span>Status Query API: <strong style="color:#3b82f6;">/api/verify-payment/{txnId}</strong></span>
                         </div>
                     </div>
                 </div>
@@ -1275,10 +1275,10 @@
                 <div class="au-panel" style="padding: 24px;">
                     <div class="dash-section-title" style="margin-bottom:14px;">🔍 Live Transaction Status Lookup</div>
                     <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:16px; line-height:1.5;">
-                        Enter any PhonePe Merchant Transaction ID (e.g. <code>VIRT-TXN-...</code>). The server queries PhonePe's Check Status API, validates signature integrity, and if confirmed, immediately marks the payment as <strong>PAID</strong>, generates the official receipt, and notifies the student.
+                        Enter any Razorpay Payment ID (e.g. <code>pay_...</code>) or Transaction ID (e.g. <code>VT-TXN-...</code>). The server queries the gateway live, validates signature integrity, and if confirmed, immediately marks the payment as <strong>PAID</strong>, generates the official receipt, and notifies the student.
                     </p>
                     <form onsubmit="handleManualPhonePeSync(event)" style="display:flex; gap:10px; flex-wrap:wrap;">
-                        <input type="text" id="phonepeSyncTxnInput" class="au-input" placeholder="Merchant Txn ID (e.g. VIRT-TXN-1729...)" style="flex:1; min-width:200px;" required>
+                        <input type="text" id="phonepeSyncTxnInput" class="au-input" placeholder="Payment ID (pay_...) or Txn ID (VT-TXN-...)" style="flex:1; min-width:200px;" required>
                         <button type="submit" id="phonepeSyncSubmitBtn" class="au-btn success" style="padding:10px 20px; white-space:nowrap;">⚡ Verify &amp; Reconcile</button>
                     </form>
                     <div id="phonepeSyncResultBox" style="display:none; margin-top:16px; padding:14px; border-radius:10px; font-size:0.88rem;"></div>

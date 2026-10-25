@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Intern Dashboard | Virtuole</title>
     {% include 'theme.html' %}
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 
 <body class="dash-body">
@@ -795,7 +796,7 @@
             if (hiddenCode) hiddenCode.value = formattedCodeLink;
             if (hiddenDef) hiddenDef.value = formattedDefenseLink;
 
-            payBtn.innerText = "Generating Secure Gateway...";
+            payBtn.innerText = "Initializing Razorpay Gateway...";
             payBtn.disabled = true;
 
             const payload = {
@@ -813,16 +814,80 @@
                     body: JSON.stringify(payload)
                 });
                 const data = await response.json();
-                if (data.payment_url) {
+
+                // If 100% discount promo applied
+                if (data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                    return;
+                }
+
+                // Razorpay Modal Checkout
+                if (data.gateway === "razorpay" || data.order_id) {
+                    const options = {
+                        key: data.key_id,
+                        amount: data.amount,
+                        currency: data.currency || "INR",
+                        name: "Virtuole Education Technologies",
+                        description: (data.program_title || "Virtual Internship") + " Certification Fee",
+                        image: "https://www.virtuole.in/static/msme_logo.png",
+                        order_id: data.order_id,
+                        prefill: {
+                            name: data.user_name || "",
+                            email: data.user_email || ""
+                        },
+                        theme: {
+                            color: "#1a365d"
+                        },
+                        handler: async function (rzpResponse) {
+                            payBtn.innerText = "Verifying Transaction...";
+                            try {
+                                const verifyRes = await fetch('/api/verify-payment', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        razorpay_order_id: rzpResponse.razorpay_order_id,
+                                        razorpay_payment_id: rzpResponse.razorpay_payment_id,
+                                        razorpay_signature: rzpResponse.razorpay_signature,
+                                        transaction_id: data.transaction_id
+                                    })
+                                });
+                                const verifyData = await verifyRes.json();
+                                if (verifyData.success) {
+                                    window.location.href = verifyData.redirect_url || "/dashboard-intern?status=success";
+                                } else {
+                                    alert("Verification alert: " + (verifyData.error || "Payment verification failed."));
+                                    payBtn.innerHTML = `Confirm & Pay ₹<span id="modal-price">${currentDisplayedPrice}</span>`;
+                                    payBtn.disabled = false;
+                                }
+                            } catch (vErr) {
+                                console.error(vErr);
+                                window.location.href = `/dashboard-intern?txn_id=${data.transaction_id}`;
+                            }
+                        },
+                        modal: {
+                            ondismiss: function () {
+                                payBtn.innerHTML = `Confirm & Pay ₹<span id="modal-price">${currentDisplayedPrice}</span>`;
+                                payBtn.disabled = false;
+                            }
+                        }
+                    };
+                    const rzp = new Razorpay(options);
+                    rzp.on('payment.failed', function (resp) {
+                        alert("Payment Failed: " + (resp.error ? resp.error.description : "Transaction declined."));
+                        payBtn.innerHTML = `Confirm & Pay ₹<span id="modal-price">${currentDisplayedPrice}</span>`;
+                        payBtn.disabled = false;
+                    });
+                    rzp.open();
+                } else if (data.payment_url) {
                     window.location.href = data.payment_url;
                 } else {
-                    alert("Payment initiation failed: " + (data.error || "Please check your PhonePe .env keys."));
+                    alert("Payment initiation failed: " + (data.error || "Please verify your Razorpay API keys."));
                     payBtn.innerHTML = `Confirm & Pay ₹<span id="modal-price">${currentDisplayedPrice}</span>`;
                     payBtn.disabled = false;
                 }
             } catch (err) {
                 console.error(err);
-                alert("System error. Ensure your backend is running and API keys are set.");
+                alert("System error. Ensure backend is running and Razorpay API keys are configured.");
                 payBtn.innerHTML = `Confirm & Pay ₹<span id="modal-price">${currentDisplayedPrice}</span>`;
                 payBtn.disabled = false;
             }

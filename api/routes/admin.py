@@ -358,17 +358,31 @@ def admin_sync_phonepe_transaction():
     transaction_id = (data.get('transaction_id') or '').strip()
 
     if not transaction_id:
-        return jsonify({"success": False, "error": "Merchant Transaction ID is required."}), 400
+        return jsonify({"success": False, "error": "Transaction ID or Razorpay Payment ID is required."}), 400
 
-    from api.utils.phonepe import check_phonepe_status, fulfill_payment_success
+    from api.utils.razorpay import fetch_razorpay_payment, fulfill_payment_success as fulfill_rzp
+    from api.utils.phonepe import check_phonepe_status, fulfill_payment_success as fulfill_pe
 
+    # 1. Try Razorpay verification if starts with pay_ or order_
+    if transaction_id.startswith('pay_') or transaction_id.startswith('order_'):
+        rzp_res = fetch_razorpay_payment(transaction_id)
+        if rzp_res.get("success"):
+            fulfill_rzp(transaction_id, payment_id=transaction_id)
+            return jsonify({
+                "success": True,
+                "status": "paid",
+                "message": f"Razorpay confirmed transaction '{transaction_id}'. Marked as PAID and receipt dispatched!",
+                "data": rzp_res.get("data")
+            })
+
+    # 2. Check PhonePe status
     status_res = check_phonepe_status(transaction_id)
     if status_res.get("success"):
-        fulfill_payment_success(transaction_id)
+        fulfill_pe(transaction_id)
         return jsonify({
             "success": True,
             "status": "paid",
-            "message": f"PhonePe confirmed transaction '{transaction_id}'. Marked as PAID and receipt dispatched!",
+            "message": f"Payment confirmed for transaction '{transaction_id}'. Marked as PAID and receipt dispatched!",
             "data": status_res.get("data")
         })
 
@@ -387,7 +401,7 @@ def admin_sync_phonepe_transaction():
     return jsonify({
         "success": False,
         "status": code,
-        "message": f"PhonePe response: {code} - {msg}",
+        "message": f"Gateway response: {code} - {msg}",
         "data": status_res.get("data")
     })
 

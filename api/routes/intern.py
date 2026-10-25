@@ -12,6 +12,14 @@ from api.utils.phonepe import (
     check_phonepe_status, 
     fulfill_payment_success
 )
+from api.utils.razorpay import (
+    get_razorpay_config,
+    create_razorpay_order,
+    verify_razorpay_payment_signature,
+    verify_razorpay_webhook_signature,
+    fetch_razorpay_payment,
+    fulfill_payment_success as fulfill_razorpay_payment_success
+)
 
 intern_bp = Blueprint('intern', __name__)
 
@@ -83,9 +91,11 @@ def create_phonepe_payment():
     enrollment_id = data.get('enrollment_id')
     promo_code = data.get('promo_code', '').upper()
     
-    enroll_info = supabase.table('enrollments').select('track_level, programs(price_beginner, price_intermediate, price_expert)').eq('enrollment_id', enrollment_id).execute().data[0]
+    enroll_info = supabase.table('enrollments').select('track_level, programs(title, price_beginner, price_intermediate, price_expert)').eq('enrollment_id', enrollment_id).execute().data[0]
     track = enroll_info['track_level']
-    base_price = enroll_info['programs'][f'price_{track}']
+    prog = enroll_info.get('programs') or {}
+    prog_title = prog.get('title', 'Virtual Internship')
+    base_price = prog.get(f'price_{track}', 0)
     
     final_price = base_price
     applied_promo = None
@@ -116,10 +126,9 @@ def create_phonepe_payment():
 
     transaction_id = f"VT-TXN-{random.randint(100000, 999999)}"
     amount_in_paise = int(final_price * 100) 
-    safe_merchant_user_id = session.get('public_id', 'VIRT-USER')
     
     if amount_in_paise == 0:
-        # 100% discount applied! Skip PhonePe integration.
+        # 100% discount applied! Skip payment gateway.
         supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": data.get('code_link'), "defense_link": data.get('defense_link')}).execute()
         supabase.table('payments').insert({"user_id": session['user_id'], "transaction_id": transaction_id, "amount": 0, "status": "paid", "applied_promo": applied_promo}).execute()
         
@@ -138,25 +147,28 @@ def create_phonepe_payment():
                     <td style="padding: 10px 0; text-align: right;">INR 0.00 (100% Discount)</td>
                 </tr>
             </table>
-            <p style="margin-top: 20px;">Thank you for choosing Virtuole. We are excited to have you on board!</p>
+            <p style="margin-top: 20px;">Thank you for choosing Virtuole. We are excited to evaluate your architecture!</p>
         </div>
         """
         send_system_email(session['email'], "Payment Invoice - Virtuole", invoice_html, is_html=True)
         
         if is_ajax:
-            return jsonify({"payment_url": "/dashboard-intern"})
-        return redirect("/dashboard-intern")
+            return jsonify({"redirect_url": "/dashboard-intern?status=success"})
+        return redirect("/dashboard-intern?status=success")
     
-    # Secure Redirect URL with txn_id for auto-reconciliation on return
-    redirect_url = f"https://www.virtuole.in/dashboard-intern?txn_id={transaction_id}"
-    callback_url = "https://www.virtuole.in/api/phonepe-webhook"
-
-    success, payment_url_or_err, _ = create_phonepe_pay_order(
+    # Razorpay Gateway Integration
+    rzp_cfg = get_razorpay_config()
+    success, order_id_or_err, order_data = create_razorpay_order(
         merchant_txn_id=transaction_id,
-        merchant_user_id=safe_merchant_user_id,
         amount_in_paise=amount_in_paise,
-        redirect_url=redirect_url,
-        callback_url=callback_url
+        user_name=session.get('name', 'Student Intern'),
+        user_email=session.get('email', ''),
+        notes={
+            "enrollment_id": str(enrollment_id),
+            "program_title": str(prog_title),
+            "track": str(track),
+            "user_id": str(session.get('user_id'))
+        }
     )
 
     if success:
@@ -175,14 +187,117 @@ def create_phonepe_payment():
         }).execute()
 
         if is_ajax:
-            return jsonify({"payment_url": payment_url_or_err})
+            return jsonify({
+                "success": True,
+                "gateway": "razorpay",
+                "key_id": rzp_cfg["key_id"],
+                "order_id": order_id_or_err,
+                "amount": amount_in_paise,
+                "currency": "INR",
+                "transaction_id": transaction_id,
+                "user_name": session.get('name', 'Student Intern'),
+                "user_email": session.get('email', ''),
+                "program_title": prog_title
+            })
         else:
-            return redirect(payment_url_or_err)
+            return redirect(f"/dashboard-intern?txn_id={transaction_id}")
+
+    # Fallback to PhonePe if Razorpay keys not yet set or error occurred
+    if not rzp_cfg["key_id"]:
+        safe_merchant_user_id = session.get('public_id', 'VIRT-USER')
+        redirect_url = f"https://www.virtuole.in/dashboard-intern?txn_id={transaction_id}"
+        callback_url = "https://www.virtuole.in/api/phonepe-webhook"
+        pe_success, pe_payment_url, _ = create_phonepe_pay_order(
+            merchant_txn_id=transaction_id,
+            merchant_user_id=safe_merchant_user_id,
+            amount_in_paise=amount_in_paise,
+            redirect_url=redirect_url,
+            callback_url=callback_url
+        )
+        if pe_success:
+            supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": data.get('code_link'), "defense_link": data.get('defense_link')}).execute()
+            supabase.table('payments').insert({"user_id": session['user_id'], "transaction_id": transaction_id, "amount": amount_in_paise, "status": "pending", "applied_promo": applied_promo}).execute()
+            if is_ajax:
+                return jsonify({"payment_url": pe_payment_url})
+            return redirect(pe_payment_url)
 
     if is_ajax:
-        return jsonify({"error": payment_url_or_err or "PhonePe Gateway Error"}), 400
+        return jsonify({"error": order_id_or_err or "Payment Gateway Error. Please ensure RAZORPAY_KEY_ID & RAZORPAY_KEY_SECRET are set."}), 400
     else:
-        return f"Gateway Error encountered: {payment_url_or_err}", 400
+        return f"Gateway Error encountered: {order_id_or_err}", 400
+
+
+@intern_bp.route('/api/verify-payment', methods=['POST'])
+@intern_bp.route('/api/razorpay/verify-payment', methods=['POST'])
+def verify_razorpay_payment():
+    """
+    Validates Razorpay HMAC SHA256 payment signature and fulfills payment.
+    """
+    data = request.get_json(silent=True) or {}
+    razorpay_order_id = data.get('razorpay_order_id')
+    razorpay_payment_id = data.get('razorpay_payment_id')
+    razorpay_signature = data.get('razorpay_signature')
+    transaction_id = data.get('transaction_id')
+
+    if not razorpay_order_id or not razorpay_payment_id or not razorpay_signature:
+        return jsonify({"success": False, "error": "Missing Razorpay payment parameters."}), 400
+
+    # Cryptographic signature validation
+    is_valid = verify_razorpay_payment_signature(
+        razorpay_order_id=razorpay_order_id,
+        razorpay_payment_id=razorpay_payment_id,
+        razorpay_signature=razorpay_signature
+    )
+
+    if not is_valid:
+        print(f"[SECURITY ALERT] Invalid Razorpay signature for txn {transaction_id}, order {razorpay_order_id}")
+        return jsonify({"success": False, "error": "Signature verification failed. Invalid transaction."}), 400
+
+    # Fulfill payment
+    fulfill_razorpay_payment_success(transaction_id, payment_id=razorpay_payment_id)
+
+    return jsonify({
+        "success": True,
+        "message": "Payment verified successfully!",
+        "redirect_url": f"/dashboard-intern?txn_id={transaction_id}&status=success"
+    }), 200
+
+
+@intern_bp.route('/api/razorpay-webhook', methods=['POST'])
+@intern_bp.route('/razorpay-webhook', methods=['POST'])
+def razorpay_webhook():
+    """
+    Asynchronous Webhook listener for background Razorpay events (payment.captured, order.paid).
+    """
+    raw_body = request.get_data()
+    signature = request.headers.get('X-Razorpay-Signature', '')
+
+    if not verify_razorpay_webhook_signature(raw_body, signature):
+        print(f"[SECURITY ALERT] Invalid Razorpay Webhook signature from {request.remote_addr}")
+        return jsonify({"error": "Invalid signature"}), 401
+
+    try:
+        payload = json.loads(raw_body.decode('utf-8'))
+        event = payload.get('event')
+        payment_entity = payload.get('payload', {}).get('payment', {}).get('entity', {})
+        order_entity = payload.get('payload', {}).get('order', {}).get('entity', {})
+
+        if event in ['payment.captured', 'order.paid']:
+            merchant_txn_id = (
+                order_entity.get('receipt') 
+                or payment_entity.get('notes', {}).get('transaction_id')
+                or order_entity.get('notes', {}).get('transaction_id')
+            )
+            payment_id = payment_entity.get('id')
+            if merchant_txn_id:
+                fulfill_razorpay_payment_success(merchant_txn_id, payment_id=payment_id)
+                return jsonify({"status": "fulfilled", "event": event}), 200
+
+    except Exception as e:
+        print(f"Error processing Razorpay webhook: {e}")
+        return jsonify({"error": "Webhook processing error"}), 500
+
+    return jsonify({"status": "received"}), 200
 
 
 @intern_bp.route('/phonepe-webhook', methods=['POST'])
@@ -226,11 +341,22 @@ def phonepe_webhook():
 @intern_bp.route('/api/verify-payment/<transaction_id>', methods=['GET'])
 def verify_payment_status_endpoint(transaction_id):
     """
-    On-demand status verification endpoint: Queries PhonePe Check Status API live
+    On-demand status verification endpoint: Queries Razorpay or PhonePe live
     and fulfills payment if confirmed.
     """
     if not session.get('user_id'):
         return jsonify({"error": "Unauthorized"}), 401
+
+    pay_query = supabase.table('payments').select('status, transaction_id').eq('transaction_id', transaction_id).execute()
+    if pay_query.data and pay_query.data[0].get('status') == 'paid':
+        return jsonify({"status": "paid", "message": "Transaction verified and completed successfully!"})
+
+    # If starts with pay_, check Razorpay
+    if str(transaction_id).startswith('pay_'):
+        rzp_st = fetch_razorpay_payment(transaction_id)
+        if rzp_st.get("success"):
+            fulfill_razorpay_payment_success(transaction_id, payment_id=transaction_id)
+            return jsonify({"status": "paid", "message": "Razorpay transaction verified!"})
 
     status_res = check_phonepe_status(transaction_id)
     if status_res.get("success"):

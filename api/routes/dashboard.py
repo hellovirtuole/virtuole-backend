@@ -26,16 +26,25 @@ def dashboard_intern():
         user_role = str(session.get('role', '')).lower()
         if user_role not in ['intern', 'intern + ambassador']: return redirect('/login')
 
-        # Auto-reconcile PhonePe status if returning from payment redirect
+        # Auto-reconcile payment status if returning with txn_id
         return_txn_id = request.args.get('txn_id')
         if return_txn_id:
             try:
-                from api.utils.phonepe import check_phonepe_status, fulfill_payment_success
-                st = check_phonepe_status(return_txn_id)
-                if st.get("success"):
-                    fulfill_payment_success(return_txn_id)
-            except Exception as pe_err:
-                print(f"Auto-sync on return error for txn {return_txn_id}: {pe_err}")
+                from api.utils.razorpay import fulfill_payment_success as fulfill_rzp, fetch_razorpay_payment
+                from api.utils.phonepe import check_phonepe_status, fulfill_payment_success as fulfill_pe
+                
+                pay_rec = supabase.table('payments').select('status').eq('transaction_id', return_txn_id).execute()
+                if pay_rec.data and pay_rec.data[0].get('status') != 'paid':
+                    if str(return_txn_id).startswith('pay_'):
+                        rzp_res = fetch_razorpay_payment(return_txn_id)
+                        if rzp_res.get("success"):
+                            fulfill_rzp(return_txn_id, payment_id=return_txn_id)
+                    else:
+                        st = check_phonepe_status(return_txn_id)
+                        if st.get("success"):
+                            fulfill_pe(return_txn_id)
+            except Exception as auto_err:
+                print(f"Auto-sync on return error for txn {return_txn_id}: {auto_err}")
     
         ambassador_active = False
         if user_role == 'intern + ambassador':
