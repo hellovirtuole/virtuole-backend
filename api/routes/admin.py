@@ -19,10 +19,20 @@ def fix_gdrive_url(url):
             return url
     return url
 
+def is_admin_session():
+    role = str(session.get('role', '')).lower()
+    email = str(session.get('email', '')).lower()
+    if email == 'admin@virtuole.in':
+        if role != 'admin':
+            session['role'] = 'admin'
+            session.modified = True
+        return True
+    return role == 'admin'
+
 @admin_bp.route('/admin/add-program', methods=['POST'])
 @admin_bp.route('/api/admin/add-program', methods=['POST'])
 def add_program():
-    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
+    if not is_admin_session(): return redirect('/login')
     t_months = request.form.getlist('track_months[]')
     t_prices = request.form.getlist('track_price[]')
     t_specs = request.form.getlist('track_specs[]')
@@ -56,7 +66,7 @@ def add_program():
 @admin_bp.route('/admin/edit-program', methods=['POST'])
 @admin_bp.route('/api/admin/edit-program', methods=['POST'])
 def edit_program():
-    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
+    if not is_admin_session(): return redirect('/login')
     program_id = request.form.get('program_id')
     t_months = request.form.getlist('track_months[]')
     t_prices = request.form.getlist('track_price[]')
@@ -84,7 +94,7 @@ def edit_program():
 @admin_bp.route('/admin/delete-program', methods=['POST'])
 @admin_bp.route('/api/admin/delete-program', methods=['POST'])
 def delete_program():
-    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
+    if not is_admin_session(): return redirect('/login')
     # Soft Delete: Preserves student data history
     supabase.table('programs').update({"is_active": False}).eq('id', request.form.get('program_id')).execute()
     return redirect(url_for('dashboard.dashboard_admin', tab='programs'))
@@ -92,14 +102,14 @@ def delete_program():
 @admin_bp.route('/admin/reactivate-program', methods=['POST'])
 @admin_bp.route('/api/admin/reactivate-program', methods=['POST'])
 def reactivate_program():
-    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
+    if not is_admin_session(): return redirect('/login')
     supabase.table('programs').update({"is_active": True}).eq('id', request.form.get('program_id')).execute()
     return redirect(url_for('dashboard.dashboard_admin', tab='programs'))
 
 @admin_bp.route('/admin/add-task', methods=['POST'])
 @admin_bp.route('/api/admin/add-task', methods=['POST'])
 def add_task():
-    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
+    if not is_admin_session(): return redirect('/login')
     max_completions = int(request.form.get('max_completions', 1) or 1)
     supabase.table('ambassador_tasks').insert({
         "title": request.form.get('title'), 
@@ -114,7 +124,7 @@ def add_task():
 @admin_bp.route('/admin/edit-task', methods=['POST'])
 @admin_bp.route('/api/admin/edit-task', methods=['POST'])
 def edit_task():
-    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
+    if not is_admin_session(): return redirect('/login')
     task_id = request.form.get('task_id')
     max_completions = int(request.form.get('max_completions', 1) or 1)
     supabase.table('ambassador_tasks').update({
@@ -128,14 +138,14 @@ def edit_task():
 @admin_bp.route('/admin/delete-task', methods=['POST'])
 @admin_bp.route('/api/admin/delete-task', methods=['POST'])
 def delete_task():
-    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
+    if not is_admin_session(): return redirect('/login')
     supabase.table('ambassador_tasks').delete().eq('id', request.form.get('task_id')).execute()
     return redirect(url_for('dashboard.dashboard_admin', tab='tasks'))
 
 @admin_bp.route('/admin/mark-swag-sent', methods=['POST'])
 @admin_bp.route('/api/admin/mark-swag-sent', methods=['POST'])
 def mark_swag_sent():
-    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
+    if not is_admin_session(): return redirect('/login')
     ambassador_id = request.form.get('ambassador_id')
     swag_tier = request.form.get('swag_tier', '')
     amb = supabase.table('users').select('email', 'full_name').eq('id', ambassador_id).execute().data
@@ -156,7 +166,7 @@ def mark_swag_sent():
 @admin_bp.route('/admin/update-role', methods=['POST'])
 @admin_bp.route('/api/admin/update-role', methods=['POST'])
 def update_role():
-    if str(session.get('role', '')).lower() != 'admin': return redirect('/login')
+    if not is_admin_session(): return redirect('/login')
     user_id = request.form.get('user_id')
     new_role = request.form.get('new_role')
     user = supabase.table('users').select('email', 'full_name').eq('id', user_id).execute().data[0]
@@ -186,7 +196,7 @@ def update_role():
 @admin_bp.route('/api/admin/push-notification', methods=['POST'])
 def admin_push_notification():
     try:
-        if str(session.get('role', '')).lower() != 'admin':
+        if not is_admin_session():
             return jsonify({"success": False, "error": "Unauthorized"}), 401
 
         data = request.get_json(force=True, silent=True)
@@ -303,7 +313,7 @@ def admin_push_notification():
 @admin_bp.route('/admin/bulk-update-roles', methods=['POST'])
 @admin_bp.route('/api/admin/bulk-update-roles', methods=['POST'])
 def admin_bulk_update_roles():
-    if str(session.get('role', '')).lower() != 'admin':
+    if not is_admin_session():
         if request.is_json:
             return jsonify({"success": False, "error": "Unauthorized"}), 401
         return redirect('/login')
@@ -349,7 +359,7 @@ def admin_bulk_update_roles():
 @admin_bp.route('/admin/sync-phonepe-transaction', methods=['POST'])
 @admin_bp.route('/api/admin/sync-phonepe-transaction', methods=['POST'])
 def admin_sync_phonepe_transaction():
-    if str(session.get('role', '')).lower() != 'admin':
+    if not is_admin_session():
         return jsonify({"success": False, "error": "Unauthorized"}), 401
 
     data = request.get_json(silent=True) if request.is_json else request.form

@@ -46,9 +46,15 @@ class _VercelFix:
 
 app.wsgi_app = _VercelFix(app.wsgi_app)
 
+is_production = bool(os.getenv("VERCEL") or os.getenv("PRODUCTION") or os.getenv("FLASK_ENV") == "production")
+
+app.config['SESSION_COOKIE_NAME'] = 'virtuole_session'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = __import__('datetime').timedelta(days=30)
+app.config['SESSION_COOKIE_PATH'] = '/'
+app.config['SESSION_COOKIE_SECURE'] = is_production
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+app.config['SESSION_REFRESH_EACH_REQUEST'] = False
 CORS(app)
 
 from flask import send_from_directory, Response

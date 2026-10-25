@@ -104,13 +104,15 @@ def login():
             
             # 4. Normalize the role string to completely eliminate redirect loop issues
             user_role = str(user_data.get('role', 'intern')).strip().lower()
+            if email.strip().lower() == "admin@virtuole.in":
+                user_role = "admin"
             session['role'] = user_role
             
             # Force Flask to instantly save the session
             session.modified = True 
             
             # 5. Smart Routing based on normalized role
-            if user_role == 'admin' or email == "admin@virtuole.in": 
+            if user_role == 'admin': 
                 return redirect(url_for('dashboard.dashboard_admin'))
             elif user_role == 'mentor': 
                 return redirect(url_for('dashboard.dashboard_mentor'))
@@ -259,11 +261,13 @@ def oauth_session():
         session['public_id'] = user_data.get('public_id')
 
         user_role = str(user_data.get('role', 'intern')).strip().lower()
+        if email.strip().lower() == "admin@virtuole.in":
+            user_role = "admin"
         session['role'] = user_role
         session.modified = True
 
         # Role-based dashboard redirect
-        if user_role == 'admin' or email == "admin@virtuole.in":
+        if user_role == 'admin':
             redirect_url = url_for('dashboard.dashboard_admin')
         elif user_role == 'mentor':
             redirect_url = url_for('dashboard.dashboard_mentor')
@@ -289,6 +293,8 @@ def logout():
     response = make_response(redirect('/login'))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     response.headers['Pragma'] = 'no-cache'
+    response.delete_cookie('virtuole_session', path='/')
+    response.delete_cookie('session', path='/')
     return response
 
 @auth_bp.route('/forgot-password', methods=['POST'])
