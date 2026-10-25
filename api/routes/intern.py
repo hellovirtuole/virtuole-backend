@@ -458,7 +458,10 @@ def api_enroll():
         import traceback
         traceback.print_exc()
         print(f"api_enroll fatal error caught: {fatal_e}")
-        return redirect(url_for('dashboard.dashboard_intern', active_tab='workspace', error=str(fatal_e)))
+        err_msg = str(fatal_e)
+        if 'enrollments_status_check' in err_msg:
+            err_msg = "Database constraint: 'pending' status is not allowed by the 'enrollments_status_check' constraint in Supabase. Please run: ALTER TABLE enrollments DROP CONSTRAINT IF EXISTS enrollments_status_check; in your Supabase SQL Editor."
+        return redirect(url_for('dashboard.dashboard_intern', active_tab='workspace', error=err_msg))
 
 
 @intern_bp.route('/submit-project', methods=['POST'])
