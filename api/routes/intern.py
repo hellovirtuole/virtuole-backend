@@ -128,8 +128,17 @@ def create_phonepe_payment():
     amount_in_paise = int(final_price * 100) 
     
     if amount_in_paise == 0:
-        # 100% discount applied! Skip payment gateway.
-        supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": data.get('code_link'), "defense_link": data.get('defense_link')}).execute()
+        # 100% discount applied! Skip payment gateway and record official submission.
+        try:
+            exist_sub = supabase.table('submissions').select('id').eq('enrollment_id', enrollment_id).execute().data
+            if exist_sub:
+                supabase.table('submissions').update({"code_link": data.get('code_link'), "defense_link": data.get('defense_link')}).eq('id', exist_sub[0]['id']).execute()
+            else:
+                supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": data.get('code_link'), "defense_link": data.get('defense_link')}).execute()
+            supabase.table('enrollments').update({"status": "submitted"}).eq('enrollment_id', enrollment_id).execute()
+        except Exception as e_sub:
+            print(f"Error saving 100% discount submission: {e_sub}")
+
         supabase.table('payments').insert({"user_id": session['user_id'], "transaction_id": transaction_id, "amount": 0, "status": "paid", "applied_promo": applied_promo}).execute()
         
         invoice_html = f"""
@@ -151,11 +160,21 @@ def create_phonepe_payment():
         </div>
         """
         send_system_email(session['email'], "Payment Invoice - Virtuole", invoice_html, is_html=True)
+        send_notification('intern', session['user_id'], 'submission', 'Project Submitted', f'Your architecture for {enrollment_id} has entered evaluation.')
+        send_notification('mentor', None, 'new_submission', 'New Project Submission', f'A new project for {enrollment_id} has been submitted for evaluation.')
         
         if is_ajax:
             return jsonify({"redirect_url": "/dashboard-intern?status=success"})
         return redirect("/dashboard-intern?status=success")
     
+    # Store pending submission in session until payment is confirmed
+    session[f'pending_sub_{transaction_id}'] = {
+        "enrollment_id": enrollment_id,
+        "code_link": data.get('code_link'),
+        "defense_link": data.get('defense_link')
+    }
+    session.modified = True
+
     # Razorpay Gateway Integration
     rzp_cfg = get_razorpay_config()
     success, order_id_or_err, order_data = create_razorpay_order(
@@ -172,12 +191,7 @@ def create_phonepe_payment():
     )
 
     if success:
-        # Save submission and pending payment record
-        supabase.table('submissions').insert({
-            "enrollment_id": enrollment_id, 
-            "code_link": data.get('code_link'), 
-            "defense_link": data.get('defense_link')
-        }).execute()
+        # DO NOT insert into submissions yet! Payment is pending.
         supabase.table('payments').insert({
             "user_id": session['user_id'], 
             "transaction_id": transaction_id, 
@@ -215,7 +229,7 @@ def create_phonepe_payment():
             callback_url=callback_url
         )
         if pe_success:
-            supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": data.get('code_link'), "defense_link": data.get('defense_link')}).execute()
+            # DO NOT insert into submissions yet! Payment is pending.
             supabase.table('payments').insert({"user_id": session['user_id'], "transaction_id": transaction_id, "amount": amount_in_paise, "status": "pending", "applied_promo": applied_promo}).execute()
             if is_ajax:
                 return jsonify({"payment_url": pe_payment_url})
@@ -232,6 +246,7 @@ def create_phonepe_payment():
 def verify_razorpay_payment():
     """
     Validates Razorpay HMAC SHA256 payment signature and fulfills payment.
+    Only upon successful verified payment is the project officially marked as submitted.
     """
     data = request.get_json(silent=True) or {}
     razorpay_order_id = data.get('razorpay_order_id')
@@ -255,6 +270,41 @@ def verify_razorpay_payment():
 
     # Fulfill payment
     fulfill_razorpay_payment_success(transaction_id, payment_id=razorpay_payment_id)
+
+    # NOW AND ONLY NOW: Save the official submission and mark enrollment as 'submitted'
+    cached_sub = session.get(f'pending_sub_{transaction_id}') or {}
+    enrollment_id = data.get('enrollment_id') or cached_sub.get('enrollment_id')
+    code_link = data.get('code_link') or cached_sub.get('code_link')
+    defense_link = data.get('defense_link') or cached_sub.get('defense_link')
+
+    if enrollment_id:
+        try:
+            exist_sub = supabase.table('submissions').select('id').eq('enrollment_id', enrollment_id).execute().data
+            if exist_sub:
+                supabase.table('submissions').update({
+                    "code_link": code_link,
+                    "defense_link": defense_link
+                }).eq('id', exist_sub[0]['id']).execute()
+            else:
+                supabase.table('submissions').insert({
+                    "enrollment_id": enrollment_id,
+                    "code_link": code_link,
+                    "defense_link": defense_link
+                }).execute()
+
+            # Mark enrollment as submitted
+            supabase.table('enrollments').update({"status": "submitted"}).eq('enrollment_id', enrollment_id).execute()
+
+            user_id = session.get('user_id')
+            if user_id:
+                send_notification('intern', user_id, 'submission', 'Project Submitted', f'Your architecture for {enrollment_id} has entered evaluation.')
+            send_notification('mentor', None, 'new_submission', 'New Project Submission', f'A new project for {enrollment_id} has been submitted for evaluation.')
+            
+            # Clean up session cache
+            session.pop(f'pending_sub_{transaction_id}', None)
+            session.modified = True
+        except Exception as sub_err:
+            print(f"Error saving submission upon verified payment: {sub_err}")
 
     return jsonify({
         "success": True,

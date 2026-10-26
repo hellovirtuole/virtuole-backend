@@ -24,12 +24,30 @@ def fix_gdrive_url(url):
 def is_admin_session():
     role = str(session.get('role', '')).lower()
     email = str(session.get('email', '')).lower()
-    if email == 'admin@virtuole.in':
+    if email == 'admin@virtuole.in' or role == 'admin':
         if role != 'admin':
             session['role'] = 'admin'
-            session.modified = True
+        session.permanent = True
+        session.modified = True
         return True
-    return role == 'admin'
+
+    # Database fallback if user_id in session
+    u_id = session.get('user_id')
+    if u_id and supabase:
+        try:
+            u_check = supabase.table('users').select('role, email').eq('id', u_id).execute().data
+            if u_check:
+                db_role = str(u_check[0].get('role', '')).lower()
+                db_email = str(u_check[0].get('email', '')).lower()
+                if db_role == 'admin' or db_email == 'admin@virtuole.in':
+                    session['role'] = 'admin'
+                    session['email'] = db_email
+                    session.permanent = True
+                    session.modified = True
+                    return True
+        except Exception:
+            pass
+    return False
 
 @dashboard_bp.route('/dashboard-intern')
 def dashboard_intern():
@@ -365,7 +383,14 @@ def dashboard_mentor():
     active_cohort_subs = []
     graded_subs = []
 
+    seen_enrollments = set()
     for sub in all_subs_raw:
+        eid = sub.get('enrollment_id')
+        if eid and eid in seen_enrollments:
+            continue
+        if eid:
+            seen_enrollments.add(eid)
+
         parsed_projects = parse_submission_deliverables(sub.get('code_link'), sub.get('defense_link'))
         sub['projects_list'] = parsed_projects
         sub['project_count'] = len(parsed_projects)
@@ -374,11 +399,16 @@ def dashboard_mentor():
 
         cert = sub.get('certificate_url') or ''
         e = sub.get('enrollments') or {}
-        e_status = e.get('status', '')
+        e_status = str(e.get('status') or '').strip().lower()
 
         # Check if already officially completed/graded & released
         if cert.startswith('https://') or cert.startswith('failed:') or e_status in ['graded', 'failed']:
             graded_subs.append(sub)
+            continue
+
+        # CRITICAL FILTER: Only enrollments in 'submitted' or 'resubmit' status belong in the mentor review queue.
+        # If an intern only clicked to pay or enrollment is still 'active'/'pending' (unpaid/abandoned), it must NOT appear.
+        if e_status not in ['submitted', 'resubmit']:
             continue
 
         # Sub is in review queue (either un-graded or pre-graded / staged)

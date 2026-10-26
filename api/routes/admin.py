@@ -22,12 +22,30 @@ def fix_gdrive_url(url):
 def is_admin_session():
     role = str(session.get('role', '')).lower()
     email = str(session.get('email', '')).lower()
-    if email == 'admin@virtuole.in':
+    if email == 'admin@virtuole.in' or role == 'admin':
         if role != 'admin':
             session['role'] = 'admin'
-            session.modified = True
+        session.permanent = True
+        session.modified = True
         return True
-    return role == 'admin'
+
+    # Database fallback if user_id in session
+    u_id = session.get('user_id')
+    if u_id and supabase:
+        try:
+            u_check = supabase.table('users').select('role, email').eq('id', u_id).execute().data
+            if u_check:
+                db_role = str(u_check[0].get('role', '')).lower()
+                db_email = str(u_check[0].get('email', '')).lower()
+                if db_role == 'admin' or db_email == 'admin@virtuole.in':
+                    session['role'] = 'admin'
+                    session['email'] = db_email
+                    session.permanent = True
+                    session.modified = True
+                    return True
+        except Exception:
+            pass
+    return False
 
 @admin_bp.route('/admin/add-program', methods=['POST'])
 @admin_bp.route('/api/admin/add-program', methods=['POST'])

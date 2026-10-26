@@ -42,6 +42,10 @@ class _VercelFix:
         if script and '/api/index' in script:
             environ['SCRIPT_NAME'] = ''
             
+        proto = environ.get('HTTP_X_FORWARDED_PROTO', '')
+        if 'https' in proto or environ.get('HTTP_X_VERCEL_ID'):
+            environ['wsgi.url_scheme'] = 'https'
+            
         return self.wsgi(environ, start_response)
 
 app.wsgi_app = _VercelFix(app.wsgi_app)
@@ -54,7 +58,7 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_PATH'] = '/'
 app.config['SESSION_COOKIE_SECURE'] = is_production
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
-app.config['SESSION_REFRESH_EACH_REQUEST'] = False
+app.config['SESSION_REFRESH_EACH_REQUEST'] = True
 CORS(app)
 
 from flask import send_from_directory, Response

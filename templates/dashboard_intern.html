@@ -855,7 +855,11 @@
                                         razorpay_order_id: rzpResponse.razorpay_order_id,
                                         razorpay_payment_id: rzpResponse.razorpay_payment_id,
                                         razorpay_signature: rzpResponse.razorpay_signature,
-                                        transaction_id: data.transaction_id
+                                        transaction_id: data.transaction_id,
+                                        enrollment_id: payload.enrollment_id,
+                                        code_link: payload.code_link,
+                                        defense_link: payload.defense_link,
+                                        promo_code: payload.promo_code
                                     })
                                 });
                                 const verifyData = await verifyRes.json();
