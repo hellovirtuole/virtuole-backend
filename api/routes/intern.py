@@ -5,7 +5,7 @@ from api.utils.email import send_system_email, send_ambassador_email
 import random, string, uuid, json, os, base64, hashlib, requests
 from datetime import datetime, timedelta
 from api.utils.notifications import send_notification
-from api.utils.batch import parse_track_duration, calculate_next_start_date
+from api.utils.batch import parse_track_duration, calculate_next_start_date, resolve_track_price_and_specs
 from api.utils.phonepe import (
     create_phonepe_pay_order, 
     verify_phonepe_webhook_checksum, 
@@ -89,46 +89,87 @@ def create_phonepe_payment():
         is_ajax = False
         
     enrollment_id = data.get('enrollment_id')
-    promo_code = data.get('promo_code', '').upper()
+    promo_code = (data.get('promo_code') or '').strip().upper()
     
-    enroll_info = supabase.table('enrollments').select('track_level, programs(title, price_beginner, price_intermediate, price_expert)').eq('enrollment_id', enrollment_id).execute().data[0]
-    track = enroll_info['track_level']
+    enroll_res = supabase.table('enrollments').select('track_level, programs(*)').eq('enrollment_id', enrollment_id).execute().data
+    if not enroll_res:
+        if is_ajax:
+            return jsonify({"error": "Enrollment record not found."}), 404
+        return redirect('/dashboard-intern?tab=active&error=not_found')
+
+    enroll_info = enroll_res[0]
+    track = enroll_info.get('track_level') or '1'
     prog = enroll_info.get('programs') or {}
     prog_title = prog.get('title', 'Virtual Internship')
-    base_price = prog.get(f'price_{track}', 0)
+    
+    # Reliably resolve exact track fee across numeric, text, custom, or column schemes
+    base_price, _ = resolve_track_price_and_specs(prog, track)
+    if not base_price or base_price <= 0:
+        base_price = 999
     
     final_price = base_price
     applied_promo = None
+    discount_percent = 0
     if promo_code:
-        user_data = supabase.table('users').select('id, role, total_points, ambassador_expiry').eq('promo_code', promo_code).execute().data
+        user_data = supabase.table('users').select('id, role, total_points, ambassador_expiry, coupon_usage_limit, coupon_user_limit, coupon_allowed_level').eq('promo_code', promo_code).execute().data
         
         if user_data:
             c_data = user_data[0]
             user_role = str(c_data.get('role', '')).lower()
             
-            if 'ambassador' in user_role:
-                final_price = int(base_price * 0.9)
-                applied_promo = promo_code
-            elif 'coupon' in user_role:
-                is_expired = False
-                if c_data.get('ambassador_expiry'):
-                    try:
-                        expiry = datetime.fromisoformat(c_data['ambassador_expiry'])
-                        if datetime.utcnow() > expiry.replace(tzinfo=None):
-                            is_expired = True
-                    except ValueError:
-                        pass
-                
-                if not is_expired:
-                    discount_percent = c_data.get('total_points', 0)
-                    final_price = int(base_price * ((100 - discount_percent) / 100))
+            # Check track restriction if any
+            allowed_lvl = (c_data.get('coupon_allowed_level') or '').strip().lower()
+            if allowed_lvl and allowed_lvl not in str(track).lower():
+                user_data = [] # Invalid track for this coupon
+            
+            # Check expiration
+            if user_data and c_data.get('ambassador_expiry'):
+                try:
+                    expiry = datetime.fromisoformat(c_data['ambassador_expiry'])
+                    if datetime.utcnow() > expiry.replace(tzinfo=None):
+                        user_data = [] # Expired
+                except ValueError:
+                    pass
+            
+            # Check global usage limit
+            if user_data and c_data.get('coupon_usage_limit') is not None:
+                c_payments = supabase.table('payments').select('id').eq('applied_promo', promo_code).eq('status', 'paid').execute().data
+                if len(c_payments) >= c_data['coupon_usage_limit']:
+                    user_data = [] # Usage limit reached
+            
+            # Check user limit
+            if user_data and c_data.get('coupon_user_limit') is not None and session.get('user_id'):
+                u_payments = supabase.table('payments').select('id').eq('applied_promo', promo_code).eq('status', 'paid').eq('user_id', session['user_id']).execute().data
+                if len(u_payments) >= c_data['coupon_user_limit']:
+                    user_data = [] # User limit reached
+
+            if user_data:
+                if 'ambassador' in user_role:
+                    discount_percent = 10
+                    final_price = max(1, int(base_price * 0.9))
                     applied_promo = promo_code
+                elif 'coupon' in user_role:
+                    try:
+                        discount_percent = int(c_data.get('total_points', 0) or 0)
+                    except Exception:
+                        discount_percent = 0
+                    if discount_percent > 0:
+                        discount_amount = int(base_price * (min(100, discount_percent) / 100))
+                        final_price = max(0, base_price - discount_amount)
+                        applied_promo = promo_code
 
     transaction_id = f"VT-TXN-{random.randint(100000, 999999)}"
     amount_in_paise = int(final_price * 100) 
     
     if amount_in_paise == 0:
-        # 100% discount applied! Skip payment gateway and record official submission.
+        # STRICT SECURITY ENFORCEMENT:
+        # 0 fee is strictly forbidden unless an authentic, non-expired 100% coupon was validated!
+        if not (applied_promo and discount_percent >= 100):
+            if is_ajax:
+                return jsonify({"error": "Unable to calculate payable amount. Please contact support."}), 400
+            return redirect("/dashboard-intern?tab=active&error=invalid_amount")
+
+        # Authentic 100% discount applied! Skip payment gateway and record official submission.
         try:
             exist_sub = supabase.table('submissions').select('id').eq('enrollment_id', enrollment_id).execute().data
             if exist_sub:

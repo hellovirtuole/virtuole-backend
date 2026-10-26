@@ -5,7 +5,7 @@ from api.utils.email import send_system_email, send_ambassador_email
 import random, string, uuid, json, os, re
 from datetime import datetime, timedelta
 from api.routes.ambassador import parse_shipping_address
-from api.utils.batch import calculate_next_start_date, parse_track_duration
+from api.utils.batch import calculate_next_start_date, parse_track_duration, resolve_track_price_and_specs
 from api.utils.submissions import parse_submission_deliverables
 
 dashboard_bp = Blueprint('dashboard', __name__)
@@ -107,7 +107,28 @@ def dashboard_intern():
                 except Exception:
                     all_user_enrolls = []
 
-        active_enrolls = [e for e in all_user_enrolls if str(e.get('status', '')).strip().lower() in ['active', 'resubmit']]
+        # Self-healing check for zero-fee bypass submissions without valid payment or authentic 100% coupon
+        if supabase:
+            for e in all_user_enrolls:
+                if str(e.get('status', '')).strip().lower() == 'submitted':
+                    eid = e.get('enrollment_id')
+                    try:
+                        paid_records = supabase.table('payments').select('*').eq('user_id', u_id).eq('status', 'paid').execute().data or []
+                        has_paid = any(
+                            (p.get('amount', 0) or 0) > 0 or 
+                            (p.get('applied_promo') and str(p.get('applied_promo')).strip())
+                            for p in paid_records
+                        )
+                        if not has_paid:
+                            print(f"[RECONCILIATION] Reverting unpaid bypass submission {eid} to active.")
+                            supabase.table('submissions').delete().eq('enrollment_id', eid).execute()
+                            supabase.table('enrollments').update({'status': 'active'}).eq('enrollment_id', eid).execute()
+                            supabase.table('payments').delete().eq('user_id', u_id).eq('amount', 0).is_('applied_promo', 'null').execute()
+                            e['status'] = 'active'
+                    except Exception as heal_err:
+                        print(f"Error self-healing intern submission {eid}: {heal_err}")
+
+        active_enrolls = [e for e in all_user_enrolls if str(e.get('status', '')).strip().lower() in ['active', 'resubmit', 'submitted']]
         pending_enrolls = [e for e in all_user_enrolls if str(e.get('status', '')).strip().lower() == 'pending']
 
         active_projects = []
@@ -183,7 +204,7 @@ def dashboard_intern():
             start_date_str = start_dt.strftime("%B %d, %Y")
             end_date_str = end_dt.strftime("%B %d, %Y")
 
-            if now > end_dt:
+            if now > end_dt and e['status'] != 'submitted':
                 if e['status'] == 'active':
                     # Auto-delete expired enrollment
                     supabase.table('enrollments').delete().eq('id', e['id']).execute()
@@ -211,21 +232,7 @@ def dashboard_intern():
                     pass
 
             track = e.get('track_level', '').lower()
-            if track.startswith('custom_'):
-                specs_link = prog.get('custom_specs', '#')
-                amount_due = prog.get('custom_price', 0)
-            elif track.isdigit():
-                tracks_json = prog.get('tracks') or []
-                matched = next((t for t in tracks_json if str(t.get('months')) == track), None)
-                if matched:
-                    specs_link = matched.get('specs', '#')
-                    amount_due = matched.get('price', 0)
-                else:
-                    specs_link = '#'
-                    amount_due = 0
-            else:
-                specs_link = prog.get(f"specs_{track}", '#')
-                amount_due = prog.get(f"price_{track}", 0)
+            amount_due, specs_link = resolve_track_price_and_specs(prog, track)
 
             active_projects.append({
                 'program_title': prog.get('title', 'Architecture Internship'), 
@@ -260,7 +267,7 @@ def dashboard_intern():
             offered_programs_grouped[cat].append(p)
     
         completed_projects = []
-        graded_enrolls = supabase.table('enrollments').select('*, programs(title)').eq('user_id', u_id).in_('status', ['graded', 'submitted', 'certified', 'completed', 'graduated']).execute().data
+        graded_enrolls = supabase.table('enrollments').select('*, programs(title)').eq('user_id', u_id).in_('status', ['graded', 'certified', 'completed', 'graduated']).execute().data
         for e in graded_enrolls:
             track = e.get('track_level', '').lower()
             if track.startswith('custom_'):
@@ -376,7 +383,7 @@ def dashboard_mentor():
 
     # Fetch all submissions with enrollment, program, and user details
     all_subs_raw = supabase.table('submissions').select(
-        '*, enrollments(created_at, track_level, status, programs(title), users(full_name, email))'
+        '*, enrollments(id, user_id, created_at, track_level, status, programs(title), users(id, full_name, email))'
     ).order('created_at', desc=True).execute().data or []
 
     ready_to_release_subs = []
@@ -410,6 +417,29 @@ def dashboard_mentor():
         # If an intern only clicked to pay or enrollment is still 'active'/'pending' (unpaid/abandoned), it must NOT appear.
         if e_status not in ['submitted', 'resubmit']:
             continue
+
+        # AUTO-RECONCILIATION & SECURITY CHECK:
+        # Verify that this submission has a valid paid record or authentic 100% coupon.
+        # If an enrollment was prematurely marked 'submitted' without payment (like 0-fee bypass),
+        # self-heal the database: revert enrollment status back to 'active' and delete the bogus submission.
+        sub_uid = e.get('user_id') or (e.get('users') or {}).get('id')
+        if sub_uid and eid:
+            matching_payments = [
+                p for p in paid_payments
+                if p.get('user_id') == sub_uid and (
+                    (p.get('amount') or 0) > 0 or 
+                    (p.get('applied_promo') and str(p.get('applied_promo')).strip())
+                )
+            ]
+            if not matching_payments:
+                print(f"[MENTOR QUEUE] Self-healing unpaid submission {eid} for user {sub_uid}.")
+                try:
+                    supabase.table('submissions').delete().eq('id', sub.get('id')).execute()
+                    supabase.table('enrollments').update({'status': 'active'}).eq('enrollment_id', eid).execute()
+                    supabase.table('payments').delete().eq('user_id', sub_uid).eq('amount', 0).is_('applied_promo', 'null').execute()
+                except Exception as heal_err:
+                    print(f"Error self-healing unpaid submission {eid}: {heal_err}")
+                continue
 
         # Sub is in review queue (either un-graded or pre-graded / staged)
         raw_start = e.get('created_at')
