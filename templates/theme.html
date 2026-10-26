@@ -30,9 +30,72 @@ document.addEventListener('DOMContentLoaded', function () {
         entries.forEach(function (en) {
             if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
         });
-    }, { threshold: .12, rootMargin: '0px 0px -8% 0px' });
+    }, { threshold: .08, rootMargin: '0px 0px -4% 0px' });
     els.forEach(function (e) { io.observe(e); });
+
+    var activeSec = document.querySelector('.view-section.active');
+    if (activeSec) {
+        activeSec.querySelectorAll('.reveal').forEach(function (e) { e.classList.add('in'); });
+    }
 });
+
+/* Global image fallback handler for Google Drive and external program images */
+window.handleProgramImgError = function (img, title, category) {
+    if (!img) return;
+    var currentSrc = img.src || '';
+    
+    // Attempt 1: If thumbnail endpoint failed, try lh3 endpoint
+    if (currentSrc.indexOf('drive.google.com/thumbnail') !== -1 && !img.dataset.fallbackTried) {
+        img.dataset.fallbackTried = '1';
+        var match = currentSrc.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+            img.src = 'https://lh3.googleusercontent.com/d/' + match[1];
+            return;
+        }
+    }
+    
+    // Attempt 2: If lh3 endpoint failed, try thumbnail endpoint
+    if (currentSrc.indexOf('lh3.googleusercontent.com/d/') !== -1 && !img.dataset.fallbackTried) {
+        img.dataset.fallbackTried = '1';
+        var match = currentSrc.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+            img.src = 'https://drive.google.com/thumbnail?id=' + match[1] + '&sz=w1000';
+            return;
+        }
+    }
+
+    // Final fallback: Replace broken image with a rich Aurora branded gradient header
+    var titleText = title || 'Virtual Internship';
+    var catText = category || 'Architecture';
+    var lower = (titleText + ' ' + catText).toLowerCase();
+    var icon = '🚀';
+    var grad = 'linear-gradient(135deg, rgba(99,102,241,0.3) 0%, rgba(168,85,247,0.2) 100%)';
+    
+    if (lower.indexOf('app') !== -1 || lower.indexOf('android') !== -1 || lower.indexOf('mobile') !== -1 || lower.indexOf('flutter') !== -1) {
+        icon = '📱';
+        grad = 'linear-gradient(135deg, rgba(16,185,129,0.3) 0%, rgba(6,182,212,0.2) 100%)';
+    } else if (lower.indexOf('front') !== -1 || lower.indexOf('web') !== -1 || lower.indexOf('ui') !== -1 || lower.indexOf('react') !== -1) {
+        icon = '🎨';
+        grad = 'linear-gradient(135deg, rgba(59,130,246,0.3) 0%, rgba(147,51,234,0.2) 100%)';
+    } else if (lower.indexOf('back') !== -1 || lower.indexOf('node') !== -1 || lower.indexOf('cloud') !== -1 || lower.indexOf('devops') !== -1) {
+        icon = '⚙️';
+        grad = 'linear-gradient(135deg, rgba(245,158,11,0.3) 0%, rgba(239,68,68,0.2) 100%)';
+    } else if (lower.indexOf('ai') !== -1 || lower.indexOf('ml') !== -1 || lower.indexOf('data') !== -1 || lower.indexOf('python') !== -1) {
+        icon = '🧠';
+        grad = 'linear-gradient(135deg, rgba(139,92,246,0.3) 0%, rgba(236,72,153,0.2) 100%)';
+    }
+
+    var h = img.style.height || (img.offsetHeight ? img.offsetHeight + 'px' : '160px');
+    var placeholder = document.createElement('div');
+    placeholder.style.cssText = 'width:100%;height:' + h + ';background:' + grad + ', #0b1220;display:flex;flex-direction:column;align-items:center;justify-content:center;border-bottom:1px solid rgba(255,255,255,0.08);position:relative;overflow:hidden;padding:16px;box-sizing:border-box;text-align:center;';
+    placeholder.innerHTML = '<div style="font-size:2.2rem;margin-bottom:6px;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.4));">' + icon + '</div>' +
+        '<div style="font-size:0.88rem;font-weight:700;color:var(--text-main,#f3f6fc);letter-spacing:0.5px;text-transform:uppercase;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + titleText + '</div>' +
+        '<div style="font-size:0.72rem;color:var(--text-muted,#98a4bd);margin-top:2px;">' + catText + ' Track</div>';
+    
+    if (img.parentNode) {
+        img.parentNode.replaceChild(placeholder, img);
+    }
+};
 
 /* =====================================================================
    SHARED CHART HELPERS  (used by every dashboard that loads Chart.js)

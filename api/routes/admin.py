@@ -2,7 +2,7 @@
 from flask import Blueprint, request, jsonify, render_template, session, redirect, url_for, send_from_directory
 from api.config import supabase, limiter
 from api.utils.email import send_system_email, send_ambassador_email
-import random, string, uuid, json
+import random, string, uuid, json, re
 from datetime import datetime, timedelta
 
 admin_bp = Blueprint('admin', __name__)
@@ -11,13 +11,13 @@ admin_bp = Blueprint('admin', __name__)
 
 def fix_gdrive_url(url):
     if not url: return url
-    if "drive.google.com/file/d/" in url:
-        try:
-            file_id = url.split("/d/")[1].split("/")[0]
-            return f"https://lh3.googleusercontent.com/d/{file_id}"
-        except:
-            return url
-    return url
+    url_str = str(url).strip()
+    match = re.search(r'/(?:file/)?d/([a-zA-Z0-9_-]+)', url_str)
+    if not match: match = re.search(r'[?&]id=([a-zA-Z0-9_-]+)', url_str)
+    if match:
+        file_id = match.group(1)
+        return f"https://drive.google.com/thumbnail?id={file_id}&sz=w1000"
+    return url_str
 
 def is_admin_session():
     role = str(session.get('role', '')).lower()
