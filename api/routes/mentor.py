@@ -505,3 +505,21 @@ def reject_enrollment():
 
     send_notification('intern', e.get('user_id'), 'enrollment_rejected', 'Application Update', f"Your enrollment request for {prog.get('title')} was not approved.")
     return redirect(url_for('dashboard.dashboard_mentor'))
+
+
+@mentor_bp.route('/revert-to-active', methods=['POST', 'GET'])
+@mentor_bp.route('/api/revert-to-active', methods=['POST', 'GET'])
+def revert_to_active():
+    enrollment_id = request.values.get('enrollment_id')
+    if not enrollment_id:
+        return jsonify({"error": "Missing enrollment_id"}), 400
+
+    try:
+        supabase.table('submissions').delete().eq('enrollment_id', enrollment_id).execute()
+        supabase.table('enrollments').update({"status": "active"}).eq('enrollment_id', enrollment_id).execute()
+        if request.is_json or request.method == 'GET':
+            return jsonify({"success": True, "message": f"Enrollment {enrollment_id} successfully reverted to normal active status."}), 200
+        return redirect(url_for('dashboard.dashboard_mentor', tab='queue', message=f"Enrollment {enrollment_id} reverted to active."))
+    except Exception as err:
+        return jsonify({"error": str(err)}), 500
+

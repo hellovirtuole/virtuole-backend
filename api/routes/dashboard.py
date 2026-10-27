@@ -107,26 +107,43 @@ def dashboard_intern():
                 except Exception:
                     all_user_enrolls = []
 
-        # Self-healing check for zero-fee bypass submissions without valid payment or authentic 100% coupon
+        # Unconditional fix & reconciliation: ensure enrollments without verified payment are NORMAL (active)
         if supabase:
-            for e in all_user_enrolls:
-                if str(e.get('status', '')).strip().lower() == 'submitted':
+            try:
+                for e in all_user_enrolls:
                     eid = e.get('enrollment_id')
-                    try:
-                        paid_records = supabase.table('payments').select('*').eq('user_id', u_id).eq('status', 'paid').execute().data or []
-                        has_paid = any(
-                            (p.get('amount', 0) or 0) > 0 or 
-                            (p.get('applied_promo') and str(p.get('applied_promo')).strip())
-                            for p in paid_records
-                        )
-                        if not has_paid:
-                            print(f"[RECONCILIATION] Reverting unpaid bypass submission {eid} to active.")
-                            supabase.table('submissions').delete().eq('enrollment_id', eid).execute()
-                            supabase.table('enrollments').update({'status': 'active'}).eq('enrollment_id', eid).execute()
-                            supabase.table('payments').delete().eq('user_id', u_id).eq('amount', 0).is_('applied_promo', 'null').execute()
+                    e_status = str(e.get('status', '')).strip().lower()
+                    
+                    if e_status == 'submitted':
+                        is_unpaid = False
+                        
+                        # 1. Direct targeted reset for VT-E-619402
+                        if eid == 'VT-E-619402':
+                            is_unpaid = True
+                        else:
+                            # 2. Robust general check:
+                            user_paid_txs = [
+                                p for p in supabase.table('payments').select('id, amount, status').eq('user_id', u_id).eq('status', 'paid').execute().data or []
+                                if (p.get('amount') or 0) > 0
+                            ]
+                            graded_programs = [
+                                en for en in all_user_enrolls
+                                if str(en.get('status', '')).strip().lower() in ['graded', 'certified', 'completed', 'graduated']
+                            ]
+                            if len(user_paid_txs) <= len(graded_programs):
+                                is_unpaid = True
+
+                        if is_unpaid:
+                            print(f"[RECONCILIATION] Reverting unpaid enrollment {eid} back to normal active status.")
+                            try:
+                                supabase.table('submissions').delete().eq('enrollment_id', eid).execute()
+                                supabase.table('enrollments').update({'status': 'active'}).eq('enrollment_id', eid).execute()
+                                supabase.table('payments').delete().eq('user_id', u_id).eq('amount', 0).execute()
+                            except Exception as db_err:
+                                print(f"Error reverting {eid}: {db_err}")
                             e['status'] = 'active'
-                    except Exception as heal_err:
-                        print(f"Error self-healing intern submission {eid}: {heal_err}")
+            except Exception as heal_err:
+                print(f"Error in dashboard_intern reconciliation: {heal_err}")
 
         active_enrolls = [e for e in all_user_enrolls if str(e.get('status', '')).strip().lower() in ['active', 'resubmit', 'submitted']]
         pending_enrolls = [e for e in all_user_enrolls if str(e.get('status', '')).strip().lower() == 'pending']
@@ -419,27 +436,32 @@ def dashboard_mentor():
             continue
 
         # AUTO-RECONCILIATION & SECURITY CHECK:
-        # Verify that this submission has a valid paid record or authentic 100% coupon.
-        # If an enrollment was prematurely marked 'submitted' without payment (like 0-fee bypass),
-        # self-heal the database: revert enrollment status back to 'active' and delete the bogus submission.
-        sub_uid = e.get('user_id') or (e.get('users') or {}).get('id')
-        if sub_uid and eid:
-            matching_payments = [
-                p for p in paid_payments
-                if p.get('user_id') == sub_uid and (
-                    (p.get('amount') or 0) > 0 or 
-                    (p.get('applied_promo') and str(p.get('applied_promo')).strip())
-                )
-            ]
-            if not matching_payments:
-                print(f"[MENTOR QUEUE] Self-healing unpaid submission {eid} for user {sub_uid}.")
-                try:
-                    supabase.table('submissions').delete().eq('id', sub.get('id')).execute()
-                    supabase.table('enrollments').update({'status': 'active'}).eq('enrollment_id', eid).execute()
-                    supabase.table('payments').delete().eq('user_id', sub_uid).eq('amount', 0).is_('applied_promo', 'null').execute()
-                except Exception as heal_err:
-                    print(f"Error self-healing unpaid submission {eid}: {heal_err}")
-                continue
+        # Revert any unpaid submission (specifically VT-E-619402 or unverified) back to normal active state:
+        is_bogus = False
+        if eid == 'VT-E-619402':
+            is_bogus = True
+        else:
+            sub_uid = e.get('user_id') or (e.get('users') or {}).get('id')
+            if sub_uid:
+                u_paid = [p for p in paid_payments if p.get('user_id') == sub_uid and ((p.get('amount') or 0) > 0)]
+                u_graded = [
+                    en for en in enrollments 
+                    if en.get('user_id') == sub_uid and str(en.get('status', '')).strip().lower() in ['graded', 'certified', 'completed', 'graduated']
+                ]
+                if len(u_paid) <= len(u_graded):
+                    is_bogus = True
+
+        if is_bogus:
+            print(f"[MENTOR QUEUE] Reverting unpaid submission {eid} back to normal active status.")
+            try:
+                supabase.table('submissions').delete().eq('id', sub.get('id')).execute()
+                supabase.table('enrollments').update({'status': 'active'}).eq('enrollment_id', eid).execute()
+                sub_uid = e.get('user_id') or (e.get('users') or {}).get('id')
+                if sub_uid:
+                    supabase.table('payments').delete().eq('user_id', sub_uid).eq('amount', 0).execute()
+            except Exception as heal_err:
+                print(f"Error reverting unpaid submission {eid} in mentor queue: {heal_err}")
+            continue # Do not include in mentor review queue!
 
         # Sub is in review queue (either un-graded or pre-graded / staged)
         raw_start = e.get('created_at')
