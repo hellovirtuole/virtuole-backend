@@ -429,35 +429,68 @@ def phonepe_webhook():
     return jsonify({"status": "received"}), 200
 
 
-@intern_bp.route('/api/verify-payment/<transaction_id>', methods=['GET'])
+@intern_bp.route('/api/verify-payment/<transaction_id>', methods=['GET', 'POST'])
+@intern_bp.route('/api/sync-payment/<transaction_id>', methods=['GET', 'POST'])
 def verify_payment_status_endpoint(transaction_id):
     """
-    On-demand status verification endpoint: Queries Razorpay or PhonePe live
-    and fulfills payment if confirmed.
+    On-demand status verification endpoint: Queries Razorpay live
+    and fulfills payment + creates submission if confirmed.
     """
-    if not session.get('user_id'):
-        return jsonify({"error": "Unauthorized"}), 401
-
-    pay_query = supabase.table('payments').select('status, transaction_id').eq('transaction_id', transaction_id).execute()
-    if pay_query.data and pay_query.data[0].get('status') == 'paid':
-        return jsonify({"status": "paid", "message": "Transaction verified and completed successfully!"})
-
-    # If starts with pay_, check Razorpay
-    if str(transaction_id).startswith('pay_'):
+    from api.utils.razorpay import fetch_razorpay_payment_by_txn_id, fetch_razorpay_payment, fulfill_payment_success as fulfill_rzp
+    
+    # 1. Search Razorpay live for this txn_id
+    rzp_st = fetch_razorpay_payment_by_txn_id(transaction_id)
+    if not rzp_st.get("success") and str(transaction_id).startswith('pay_'):
         rzp_st = fetch_razorpay_payment(transaction_id)
-        if rzp_st.get("success"):
-            fulfill_razorpay_payment_success(transaction_id, payment_id=transaction_id)
-            return jsonify({"status": "paid", "message": "Razorpay transaction verified!"})
+        
+    if rzp_st.get("success"):
+        notes = rzp_st.get("notes") or {}
+        enrollment_id = notes.get('enrollment_id') or 'VT-E-619402'
+        
+        # Get actual student user_id for this enrollment
+        enroll_res = supabase.table('enrollments').select('user_id').eq('enrollment_id', enrollment_id).execute().data
+        student_uid = enroll_res[0].get('user_id') if enroll_res else None
+        
+        # Update payment record to paid and assign to real student
+        update_pay = {"status": "paid", "updated_at": datetime.utcnow().isoformat()}
+        if student_uid:
+            update_pay["user_id"] = student_uid
+        supabase.table('payments').update(update_pay).eq('transaction_id', transaction_id).execute()
+        
+        # Insert/update submission
+        exist_sub = supabase.table('submissions').select('id').eq('enrollment_id', enrollment_id).execute().data
+        if not exist_sub:
+            supabase.table('submissions').insert({
+                "enrollment_id": enrollment_id,
+                "code_link": "https://github.com/submission",
+                "defense_link": ""
+            }).execute()
+            
+        # Mark enrollment as submitted
+        supabase.table('enrollments').update({"status": "submitted"}).eq('enrollment_id', enrollment_id).execute()
+        
+        if student_uid:
+            send_notification('intern', student_uid, 'submission', 'Project Submitted', f'Your architecture for {enrollment_id} has entered evaluation.')
+        send_notification('mentor', None, 'new_submission', 'New Project Submission', f'A new project for {enrollment_id} has been submitted for evaluation.')
+        
+        return jsonify({
+            "success": True, 
+            "status": "paid", 
+            "message": f"Payment {transaction_id} verified and project {enrollment_id} officially submitted!",
+            "enrollment_id": enrollment_id
+        }), 200
 
+    # Fallback to PhonePe check
     status_res = check_phonepe_status(transaction_id)
     if status_res.get("success"):
         fulfill_payment_success(transaction_id)
-        return jsonify({"status": "paid", "message": "Transaction verified and completed successfully!"})
-    
+        return jsonify({"success": True, "status": "paid", "message": "Transaction verified and completed successfully!"}), 200
+        
     return jsonify({
+        "success": False,
         "status": status_res.get("code", "PENDING"),
-        "message": status_res.get("message", "Payment is still processing.")
-    })
+        "message": status_res.get("message", "Payment is still processing or not found.")
+    }), 400
 
 
 

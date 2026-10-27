@@ -131,6 +131,34 @@ def fetch_razorpay_payment(payment_id):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+def fetch_razorpay_payment_by_txn_id(merchant_txn_id):
+    """
+    Finds a payment in Razorpay by searching recent payments for notes.transaction_id.
+    """
+    cfg = get_razorpay_config()
+    if not cfg["key_id"] or not cfg["key_secret"]:
+        return {"success": False, "error": "Keys not configured"}
+
+    try:
+        url = f"{cfg['base_url']}/payments?count=50"
+        resp = requests.get(url, auth=(cfg["key_id"], cfg["key_secret"]), timeout=15)
+        if resp.status_code == 200:
+            items = resp.json().get('items', [])
+            for item in items:
+                notes = item.get('notes') or {}
+                if notes.get('transaction_id') == str(merchant_txn_id) or str(merchant_txn_id) in str(item):
+                    status = item.get('status')
+                    return {
+                        "success": status in ["captured", "authorized"],
+                        "status": status,
+                        "payment_id": item.get('id'),
+                        "notes": notes,
+                        "data": item
+                    }
+        return {"success": False, "error": f"Transaction {merchant_txn_id} not found in recent Razorpay payments"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
 def fulfill_payment_success(merchant_txn_id, payment_id=None, method="Razorpay Checkout"):
     """
     Idempotently marks payment as 'paid', records payment_id, dispatches invoice email and notification.

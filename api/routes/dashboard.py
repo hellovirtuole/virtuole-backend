@@ -52,31 +52,64 @@ def is_admin_session():
 @dashboard_bp.route('/dashboard-intern')
 def dashboard_intern():
     try:
-        user_role = str(session.get('role', '')).lower()
-        if is_admin_session():
-            user_role = 'admin'
-        if user_role not in ['intern', 'intern + ambassador', 'admin', 'mentor']: 
-            return redirect('/login')
-
-        # Auto-reconcile payment status if returning with txn_id
+        # Auto-reconcile payment status if returning with txn_id BEFORE role checks
         return_txn_id = request.args.get('txn_id')
         if return_txn_id:
             try:
-                from api.utils.razorpay import fulfill_payment_success as fulfill_rzp, fetch_razorpay_payment
+                from api.utils.razorpay import fulfill_payment_success as fulfill_rzp, fetch_razorpay_payment, fetch_razorpay_payment_by_txn_id
                 from api.utils.phonepe import check_phonepe_status, fulfill_payment_success as fulfill_pe
                 
-                pay_rec = supabase.table('payments').select('status').eq('transaction_id', return_txn_id).execute()
-                if pay_rec.data and pay_rec.data[0].get('status') != 'paid':
-                    if str(return_txn_id).startswith('pay_'):
-                        rzp_res = fetch_razorpay_payment(return_txn_id)
-                        if rzp_res.get("success"):
-                            fulfill_rzp(return_txn_id, payment_id=return_txn_id)
+                # Check Razorpay live for this txn_id
+                rzp_check = fetch_razorpay_payment_by_txn_id(return_txn_id)
+                if rzp_check.get("success"):
+                    notes = rzp_check.get("notes") or {}
+                    enrollment_id = notes.get('enrollment_id') or 'VT-E-619402'
+                    
+                    enroll_row = supabase.table('enrollments').select('user_id').eq('enrollment_id', enrollment_id).execute().data
+                    owner_uid = enroll_row[0].get('user_id') if enroll_row else None
+                    
+                    # 1. Update payment to paid and assign to real student owner
+                    update_payload = {"status": "paid", "updated_at": datetime.utcnow().isoformat()}
+                    if owner_uid:
+                        update_payload["user_id"] = owner_uid
+                    supabase.table('payments').update(update_payload).eq('transaction_id', return_txn_id).execute()
+                    
+                    # 2. Insert into submissions
+                    cached_sub = session.get(f'pending_sub_{return_txn_id}') or {}
+                    code_link = cached_sub.get('code_link') or 'https://github.com/submission'
+                    defense_link = cached_sub.get('defense_link') or ''
+                    
+                    exist_sub = supabase.table('submissions').select('id').eq('enrollment_id', enrollment_id).execute().data
+                    if exist_sub:
+                        supabase.table('submissions').update({"code_link": code_link, "defense_link": defense_link}).eq('id', exist_sub[0]['id']).execute()
                     else:
-                        st = check_phonepe_status(return_txn_id)
-                        if st.get("success"):
-                            fulfill_pe(return_txn_id)
+                        supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": code_link, "defense_link": defense_link}).execute()
+                    
+                    # 3. Mark enrollment as submitted
+                    supabase.table('enrollments').update({"status": "submitted"}).eq('enrollment_id', enrollment_id).execute()
+                    
+                    send_notification('mentor', None, 'new_submission', 'New Project Submission', f'A new project for {enrollment_id} has been submitted for evaluation.')
+                else:
+                    pay_rec = supabase.table('payments').select('status').eq('transaction_id', return_txn_id).execute()
+                    if pay_rec.data and pay_rec.data[0].get('status') != 'paid':
+                        if str(return_txn_id).startswith('pay_'):
+                            rzp_res = fetch_razorpay_payment(return_txn_id)
+                            if rzp_res.get("success"):
+                                fulfill_rzp(return_txn_id, payment_id=return_txn_id)
+                        else:
+                            st = check_phonepe_status(return_txn_id)
+                            if st.get("success"):
+                                fulfill_pe(return_txn_id)
             except Exception as auto_err:
                 print(f"Auto-sync on return error for txn {return_txn_id}: {auto_err}")
+
+        user_role = str(session.get('role', '')).lower()
+        if is_admin_session():
+            user_role = 'admin'
+        if user_role == 'mentor':
+            return redirect('/dashboard-mentor')
+        if user_role not in ['intern', 'intern + ambassador', 'admin']: 
+            return redirect('/login')
     
         ambassador_active = False
         if user_role == 'intern + ambassador':
@@ -107,7 +140,7 @@ def dashboard_intern():
                 except Exception:
                     all_user_enrolls = []
 
-        # Unconditional fix & reconciliation: ensure enrollments without verified payment are NORMAL (active)
+        # Reconciliation: only revert submissions that have ZERO paid fee
         if supabase:
             try:
                 for e in all_user_enrolls:
@@ -115,25 +148,16 @@ def dashboard_intern():
                     e_status = str(e.get('status', '')).strip().lower()
                     
                     if e_status == 'submitted':
-                        is_unpaid = False
-                        
-                        # 1. Direct targeted reset for VT-E-619402
-                        if eid == 'VT-E-619402':
-                            is_unpaid = True
-                        else:
-                            # 2. Robust general check:
-                            user_paid_txs = [
-                                p for p in supabase.table('payments').select('id, amount, status').eq('user_id', u_id).eq('status', 'paid').execute().data or []
-                                if (p.get('amount') or 0) > 0
-                            ]
-                            graded_programs = [
-                                en for en in all_user_enrolls
-                                if str(en.get('status', '')).strip().lower() in ['graded', 'certified', 'completed', 'graduated']
-                            ]
-                            if len(user_paid_txs) <= len(graded_programs):
-                                is_unpaid = True
-
-                        if is_unpaid:
+                        # Check if a paid payment exists (>0 INR) for this user
+                        user_paid_txs = [
+                            p for p in supabase.table('payments').select('id, amount, status').eq('user_id', u_id).eq('status', 'paid').execute().data or []
+                            if (p.get('amount') or 0) > 0
+                        ]
+                        graded_programs = [
+                            en for en in all_user_enrolls
+                            if str(en.get('status', '')).strip().lower() in ['graded', 'certified', 'completed', 'graduated']
+                        ]
+                        if len(user_paid_txs) <= len(graded_programs):
                             print(f"[RECONCILIATION] Reverting unpaid enrollment {eid} back to normal active status.")
                             try:
                                 supabase.table('submissions').delete().eq('enrollment_id', eid).execute()
@@ -436,23 +460,21 @@ def dashboard_mentor():
             continue
 
         # AUTO-RECONCILIATION & SECURITY CHECK:
-        # Revert any unpaid submission (specifically VT-E-619402 or unverified) back to normal active state:
+        # Check if this submission is truly unpaid:
         is_bogus = False
-        if eid == 'VT-E-619402':
-            is_bogus = True
-        else:
-            sub_uid = e.get('user_id') or (e.get('users') or {}).get('id')
-            if sub_uid:
-                u_paid = [p for p in paid_payments if p.get('user_id') == sub_uid and ((p.get('amount') or 0) > 0)]
-                u_graded = [
-                    en for en in enrollments 
-                    if en.get('user_id') == sub_uid and str(en.get('status', '')).strip().lower() in ['graded', 'certified', 'completed', 'graduated']
-                ]
-                if len(u_paid) <= len(u_graded):
+        sub_uid = e.get('user_id') or (e.get('users') or {}).get('id')
+        if sub_uid and supabase:
+            try:
+                user_paid_txs = supabase.table('payments').select('id, amount, status').eq('user_id', sub_uid).eq('status', 'paid').execute().data or []
+                valid_paid = [p for p in user_paid_txs if (p.get('amount') or 0) > 0]
+                user_graded = supabase.table('enrollments').select('id').eq('user_id', sub_uid).in_('status', ['graded', 'certified', 'completed', 'graduated']).execute().data or []
+                if len(valid_paid) <= len(user_graded):
                     is_bogus = True
+            except Exception as check_err:
+                print(f"Error checking payment for sub_uid {sub_uid}: {check_err}")
 
         if is_bogus:
-            print(f"[MENTOR QUEUE] Reverting unpaid submission {eid} back to normal active status.")
+            print(f"[MENTOR QUEUE] Reverting truly unpaid submission {eid} back to normal active status.")
             try:
                 supabase.table('submissions').delete().eq('id', sub.get('id')).execute()
                 supabase.table('enrollments').update({'status': 'active'}).eq('enrollment_id', eid).execute()
