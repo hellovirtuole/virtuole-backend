@@ -523,3 +523,16 @@ def revert_to_active():
     except Exception as err:
         return jsonify({"error": str(err)}), 500
 
+
+@mentor_bp.route('/api/debug-enrollment/<enrollment_id>', methods=['GET'])
+def debug_enrollment(enrollment_id):
+    enroll_data = supabase.table('enrollments').select('*').eq('enrollment_id', enrollment_id).execute().data
+    subs_data = supabase.table('submissions').select('*').eq('enrollment_id', enrollment_id).execute().data
+    recent_payments = supabase.table('payments').select('*').order('created_at', desc=True).limit(10).execute().data
+    return jsonify({
+        "enrollment": enroll_data,
+        "submissions": subs_data,
+        "recent_payments": recent_payments
+    })
+
+
