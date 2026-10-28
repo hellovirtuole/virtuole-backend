@@ -528,10 +528,15 @@ def revert_to_active():
 def debug_enrollment(enrollment_id):
     enroll_data = supabase.table('enrollments').select('*').eq('enrollment_id', enrollment_id).execute().data
     subs_data = supabase.table('submissions').select('*').eq('enrollment_id', enrollment_id).execute().data
+    try:
+        joined_subs = supabase.table('submissions').select('*, enrollments(id, user_id, created_at, track_level, status, programs(title), users(id, full_name, email))').order('created_at', desc=True).execute().data
+    except Exception as e:
+        joined_subs = f"Error: {e}"
     recent_payments = supabase.table('payments').select('*').order('created_at', desc=True).limit(10).execute().data
     return jsonify({
         "enrollment": enroll_data,
         "submissions": subs_data,
+        "joined_subs": joined_subs,
         "recent_payments": recent_payments
     })
 
