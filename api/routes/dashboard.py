@@ -140,34 +140,7 @@ def dashboard_intern():
                 except Exception:
                     all_user_enrolls = []
 
-        # Reconciliation: only revert submissions that have ZERO paid fee
-        if supabase:
-            try:
-                for e in all_user_enrolls:
-                    eid = e.get('enrollment_id')
-                    e_status = str(e.get('status', '')).strip().lower()
-                    
-                    if e_status == 'submitted':
-                        # Check if a paid payment exists (>0 INR) for this user
-                        user_paid_txs = [
-                            p for p in supabase.table('payments').select('id, amount, status').eq('user_id', u_id).eq('status', 'paid').execute().data or []
-                            if (p.get('amount') or 0) > 0
-                        ]
-                        graded_programs = [
-                            en for en in all_user_enrolls
-                            if str(en.get('status', '')).strip().lower() in ['graded', 'certified', 'completed', 'graduated']
-                        ]
-                        if len(user_paid_txs) <= len(graded_programs):
-                            print(f"[RECONCILIATION] Reverting unpaid enrollment {eid} back to normal active status.")
-                            try:
-                                supabase.table('submissions').delete().eq('enrollment_id', eid).execute()
-                                supabase.table('enrollments').update({'status': 'active'}).eq('enrollment_id', eid).execute()
-                                supabase.table('payments').delete().eq('user_id', u_id).eq('amount', 0).execute()
-                            except Exception as db_err:
-                                print(f"Error reverting {eid}: {db_err}")
-                            e['status'] = 'active'
-            except Exception as heal_err:
-                print(f"Error in dashboard_intern reconciliation: {heal_err}")
+
 
         active_enrolls = [e for e in all_user_enrolls if str(e.get('status', '')).strip().lower() in ['active', 'resubmit', 'submitted']]
         pending_enrolls = [e for e in all_user_enrolls if str(e.get('status', '')).strip().lower() == 'pending']
@@ -459,31 +432,7 @@ def dashboard_mentor():
         if e_status not in ['submitted', 'resubmit']:
             continue
 
-        # AUTO-RECONCILIATION & SECURITY CHECK:
-        # Check if this submission is truly unpaid:
-        is_bogus = False
-        sub_uid = e.get('user_id') or (e.get('users') or {}).get('id')
-        if sub_uid and supabase:
-            try:
-                user_paid_txs = supabase.table('payments').select('id, amount, status').eq('user_id', sub_uid).eq('status', 'paid').execute().data or []
-                valid_paid = [p for p in user_paid_txs if (p.get('amount') or 0) > 0]
-                user_graded = supabase.table('enrollments').select('id').eq('user_id', sub_uid).in_('status', ['graded', 'certified', 'completed', 'graduated']).execute().data or []
-                if len(valid_paid) <= len(user_graded):
-                    is_bogus = True
-            except Exception as check_err:
-                print(f"Error checking payment for sub_uid {sub_uid}: {check_err}")
 
-        if is_bogus:
-            print(f"[MENTOR QUEUE] Reverting truly unpaid submission {eid} back to normal active status.")
-            try:
-                supabase.table('submissions').delete().eq('id', sub.get('id')).execute()
-                supabase.table('enrollments').update({'status': 'active'}).eq('enrollment_id', eid).execute()
-                sub_uid = e.get('user_id') or (e.get('users') or {}).get('id')
-                if sub_uid:
-                    supabase.table('payments').delete().eq('user_id', sub_uid).eq('amount', 0).execute()
-            except Exception as heal_err:
-                print(f"Error reverting unpaid submission {eid} in mentor queue: {heal_err}")
-            continue # Do not include in mentor review queue!
 
         # Sub is in review queue (either un-graded or pre-graded / staged)
         raw_start = e.get('created_at')
