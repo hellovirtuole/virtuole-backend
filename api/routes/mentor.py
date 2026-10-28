@@ -171,6 +171,12 @@ def batch_release_submissions():
             if cert.startswith('https://') or cert.startswith('failed:'):
                 continue
             e = s.get('enrollments') or {}
+            if not e and s.get('enrollment_id'):
+                try:
+                    e_res = supabase.table('enrollments').select('created_at, track_level').eq('enrollment_id', s['enrollment_id']).execute().data
+                    if e_res: e = e_res[0]
+                except Exception:
+                    pass
             raw_start = e.get('created_at')
             try:
                 start_dt = datetime.fromisoformat(raw_start.replace('Z', '+00:00')).replace(tzinfo=None) if raw_start else now

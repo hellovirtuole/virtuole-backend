@@ -420,6 +420,25 @@ def dashboard_mentor():
 
         cert = sub.get('certificate_url') or ''
         e = sub.get('enrollments') or {}
+        if not e and eid:
+            try:
+                e_res = supabase.table('enrollments').select('*, programs(title), users(id, full_name, email)').eq('enrollment_id', eid).execute().data
+                if e_res:
+                    e = e_res[0]
+                    sub['enrollments'] = e
+            except Exception:
+                try:
+                    e_res = supabase.table('enrollments').select('*').eq('enrollment_id', eid).execute().data
+                    if e_res:
+                        e = e_res[0]
+                        u_res = supabase.table('users').select('id, full_name, email').eq('id', e.get('user_id')).execute().data
+                        if u_res: e['users'] = u_res[0]
+                        p_res = supabase.table('programs').select('title').eq('id', e.get('program_id')).execute().data
+                        if p_res: e['programs'] = p_res[0]
+                        sub['enrollments'] = e
+                except Exception:
+                    pass
+
         e_status = str(e.get('status') or '').strip().lower()
 
         # Check if already officially completed/graded & released
