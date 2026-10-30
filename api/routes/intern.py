@@ -228,7 +228,9 @@ def create_phonepe_payment():
             "enrollment_id": str(enrollment_id),
             "program_title": str(prog_title),
             "track": str(track),
-            "user_id": str(session.get('user_id'))
+            "user_id": str(session.get('user_id')),
+            "code_link": str(data.get('code_link') or '')[:200],
+            "defense_link": str(data.get('defense_link') or '')[:200]
         }
     )
 
@@ -320,46 +322,8 @@ def verify_razorpay_payment():
         print(f"[SECURITY ALERT] Invalid Razorpay signature and direct fetch failed for txn {transaction_id}, order {razorpay_order_id}")
         return jsonify({"success": False, "error": "Signature verification failed. Invalid transaction."}), 400
 
-    # Fulfill payment
-    fulfill_razorpay_payment_success(transaction_id, payment_id=razorpay_payment_id)
-
-    # NOW AND ONLY NOW: Save the official submission and mark enrollment as 'submitted'
-    cached_sub = session.get(f'pending_sub_{transaction_id}') or {}
-    enrollment_id = data.get('enrollment_id') or cached_sub.get('enrollment_id')
-    code_link = data.get('code_link') or cached_sub.get('code_link')
-    defense_link = data.get('defense_link') or cached_sub.get('defense_link')
-
-    if enrollment_id:
-        try:
-            exist_sub = supabase.table('submissions').select('id').eq('enrollment_id', enrollment_id).execute().data
-            if exist_sub:
-                supabase.table('submissions').update({
-                    "code_link": code_link,
-                    "defense_link": defense_link
-                }).eq('id', exist_sub[0]['id']).execute()
-            else:
-                supabase.table('submissions').insert({
-                    "enrollment_id": enrollment_id,
-                    "code_link": code_link,
-                    "defense_link": defense_link
-                }).execute()
-
-            # Mark enrollment as submitted
-            supabase.table('enrollments').update({"status": "submitted"}).eq('enrollment_id', enrollment_id).execute()
-
-            # Ensure payment is assigned to real student owner
-            enroll_row = supabase.table('enrollments').select('user_id').eq('enrollment_id', enrollment_id).execute().data
-            student_uid = enroll_row[0].get('user_id') if enroll_row else session.get('user_id')
-            if student_uid:
-                supabase.table('payments').update({"user_id": student_uid, "status": "paid"}).eq('transaction_id', transaction_id).execute()
-                send_notification('intern', student_uid, 'submission', 'Project Submitted', f'Your architecture for {enrollment_id} has entered evaluation.')
-            send_notification('mentor', None, 'new_submission', 'New Project Submission', f'A new project for {enrollment_id} has been submitted for evaluation.')
-            
-            # Clean up session cache
-            session.pop(f'pending_sub_{transaction_id}', None)
-            session.modified = True
-        except Exception as sub_err:
-            print(f"Error saving submission upon verified payment: {sub_err}")
+    # Master Idempotent Fulfillment: sets payment paid, creates submission, marks submitted, notifies mentor
+    fulfill_razorpay_payment_success(transaction_id, payment_id=razorpay_payment_id, extra_data=data)
 
     return jsonify({
         "success": True,
@@ -394,8 +358,9 @@ def razorpay_webhook():
                 or order_entity.get('notes', {}).get('transaction_id')
             )
             payment_id = payment_entity.get('id')
+            notes = payment_entity.get('notes') or order_entity.get('notes') or {}
             if merchant_txn_id:
-                fulfill_razorpay_payment_success(merchant_txn_id, payment_id=payment_id)
+                fulfill_razorpay_payment_success(merchant_txn_id, payment_id=payment_id, extra_data=notes)
                 return jsonify({"status": "fulfilled", "event": event}), 200
 
     except Exception as e:
@@ -459,39 +424,13 @@ def verify_payment_status_endpoint(transaction_id):
         
     if rzp_st.get("success"):
         notes = rzp_st.get("notes") or {}
-        enrollment_id = notes.get('enrollment_id') or 'VT-E-619402'
-        
-        # Get actual student user_id for this enrollment
-        enroll_res = supabase.table('enrollments').select('user_id').eq('enrollment_id', enrollment_id).execute().data
-        student_uid = enroll_res[0].get('user_id') if enroll_res else None
-        
-        # Update payment record to paid and assign to real student
-        update_pay = {"status": "paid", "updated_at": datetime.utcnow().isoformat()}
-        if student_uid:
-            update_pay["user_id"] = student_uid
-        supabase.table('payments').update(update_pay).eq('transaction_id', transaction_id).execute()
-        
-        # Insert/update submission
-        exist_sub = supabase.table('submissions').select('id').eq('enrollment_id', enrollment_id).execute().data
-        if not exist_sub:
-            supabase.table('submissions').insert({
-                "enrollment_id": enrollment_id,
-                "code_link": "https://github.com/submission",
-                "defense_link": ""
-            }).execute()
-            
-        # Mark enrollment as submitted
-        supabase.table('enrollments').update({"status": "submitted"}).eq('enrollment_id', enrollment_id).execute()
-        
-        if student_uid:
-            send_notification('intern', student_uid, 'submission', 'Project Submitted', f'Your architecture for {enrollment_id} has entered evaluation.')
-        send_notification('mentor', None, 'new_submission', 'New Project Submission', f'A new project for {enrollment_id} has been submitted for evaluation.')
-        
+        payment_id = rzp_st.get("payment_id") or (transaction_id if str(transaction_id).startswith('pay_') else None)
+        fulfill_rzp(transaction_id, payment_id=payment_id, extra_data=notes)
         return jsonify({
             "success": True, 
             "status": "paid", 
-            "message": f"Payment {transaction_id} verified and project {enrollment_id} officially submitted!",
-            "enrollment_id": enrollment_id
+            "message": f"Payment {transaction_id} verified and project officially submitted for mentor review!",
+            "enrollment_id": notes.get('enrollment_id')
         }), 200
 
     # Fallback to PhonePe check
@@ -731,11 +670,21 @@ def api_enroll():
 @intern_bp.route('/submit-project', methods=['POST'])
 @intern_bp.route('/api/submit-project', methods=['POST'])
 def api_submit_project():
-    enrollment_id = request.form.get('enrollment_id')
+    user_id = session.get('user_id')
+    if not user_id:
+        if request.is_json:
+            return jsonify({"error": "Unauthorized"}), 401
+        return redirect(url_for('auth.login'))
+
+    is_json = request.is_json
+    data = request.get_json(silent=True) or {} if is_json else request.form
+    enrollment_id = data.get('enrollment_id')
     
     # Check if enrollment is valid and not expired before accepting submission
     enroll_data = supabase.table('enrollments').select('*').eq('enrollment_id', enrollment_id).in_('status', ['active', 'resubmit']).execute().data
     if not enroll_data:
+        if is_json:
+            return jsonify({"error": "Enrollment not found or already submitted."}), 403
         return "Enrollment not found or already submitted.", 403
         
     e = enroll_data[0]
@@ -774,13 +723,35 @@ def api_submit_project():
                 "certificate_url": "failed:Missed 24-hour resubmission deadline.",
                 "evaluated_at": now.isoformat()
             }).execute()
+        if is_json:
+            return jsonify({"error": "Your submission window has expired."}), 403
         return "Your submission window has expired. The enrollment has been closed.", 403
+
+    # STRICT PAYMENT ENFORCEMENT:
+    # A project can NEVER be submitted or go to mentor checking without a confirmed payment (or authentic 100% coupon)
+    user_role = str(session.get('role', '')).lower()
+    if e['status'] == 'active' and user_role != 'admin':
+        paid_tx = supabase.table('payments').select('id').eq('user_id', user_id).eq('status', 'paid').execute().data
+        if not paid_tx:
+            if is_json:
+                return jsonify({"error": "Payment is strictly required before project can be submitted for checking."}), 402
+            return redirect(url_for('dashboard.dashboard_intern', tab='active', error='payment_required'))
     
-    supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": request.form.get('code_link'), "defense_link": request.form.get('defense_link')}).execute()
+    code_link = data.get('code_link')
+    defense_link = data.get('defense_link')
+    exist_sub = supabase.table('submissions').select('id').eq('enrollment_id', enrollment_id).execute().data
+    if exist_sub:
+        supabase.table('submissions').update({"code_link": code_link, "defense_link": defense_link}).eq('id', exist_sub[0]['id']).execute()
+    else:
+        supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": code_link, "defense_link": defense_link}).execute()
+        
     supabase.table('enrollments').update({"status": "submitted"}).eq('enrollment_id', enrollment_id).execute()
     send_notification('intern', session['user_id'], 'submission', 'Project Submitted', f'Your project for {enrollment_id} has entered evaluation.')
     send_notification('mentor', None, 'new_submission', 'New Project Submission', f'A new project for {enrollment_id} has been submitted for evaluation.')
-    send_system_email(session['email'], "Submission Received", f"Your architecture for {enrollment_id} has entered evaluation.")
+    send_system_email(session.get('email', ''), "Submission Received", f"Your architecture for {enrollment_id} has entered evaluation.")
+    
+    if is_json:
+        return jsonify({"success": True, "redirect_url": "/dashboard-intern?status=success"})
     return redirect(url_for('dashboard.dashboard_intern'))
 
 

@@ -61,54 +61,26 @@ def dashboard_intern():
                 
                 # Check Razorpay live for this txn_id
                 rzp_check = fetch_razorpay_payment_by_txn_id(return_txn_id)
+                if not rzp_check.get("success") and str(return_txn_id).startswith('pay_'):
+                    rzp_check = fetch_razorpay_payment(return_txn_id)
+
                 if rzp_check.get("success"):
                     notes = rzp_check.get("notes") or {}
-                    enrollment_id = notes.get('enrollment_id') or 'VT-E-619402'
-                    
-                    enroll_row = supabase.table('enrollments').select('user_id').eq('enrollment_id', enrollment_id).execute().data
-                    owner_uid = enroll_row[0].get('user_id') if enroll_row else None
-                    
-                    # 1. Update payment to paid and assign to real student owner
-                    update_payload = {"status": "paid", "updated_at": datetime.utcnow().isoformat()}
-                    if owner_uid:
-                        update_payload["user_id"] = owner_uid
-                    supabase.table('payments').update(update_payload).eq('transaction_id', return_txn_id).execute()
-                    
-                    # 2. Insert into submissions
-                    cached_sub = session.get(f'pending_sub_{return_txn_id}') or {}
-                    code_link = cached_sub.get('code_link') or 'https://github.com/submission'
-                    defense_link = cached_sub.get('defense_link') or ''
-                    
-                    exist_sub = supabase.table('submissions').select('id').eq('enrollment_id', enrollment_id).execute().data
-                    if exist_sub:
-                        supabase.table('submissions').update({"code_link": code_link, "defense_link": defense_link}).eq('id', exist_sub[0]['id']).execute()
-                    else:
-                        supabase.table('submissions').insert({"enrollment_id": enrollment_id, "code_link": code_link, "defense_link": defense_link}).execute()
-                    
-                    # 3. Mark enrollment as submitted
-                    supabase.table('enrollments').update({"status": "submitted"}).eq('enrollment_id', enrollment_id).execute()
-                    
-                    send_notification('mentor', None, 'new_submission', 'New Project Submission', f'A new project for {enrollment_id} has been submitted for evaluation.')
+                    payment_id = rzp_check.get('payment_id') or (return_txn_id if str(return_txn_id).startswith('pay_') else None)
+                    fulfill_rzp(return_txn_id, payment_id=payment_id, extra_data=notes)
                 else:
                     pay_rec = supabase.table('payments').select('status').eq('transaction_id', return_txn_id).execute()
                     if pay_rec.data and pay_rec.data[0].get('status') != 'paid':
-                        if str(return_txn_id).startswith('pay_'):
-                            rzp_res = fetch_razorpay_payment(return_txn_id)
-                            if rzp_res.get("success"):
-                                fulfill_rzp(return_txn_id, payment_id=return_txn_id)
-                        else:
-                            st = check_phonepe_status(return_txn_id)
-                            if st.get("success"):
-                                fulfill_pe(return_txn_id)
+                        st = check_phonepe_status(return_txn_id)
+                        if st.get("success"):
+                            fulfill_pe(return_txn_id)
             except Exception as auto_err:
                 print(f"Auto-sync on return error for txn {return_txn_id}: {auto_err}")
 
         user_role = str(session.get('role', '')).lower()
         if is_admin_session():
             user_role = 'admin'
-        if user_role == 'mentor':
-            return redirect('/dashboard-mentor')
-        if user_role not in ['intern', 'intern + ambassador', 'admin']: 
+        if user_role not in ['intern', 'intern + ambassador', 'admin', 'mentor']: 
             return redirect('/login')
     
         ambassador_active = False
@@ -141,6 +113,23 @@ def dashboard_intern():
                     all_user_enrolls = []
 
 
+
+        # SELF-HEALING: Ensure any enrollment with a recorded submission or paid payment is marked 'submitted'
+        for e in all_user_enrolls:
+            e_stat = str(e.get('status', '')).strip().lower()
+            if e_stat in ['active', 'resubmit']:
+                eid = e.get('enrollment_id')
+                sub_check = supabase.table('submissions').select('id').eq('enrollment_id', eid).execute().data
+                if sub_check:
+                    supabase.table('enrollments').update({"status": "submitted"}).eq('id', e['id']).execute()
+                    e['status'] = 'submitted'
+                else:
+                    # Check if there is a paid payment for this user
+                    paid_check = supabase.table('payments').select('id, transaction_id').eq('user_id', u_id).eq('status', 'paid').order('created_at', desc=True).limit(1).execute().data
+                    if paid_check and len(all_user_enrolls) == 1:
+                        from api.utils.razorpay import fulfill_payment_success as fulfill_rzp
+                        fulfill_rzp(paid_check[0]['transaction_id'], extra_data={"enrollment_id": eid})
+                        e['status'] = 'submitted'
 
         active_enrolls = [e for e in all_user_enrolls if str(e.get('status', '')).strip().lower() in ['active', 'resubmit', 'submitted']]
         pending_enrolls = [e for e in all_user_enrolls if str(e.get('status', '')).strip().lower() == 'pending']
@@ -441,6 +430,16 @@ def dashboard_mentor():
 
         e_status = str(e.get('status') or '').strip().lower()
 
+        # SELF-HEALING: If submission exists and enrollment is still 'active', check if payment was made
+        if e_status == 'active':
+            u_id_enroll = e.get('user_id')
+            if u_id_enroll:
+                has_paid = supabase.table('payments').select('id').eq('user_id', u_id_enroll).eq('status', 'paid').execute().data
+                if has_paid:
+                    supabase.table('enrollments').update({"status": "submitted"}).eq('id', e['id']).execute()
+                    e_status = 'submitted'
+                    e['status'] = 'submitted'
+
         # Check if already officially completed/graded & released
         if cert.startswith('https://') or cert.startswith('failed:') or e_status in ['graded', 'failed']:
             graded_subs.append(sub)
@@ -451,7 +450,15 @@ def dashboard_mentor():
         if e_status not in ['submitted', 'resubmit']:
             continue
 
-
+        # STRICT UNPAID SUBMISSION DEFENSE:
+        # Verify that the student actually has a verified 'paid' transaction or 100% discount
+        if e_status == 'submitted':
+            u_id_enroll = e.get('user_id')
+            if u_id_enroll:
+                paid_exists = supabase.table('payments').select('id').eq('user_id', u_id_enroll).eq('status', 'paid').execute().data
+                if not paid_exists:
+                    # Unpaid submission anomaly: do NOT display in mentor review queue
+                    continue
 
         # Sub is in review queue (either un-graded or pre-graded / staged)
         raw_start = e.get('created_at')
@@ -466,6 +473,25 @@ def dashboard_mentor():
 
         u = e.get('users') or {}
         p = e.get('programs') or {}
+
+        if not u and e.get('user_id'):
+            try:
+                u_res = supabase.table('users').select('full_name, email').eq('id', e['user_id']).execute().data
+                if u_res:
+                    u = u_res[0]
+                    e['users'] = u
+            except Exception:
+                pass
+
+        if not p and e.get('program_id'):
+            try:
+                p_res = supabase.table('programs').select('title').eq('id', e['program_id']).execute().data
+                if p_res:
+                    p = p_res[0]
+                    e['programs'] = p
+            except Exception:
+                pass
+
         sub['student_name'] = u.get('full_name', 'Student Intern')
         sub['student_email'] = u.get('email', 'N/A')
         sub['program_title'] = p.get('title', 'Architecture Program')
