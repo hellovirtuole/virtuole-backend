@@ -196,8 +196,7 @@ def fulfill_payment_success(merchant_txn_id, payment_id=None, method="Razorpay C
     # Update payment to paid if not already
     if not already_paid:
         update_data = {
-            "status": "paid",
-            "updated_at": datetime.utcnow().isoformat()
+            "status": "paid"
         }
         supabase.table('payments').update(update_data).eq('id', p['id']).execute()
 

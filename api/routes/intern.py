@@ -396,8 +396,7 @@ def phonepe_webhook():
         elif transaction_id:
             # Update to failed if declined
             supabase.table('payments').update({
-                "status": "failed", 
-                "updated_at": datetime.utcnow().isoformat()
+                "status": "failed"
             }).eq('transaction_id', transaction_id).execute()
             return jsonify({"status": "received", "result": code}), 200
 

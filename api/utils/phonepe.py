@@ -133,7 +133,7 @@ def fulfill_payment_success(merchant_txn_id):
         return True # Already fulfilled
 
     # Update to paid
-    supabase.table('payments').update({"status": "paid", "updated_at": datetime.utcnow().isoformat()}).eq('transaction_id', merchant_txn_id).execute()
+    supabase.table('payments').update({"status": "paid"}).eq('transaction_id', merchant_txn_id).execute()
 
     user_id = p.get('user_id')
     amount = (p.get('amount') or 0) / 100.0
