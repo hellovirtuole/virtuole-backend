@@ -877,6 +877,17 @@
                                 if (verifyData.success) {
                                     window.location.href = verifyData.redirect_url || "/dashboard-intern?status=success";
                                 } else {
+                                    // Automatic live sync fallback: checks Razorpay directly by txn_id
+                                    try {
+                                        const syncRes = await fetch(`/api/sync-payment/${data.transaction_id}`);
+                                        const syncData = await syncRes.json();
+                                        if (syncData.success) {
+                                            window.location.href = "/dashboard-intern?status=success";
+                                            return;
+                                        }
+                                    } catch (sErr) {
+                                        console.error("Live sync fallback error", sErr);
+                                    }
                                     alert("Verification alert: " + (verifyData.error || "Payment verification failed."));
                                     payBtn.innerHTML = `Confirm & Pay ₹<span id="modal-price">${currentDisplayedPrice}</span>`;
                                     payBtn.disabled = false;
