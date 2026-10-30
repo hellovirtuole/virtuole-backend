@@ -415,35 +415,41 @@ def verify_payment_status_endpoint(transaction_id):
     On-demand status verification endpoint: Queries Razorpay live
     and fulfills payment + creates submission if confirmed.
     """
-    from api.utils.razorpay import fetch_razorpay_payment_by_txn_id, fetch_razorpay_payment, fulfill_payment_success as fulfill_rzp
-    
-    # 1. Search Razorpay live for this txn_id
-    rzp_st = fetch_razorpay_payment_by_txn_id(transaction_id)
-    if not rzp_st.get("success") and str(transaction_id).startswith('pay_'):
-        rzp_st = fetch_razorpay_payment(transaction_id)
+    try:
+        from api.utils.razorpay import fetch_razorpay_payment_by_txn_id, fetch_razorpay_payment, fulfill_payment_success as fulfill_rzp
         
-    if rzp_st.get("success"):
-        notes = rzp_st.get("notes") or {}
-        payment_id = rzp_st.get("payment_id") or (transaction_id if str(transaction_id).startswith('pay_') else None)
-        fulfill_rzp(transaction_id, payment_id=payment_id, extra_data=notes)
-        return jsonify({
-            "success": True, 
-            "status": "paid", 
-            "message": f"Payment {transaction_id} verified and project officially submitted for mentor review!",
-            "enrollment_id": notes.get('enrollment_id')
-        }), 200
+        # 1. Search Razorpay live for this txn_id
+        rzp_st = fetch_razorpay_payment_by_txn_id(transaction_id)
+        if not rzp_st.get("success") and str(transaction_id).startswith('pay_'):
+            rzp_st = fetch_razorpay_payment(transaction_id)
+            
+        if rzp_st.get("success"):
+            notes = rzp_st.get("notes") or {}
+            payment_id = rzp_st.get("payment_id") or (transaction_id if str(transaction_id).startswith('pay_') else None)
+            fulfill_rzp(transaction_id, payment_id=payment_id, extra_data=notes)
+            return jsonify({
+                "success": True, 
+                "status": "paid", 
+                "message": f"Payment {transaction_id} verified and project officially submitted for mentor review!",
+                "enrollment_id": notes.get('enrollment_id')
+            }), 200
 
-    # Fallback to PhonePe check
-    status_res = check_phonepe_status(transaction_id)
-    if status_res.get("success"):
-        fulfill_payment_success(transaction_id)
-        return jsonify({"success": True, "status": "paid", "message": "Transaction verified and completed successfully!"}), 200
-        
-    return jsonify({
-        "success": False,
-        "status": status_res.get("code", "PENDING"),
-        "message": status_res.get("message", "Payment is still processing or not found.")
-    }), 400
+        # Fallback to PhonePe check
+        status_res = check_phonepe_status(transaction_id)
+        if status_res.get("success"):
+            fulfill_payment_success(transaction_id)
+            return jsonify({"success": True, "status": "paid", "message": "Transaction verified and completed successfully!"}), 200
+            
+        return jsonify({
+            "success": False,
+            "status": status_res.get("code", "PENDING"),
+            "message": status_res.get("message", "Payment is still processing or not found.")
+        }), 400
+    except Exception as e:
+        import traceback
+        err_detail = traceback.format_exc()
+        print(f"[SYNC PAYMENT ERROR] {err_detail}")
+        return jsonify({"success": False, "error": str(e), "traceback": err_detail}), 500
 
 
 
